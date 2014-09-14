@@ -1,0 +1,60 @@
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+<!-- Aperture type description -->
+<xs:complexType name="TFurnitureItem">
+    <xs:sequence>
+        <xs:element type="xs:string" name="ClassName"/>
+        <xs:element type="xs:int" name="Id"/>
+        <xs:element type="xs:int" name="Type"/>
+        <xs:element type="xs:string" name="Name"/>
+        <xs:element type="xs:float" name="X"/>
+        <xs:element type="xs:float" name="Y"/>
+        <xs:element type="xs:float" name="Z"/>
+        <xs:element type="xs:float" name="Width"/>
+        <xs:element type="xs:float" name="Height"/>
+        <xs:element type="xs:float" name="Length"/>
+        <xs:element type="xs:float" name="Angle"/>
+        <xs:element type="xs:int" name="Set"/>
+      </xs:sequence>
+</xs:complexType>
+
+<!-- Array of aperture type description -->
+<xs:complexType name="ArrayOfTFurniture">
+    <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" name="FurnitureItem" nillable="true" type="TFurnitureItem"/>
+    </xs:sequence>
+</xs:complexType>
+
+<!-- Floor type description -->
+<xs:complexType name="TFloor">
+    <xs:sequence>
+        <xs:element type="xs:string" name="ClassName"/>
+        <xs:element type="xs:int" name="Id"/>
+        <xs:element type="xs:int" name="Type"/>
+        <xs:element type="xs:string" name="Name"/>
+        <xs:element type="xs:int" name="Number"/>
+        <xs:element type="ArrayOfTFurniture" name="Furniture" nillable="true"/>
+    </xs:sequence>
+</xs:complexType>
+
+<!-- Array of floor type description -->
+<xs:complexType name="ArrayOfTFloor">
+    <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" name="Floor" nillable="true" type="TFloor"/>
+    </xs:sequence>
+</xs:complexType>
+
+<!-- Building type description -->
+<xs:complexType name="TBuilding">
+    <xs:sequence>
+        <xs:element type="xs:string" name="ClassName"/>
+        <xs:element type="xs:int" name="Id"/>
+        <xs:element type="xs:int" name="Type"/>
+        <xs:element type="xs:string" name="Name"/>
+        <xs:element type="ArrayOfTFloor" name="FloorList" nillable="true"/>
+    </xs:sequence>
+</xs:complexType>
+
+<xs:element name="Building" type="TBuilding"/>
+
+</xs:schema>

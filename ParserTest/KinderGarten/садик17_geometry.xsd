@@ -1,0 +1,186 @@
+﻿<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:element name="Building" type="TBuilding"/>
+
+	<!-- Building type description -->
+	<xs:complexType name="TBuilding">
+		<xs:sequence>
+			<xs:element type="xs:string" name="ClassName"/>
+			<xs:element type="xs:int" name="Id"/>
+			<xs:element type="xs:int" name="Type"/>
+			<xs:element type="xs:string" name="Name"/>
+			<xs:element type="ArrayOfTFloor" name="FloorList"/>
+			<xs:element type="ArrayOfTStairway" name="StairwayList"/>
+			<xs:element type="TBox" name="Roof"/>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="ArrayOfTFloor">
+		<xs:sequence>
+			<xs:element maxOccurs="unbounded" name="Floor" type="TFloor"/>
+		</xs:sequence>
+	</xs:complexType>
+
+	<!-- Array of stairway -->
+	<xs:complexType name="ArrayOfTStairway">
+		<xs:sequence>
+			<xs:element maxOccurs="unbounded" name="Stairway" type="TStairway"/>
+		</xs:sequence>
+	</xs:complexType>
+
+	<!-- Floor -->
+	<xs:complexType name="TFloor">
+		<xs:sequence>
+			<xs:element type="xs:string" name="ClassName"/>
+			<xs:element type="xs:int" name="Id"/>
+			<xs:element type="xs:int" name="Type"/>
+			<xs:element type="xs:string" name="Name"/>
+			<xs:element type="xs:int" name="Number"/>
+			<xs:element type="ArrayOfTRoom" name="RoomList"/>
+			<xs:element type="ArrayOfTAperture" name="ApertureList"/>
+		</xs:sequence>
+	</xs:complexType>
+
+	<!-- Array of room -->
+	<xs:complexType name="ArrayOfTRoom">
+		<xs:sequence>
+			<xs:element maxOccurs="unbounded" name="Room" type="TRoom"/>
+		</xs:sequence>
+	</xs:complexType>
+
+	<!-- Room -->
+	<xs:complexType name="TRoom">
+		<xs:sequence>
+			<xs:element type="xs:string" name="ClassName"/>
+			<xs:element type="xs:int" name="Id"/>
+			<xs:element type="xs:int" name="Type"/>
+			<xs:element type="xs:string" name="Name"/>
+			<xs:element type="ArrayOfRoomGeometry" name="Geometry"/>
+			<xs:element type="xs:float" name="FireLoad"/>
+			<xs:element type="xs:float" name="Mass"/>
+		</xs:sequence>
+	</xs:complexType>
+
+	<!-- Array of stairway -->
+	<xs:complexType name="ArrayOfRoomGeometry">
+		<xs:sequence>
+			<xs:element maxOccurs="unbounded" name="GeometryItem" type="TBox"/>
+		</xs:sequence>
+	</xs:complexType>
+
+	<!-- Aperture -->
+	<xs:complexType name="TAperture">
+		<xs:sequence>
+			<xs:element type="xs:string" name="ClassName"/>
+			<xs:element type="xs:int" name="Id"/>
+			<xs:element type="xs:int" name="Type"/>
+			<xs:element type="xs:string" name="Name"/>
+
+			<xs:element type="xs:float" name="X1" minOccurs="0" maxOccurs="1"/>
+			<xs:element type="xs:float" name="Y1" minOccurs="0" maxOccurs="1"/>
+			<xs:element type="xs:float" name="Z1" minOccurs="0" maxOccurs="1"/>
+			<xs:element type="xs:float" name="X2" minOccurs="0" maxOccurs="1"/>
+			<xs:element type="xs:float" name="Y2" minOccurs="0" maxOccurs="1"/>
+			<xs:element type="xs:float" name="Z2" minOccurs="0" maxOccurs="1"/>
+			<xs:element type="xs:int" name="BoxId1" minOccurs="0" maxOccurs="1"/>
+			<xs:element type="xs:int" name="BoxId2" minOccurs="0" maxOccurs="1"/>
+		</xs:sequence>
+	</xs:complexType>
+
+	<!-- Array of stairway -->
+	<xs:complexType name="ArrayOfTAperture">
+		<xs:sequence>
+			<xs:element maxOccurs="unbounded" name="Aperture" type="TAperture"/>
+		</xs:sequence>
+	</xs:complexType>
+
+	<!-- Stairway -->
+	<xs:complexType name="TStairway">
+		<xs:sequence>
+			<xs:element type="xs:string" name="ClassName"/>
+			<xs:element type="xs:int" name="Id"/>
+			<xs:element type="xs:int" name="Type"/>
+			<xs:element type="xs:string" name="Name"/>
+			<xs:element type="ArrayOfStairwayGeometry" name="Geometry"/>
+		</xs:sequence>
+	</xs:complexType>
+
+	<!-- Array of stairway geometry items -->
+	<xs:complexType name="ArrayOfStairwayGeometry">
+		<xs:sequence maxOccurs="unbounded">
+			<xs:choice>
+				<xs:element name="Box" type="TBox"/>
+				<xs:element name="Platform" type="TPlatform"/>
+				<xs:element name="Flight" type="TFlight"/>
+				<!-- FIXME: add TAperture -->
+			</xs:choice>
+		</xs:sequence>
+	</xs:complexType>
+
+	<!-- Base geometry item -->
+	<xs:complexType name="TGeometryItem" abstract="true">
+		<xs:sequence>
+			<xs:element type="xs:string" name="ClassName"/>
+			<xs:element type="xs:int" name="Id"/>
+			<xs:element type="xs:int" name="Type"/>
+		</xs:sequence>
+	</xs:complexType>
+
+	<!-- Box geometry item -->
+	<xs:complexType name="TBox">
+		<xs:complexContent>
+			<xs:extension base="TGeometryItem">
+				<xs:sequence>
+					<xs:element type="xs:string" name="Name"/>
+					<xs:element type="xs:float" name="X1"/>
+					<xs:element type="xs:float" name="Y1"/>
+					<xs:element type="xs:float" name="Z1"/>
+					<xs:element type="xs:float" name="X2"/>
+					<xs:element type="xs:float" name="Y2"/>
+					<xs:element type="xs:float" name="Z2"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<!-- Platform geometry item -->
+	<xs:complexType name="TPlatform">
+		<xs:complexContent>
+			<xs:extension base="TGeometryItem">
+				<xs:sequence>
+					<xs:element type="xs:string" name="Name"/>
+					<xs:element type="xs:float" name="X1"/>
+					<xs:element type="xs:float" name="Y1"/>
+					<xs:element type="xs:float" name="Z1"/>
+					<xs:element type="xs:float" name="X2"/>
+					<xs:element type="xs:float" name="Y2"/>
+					<xs:element type="xs:float" name="Z2"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<!-- Flight geometry item -->
+	<xs:complexType name="TFlight">
+		<xs:complexContent>
+			<xs:extension base="TGeometryItem">
+				<xs:sequence>
+					<xs:element type="xs:string" name="Name"/>
+					<xs:element type="xs:float" name="X1"/>
+					<xs:element type="xs:float" name="Y1"/>
+					<xs:element type="xs:float" name="Z1"/>
+					<xs:element type="xs:float" name="X2"/>
+					<xs:element type="xs:float" name="Y2"/>
+					<xs:element type="xs:float" name="Z2"/>
+					<xs:element type="xs:float" name="X3"/>
+					<xs:element type="xs:float" name="Y3"/>
+					<xs:element type="xs:float" name="Z3"/>
+					<xs:element type="xs:float" name="Length"/>
+					<xs:element type="xs:float" name="Height"/>
+					<xs:element type="xs:float" name="Width"/>
+					<xs:element type="xs:float" name="Angle"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+</xs:schema>

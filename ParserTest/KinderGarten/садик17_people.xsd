@@ -1,0 +1,68 @@
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+<!-- Man type description -->
+<xs:complexType name="TMan">
+    <xs:sequence>
+        <xs:element type="xs:string" name="ClassName"/>
+        <xs:element type="xs:int" name="Id"/>
+        <xs:element type="xs:int" name="Type"/>
+        <xs:element type="xs:float" name="px"/>
+        <xs:element type="xs:float" name="py"/>
+        <xs:element type="xs:float" name="pz"/>
+        <xs:element type="xs:int" name="Color"/>
+        <xs:element type="xs:int" name="Mobility"/>
+        <xs:element type="xs:int" name="Age"/>
+        <xs:element type="xs:float" name="Size"/>
+        <xs:element type="xs:int" name="Sex"/>
+        <xs:element type="xs:int" name="EmoState"/>
+        <xs:element type="xs:int" name="EducLevel"/>
+        <xs:element type="xs:int" name="Role"/>
+        <xs:element type="xs:int" name="StartRoom"/>
+        <xs:element type="xs:int" name="StartTime"/>
+        <xs:element type="xs:int" name="IsControl"/>
+        <xs:element type="xs:int" name="ExitId"/>
+      </xs:sequence>
+</xs:complexType>
+
+<!-- Array of man type description -->
+<!-- <xs:element name="TMan" nillable="true" type="tns:TMan"/> -->
+<xs:complexType name="ArrayOfTMan">
+    <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" name="Man" nillable="true" type="TMan"/>
+    </xs:sequence>
+</xs:complexType>
+<!-- <xs:element name="ArrayOfTMan" nillable="true" type="tns:ArrayOfTMan"/> -->
+
+<!-- Floor type description -->
+<xs:complexType name="TFloor">
+    <xs:sequence>
+        <xs:element type="xs:string" name="ClassName"/>
+        <xs:element type="xs:int" name="Id"/>
+        <xs:element type="xs:int" name="Type"/>
+        <xs:element type="xs:string" name="Name"/>
+        <xs:element type="xs:int" name="Number"/>
+        <xs:element type="ArrayOfTMan" name="People" nillable="true"/>
+    </xs:sequence>
+</xs:complexType>
+
+<!-- Array of floor type description -->
+<xs:complexType name="ArrayOfTFloor">
+    <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" name="Floor" nillable="true" type="TFloor"/>
+    </xs:sequence>
+</xs:complexType>
+
+<!-- Building type description -->
+<xs:complexType name="TBuilding">
+    <xs:sequence>
+        <xs:element type="xs:string" name="ClassName"/>
+        <xs:element type="xs:int" name="Id"/>
+        <xs:element type="xs:int" name="Type"/>
+        <xs:element type="xs:string" name="Name"/>
+        <xs:element type="ArrayOfTFloor" name="FloorList" nillable="true"/>
+    </xs:sequence>
+</xs:complexType>
+
+<xs:element name="Building" type="TBuilding"/>
+
+</xs:schema>

@@ -1,0 +1,60 @@
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+<!-- Aperture type description -->
+<xs:complexType name="TAperture">
+    <xs:sequence>
+        <xs:element type="xs:string" name="ClassName"/>
+        <xs:element type="xs:int" name="Id"/>
+        <xs:element type="xs:float" name="x1" minOccurs="0" maxOccurs="1"/>
+        <xs:element type="xs:float" name="y1" minOccurs="0" maxOccurs="1"/>
+        <xs:element type="xs:float" name="z1" minOccurs="0" maxOccurs="1"/>
+        <xs:element type="xs:float" name="x2" minOccurs="0" maxOccurs="1"/>
+        <xs:element type="xs:float" name="y2" minOccurs="0" maxOccurs="1"/>
+        <xs:element type="xs:float" name="z2" minOccurs="0" maxOccurs="1"/>
+        <xs:element type="xs:int" name="Lock" minOccurs="0" maxOccurs="1"/>
+        <xs:element type="xs:int" name="Closer" minOccurs="0" maxOccurs="1"/>
+        <xs:element type="xs:int" name="AntiFire" minOccurs="0" maxOccurs="1"/>
+        <xs:element type="xs:float" name="Angle" minOccurs="0" maxOccurs="1"/>
+      </xs:sequence>
+</xs:complexType>
+
+<!-- Array of aperture type description -->
+<xs:complexType name="ArrayOfTAperture">
+    <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" name="Aperture" nillable="true" type="TAperture"/>
+    </xs:sequence>
+</xs:complexType>
+
+<!-- Floor type description -->
+<xs:complexType name="TFloor">
+    <xs:sequence>
+        <xs:element type="xs:string" name="ClassName"/>
+        <xs:element type="xs:int" name="Id"/>
+        <xs:element type="xs:int" name="Type"/>
+        <xs:element type="xs:string" name="Name"/>
+        <xs:element type="xs:int" name="Number"/>
+        <xs:element type="ArrayOfTAperture" name="ApertureList" nillable="true"/>
+    </xs:sequence>
+</xs:complexType>
+
+<!-- Array of floor type description -->
+<xs:complexType name="ArrayOfTFloor">
+    <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" name="Floor" nillable="true" type="TFloor"/>
+    </xs:sequence>
+</xs:complexType>
+
+<!-- Building type description -->
+<xs:complexType name="TBuilding">
+    <xs:sequence>
+        <xs:element type="xs:string" name="ClassName"/>
+        <xs:element type="xs:int" name="Id"/>
+        <xs:element type="xs:int" name="Type"/>
+        <xs:element type="xs:string" name="Name"/>
+        <xs:element type="ArrayOfTFloor" name="FloorList" nillable="true"/>
+    </xs:sequence>
+</xs:complexType>
+
+<xs:element name="Building" type="TBuilding"/>
+
+</xs:schema>
