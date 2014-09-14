@@ -44,9 +44,6 @@
     <Compile Include="GeometryTypes.cs" />
     <Compile Include="InputDataParser.cs" />
     <Compile Include="PeopleTypes.cs" />
-    <Compile Include="PeopleTypesLINQ.cs">
-      <SubType>Component</SubType>
-    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

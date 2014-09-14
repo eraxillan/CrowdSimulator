@@ -21,7 +21,7 @@ namespace ApertureTypes {
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
     [System.Xml.Serialization.XmlRootAttribute("Building", Namespace="", IsNullable=false)]
-    public partial class TBuilding {
+    public partial class TBuilding : object, System.ComponentModel.INotifyPropertyChanged {
         
         private string classNameField;
         
@@ -40,6 +40,7 @@ namespace ApertureTypes {
             }
             set {
                 this.classNameField = value;
+                this.RaisePropertyChanged("ClassName");
             }
         }
         
@@ -50,6 +51,7 @@ namespace ApertureTypes {
             }
             set {
                 this.idField = value;
+                this.RaisePropertyChanged("Id");
             }
         }
         
@@ -60,6 +62,7 @@ namespace ApertureTypes {
             }
             set {
                 this.typeField = value;
+                this.RaisePropertyChanged("Type");
             }
         }
         
@@ -70,6 +73,7 @@ namespace ApertureTypes {
             }
             set {
                 this.nameField = value;
+                this.RaisePropertyChanged("Name");
             }
         }
         
@@ -82,6 +86,16 @@ namespace ApertureTypes {
             }
             set {
                 this.floorListField = value;
+                this.RaisePropertyChanged("FloorList");
+            }
+        }
+        
+        public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
+        
+        protected void RaisePropertyChanged(string propertyName) {
+            System.ComponentModel.PropertyChangedEventHandler propertyChanged = this.PropertyChanged;
+            if ((propertyChanged != null)) {
+                propertyChanged(this, new System.ComponentModel.PropertyChangedEventArgs(propertyName));
             }
         }
     }
@@ -91,7 +105,7 @@ namespace ApertureTypes {
     [System.SerializableAttribute()]
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
-    public partial class TFloor {
+    public partial class TFloor : object, System.ComponentModel.INotifyPropertyChanged {
         
         private string classNameField;
         
@@ -112,6 +126,7 @@ namespace ApertureTypes {
             }
             set {
                 this.classNameField = value;
+                this.RaisePropertyChanged("ClassName");
             }
         }
         
@@ -122,6 +137,7 @@ namespace ApertureTypes {
             }
             set {
                 this.idField = value;
+                this.RaisePropertyChanged("Id");
             }
         }
         
@@ -132,6 +148,7 @@ namespace ApertureTypes {
             }
             set {
                 this.typeField = value;
+                this.RaisePropertyChanged("Type");
             }
         }
         
@@ -142,6 +159,7 @@ namespace ApertureTypes {
             }
             set {
                 this.nameField = value;
+                this.RaisePropertyChanged("Name");
             }
         }
         
@@ -152,6 +170,7 @@ namespace ApertureTypes {
             }
             set {
                 this.numberField = value;
+                this.RaisePropertyChanged("Number");
             }
         }
         
@@ -164,6 +183,16 @@ namespace ApertureTypes {
             }
             set {
                 this.apertureListField = value;
+                this.RaisePropertyChanged("ApertureList");
+            }
+        }
+        
+        public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
+        
+        protected void RaisePropertyChanged(string propertyName) {
+            System.ComponentModel.PropertyChangedEventHandler propertyChanged = this.PropertyChanged;
+            if ((propertyChanged != null)) {
+                propertyChanged(this, new System.ComponentModel.PropertyChangedEventArgs(propertyName));
             }
         }
     }
@@ -173,7 +202,7 @@ namespace ApertureTypes {
     [System.SerializableAttribute()]
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
-    public partial class TAperture {
+    public partial class TAperture : object, System.ComponentModel.INotifyPropertyChanged {
         
         private string classNameField;
         
@@ -226,6 +255,7 @@ namespace ApertureTypes {
             }
             set {
                 this.classNameField = value;
+                this.RaisePropertyChanged("ClassName");
             }
         }
         
@@ -236,6 +266,7 @@ namespace ApertureTypes {
             }
             set {
                 this.idField = value;
+                this.RaisePropertyChanged("Id");
             }
         }
         
@@ -246,6 +277,7 @@ namespace ApertureTypes {
             }
             set {
                 this.x1Field = value;
+                this.RaisePropertyChanged("x1");
             }
         }
         
@@ -257,6 +289,7 @@ namespace ApertureTypes {
             }
             set {
                 this.x1FieldSpecified = value;
+                this.RaisePropertyChanged("x1Specified");
             }
         }
         
@@ -267,6 +300,7 @@ namespace ApertureTypes {
             }
             set {
                 this.y1Field = value;
+                this.RaisePropertyChanged("y1");
             }
         }
         
@@ -278,6 +312,7 @@ namespace ApertureTypes {
             }
             set {
                 this.y1FieldSpecified = value;
+                this.RaisePropertyChanged("y1Specified");
             }
         }
         
@@ -288,6 +323,7 @@ namespace ApertureTypes {
             }
             set {
                 this.z1Field = value;
+                this.RaisePropertyChanged("z1");
             }
         }
         
@@ -299,6 +335,7 @@ namespace ApertureTypes {
             }
             set {
                 this.z1FieldSpecified = value;
+                this.RaisePropertyChanged("z1Specified");
             }
         }
         
@@ -309,6 +346,7 @@ namespace ApertureTypes {
             }
             set {
                 this.x2Field = value;
+                this.RaisePropertyChanged("x2");
             }
         }
         
@@ -320,6 +358,7 @@ namespace ApertureTypes {
             }
             set {
                 this.x2FieldSpecified = value;
+                this.RaisePropertyChanged("x2Specified");
             }
         }
         
@@ -330,6 +369,7 @@ namespace ApertureTypes {
             }
             set {
                 this.y2Field = value;
+                this.RaisePropertyChanged("y2");
             }
         }
         
@@ -341,6 +381,7 @@ namespace ApertureTypes {
             }
             set {
                 this.y2FieldSpecified = value;
+                this.RaisePropertyChanged("y2Specified");
             }
         }
         
@@ -351,6 +392,7 @@ namespace ApertureTypes {
             }
             set {
                 this.z2Field = value;
+                this.RaisePropertyChanged("z2");
             }
         }
         
@@ -362,6 +404,7 @@ namespace ApertureTypes {
             }
             set {
                 this.z2FieldSpecified = value;
+                this.RaisePropertyChanged("z2Specified");
             }
         }
         
@@ -372,6 +415,7 @@ namespace ApertureTypes {
             }
             set {
                 this.lockField = value;
+                this.RaisePropertyChanged("Lock");
             }
         }
         
@@ -383,6 +427,7 @@ namespace ApertureTypes {
             }
             set {
                 this.lockFieldSpecified = value;
+                this.RaisePropertyChanged("LockSpecified");
             }
         }
         
@@ -393,6 +438,7 @@ namespace ApertureTypes {
             }
             set {
                 this.closerField = value;
+                this.RaisePropertyChanged("Closer");
             }
         }
         
@@ -404,6 +450,7 @@ namespace ApertureTypes {
             }
             set {
                 this.closerFieldSpecified = value;
+                this.RaisePropertyChanged("CloserSpecified");
             }
         }
         
@@ -414,6 +461,7 @@ namespace ApertureTypes {
             }
             set {
                 this.antiFireField = value;
+                this.RaisePropertyChanged("AntiFire");
             }
         }
         
@@ -425,6 +473,7 @@ namespace ApertureTypes {
             }
             set {
                 this.antiFireFieldSpecified = value;
+                this.RaisePropertyChanged("AntiFireSpecified");
             }
         }
         
@@ -435,6 +484,7 @@ namespace ApertureTypes {
             }
             set {
                 this.angleField = value;
+                this.RaisePropertyChanged("Angle");
             }
         }
         
@@ -446,6 +496,16 @@ namespace ApertureTypes {
             }
             set {
                 this.angleFieldSpecified = value;
+                this.RaisePropertyChanged("AngleSpecified");
+            }
+        }
+        
+        public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
+        
+        protected void RaisePropertyChanged(string propertyName) {
+            System.ComponentModel.PropertyChangedEventHandler propertyChanged = this.PropertyChanged;
+            if ((propertyChanged != null)) {
+                propertyChanged(this, new System.ComponentModel.PropertyChangedEventArgs(propertyName));
             }
         }
     }
