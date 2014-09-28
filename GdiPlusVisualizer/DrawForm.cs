@@ -121,14 +121,43 @@ namespace GdiPlusVisualizer
             DrawLineWithArrow(g, Color.Black, 0, 0, halfWidth - 0.1f * Width * coeff, 0);
             DrawLineWithArrow(g, Color.Black, 0, 0, 0, halfHeight - 0.1f * Height / coeff);
 #endif
+            var thinBlackPen = new Pen( Color.Gray, 1.0f / g.DpiX );
+            thinBlackPen.DashStyle = DashStyle.Dash;
+            var bluePen = new Pen( Color.Blue, 1.0f / g.DpiX );
+            var grayBrush = new HatchBrush( HatchStyle.DiagonalCross, Color.LightGray, Color.White );
+            var fnt = new Font( "Arial", m_scale / g.DpiX, FontStyle.Bold, GraphicsUnit.Pixel );
+
+            // FIXME: Draw one line only one time
 
             foreach (var room in m_selectedFloor.RoomList)
             {
+                var roomRect = new RectangleF();
+                if ( room.Geometry.Count() >= 1 )
+                {
+                    GeometryTypes.TBox box = room.Geometry[ 0 ];
+                    roomRect = new RectangleF( box.X1, box.Y1, ( box.X2 - box.X1 ), ( box.Y2 - box.Y1 ) );
+                }
+
                 foreach (var box in room.Geometry)
                 {
-                    var customPen = new Pen(Color.Black, 1.0f / g.DpiX);
+                    // Calculate box rect and update the room one
                     var rect = new RectangleF(box.X1, box.Y1, (box.X2 - box.X1), (box.Y2 - box.Y1));
-                    g.DrawRectangle(customPen, box.X1, box.Y1, (box.X2 - box.X1), (box.Y2 - box.Y1));
+                    roomRect = RectangleF.Union(roomRect, rect);
+                    
+                    // Draw box rect
+                    switch ( room.Type )
+                    {
+                        case 0:
+                            g.DrawRectangle( thinBlackPen, box.X1, box.Y1, ( box.X2 - box.X1 ), ( box.Y2 - box.Y1 ) );
+                            break;
+                        case 1:
+                            rect.Inflate( -1.0f / g.DpiX, -1.0f / g.DpiX );
+                            g.FillRectangle( grayBrush, rect);
+                            break;
+                        default:
+                            System.Diagnostics.Debug.Assert( false );
+                            return;
+                    }
 
                     // Create a StringFormat object with the each line of text, and the block of text centered on the page
                     var stringFormat = new StringFormat()
@@ -148,12 +177,16 @@ namespace GdiPlusVisualizer
                     DrawLineWithArrow(g, Color.Yellow, 0, 0, 0, 100);
 #endif
 
-                    var fnt = new Font("Arial", m_scale / g.DpiX, FontStyle.Bold, GraphicsUnit.Pixel);
-                    //g.DrawString("ID: " + box.Id, fnt, Brushes.Black, rect, stringFormat);
-                    DrawDigonalString(g, "ID: " + box.Id, fnt, Brushes.Black, new PointF(box.X1, -box.Y1), 0);
+                    // FIXME: text still have incorrect coords
+//                    DrawDigonalString(g, "ID: " + box.Id + "\n" + "Type: " + box.Type, fnt, Brushes.Black, new PointF(box.X1, -box.Y1), 0);
 
                     g.Restore(gs);
                 }
+
+                // Draw room rectange
+                if(room.Type == 0)
+                    g.DrawRectangle(bluePen, roomRect.X, roomRect.Y, roomRect.Width, roomRect.Height );
+                //Console.WriteLine();
             }
 
             g.ResetTransform();
