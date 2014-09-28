@@ -104,5 +104,15 @@ namespace InputDataParser
             }
             return result;
         }
+
+        public GeometryTypes.TBuilding LoadGeometryXMLRoot(string fileName)
+        {
+            if (!File.Exists(fileName)) throw new InvalidOperationException("FILE NOT FOUND!");
+
+            var serializer = new XmlSerializer(typeof(GeometryTypes.TBuilding));
+            var reader = new FileStream(fileName, FileMode.Open);
+            var building = serializer.Deserialize(reader) as GeometryTypes.TBuilding;
+            return building;
+        }
     }
 }
