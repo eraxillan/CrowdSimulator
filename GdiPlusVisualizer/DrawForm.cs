@@ -25,8 +25,7 @@ namespace GdiPlusVisualizer
         {
             InitializeComponent();
 
-            pbVisualizator.MouseWheel += this.DrawForm_MouseWheel;
-            pbVisualizator.MouseDown += pbVisualizator_MouseDown;
+            pbVisualizator.MouseWheel += this.pbVisualizator_MouseWheel;
 
             // Load building data from the XML file
             InputDataParser.Parser inputParser = new InputDataParser.Parser();
@@ -41,15 +40,6 @@ namespace GdiPlusVisualizer
             cmbFloor.SelectedIndex = 0;
 
             lblBuildingExtent.Text = "Building extent (world): " + RectFToString( m_building.GetExtent() );
-        }
-
-        void pbVisualizator_MouseDown( object sender, MouseEventArgs e )
-        {
-            if ( e.Button == System.Windows.Forms.MouseButtons.Left )
-            {
-                m_panPoint = e.Location;
-                pbVisualizator.Refresh();
-            }
         }
 
         string PointFToString( PointF pnt )
@@ -85,7 +75,7 @@ namespace GdiPlusVisualizer
             return rectString;
         }
 
-        void DrawForm_MouseWheel( object sender, MouseEventArgs e )
+        void pbVisualizator_MouseWheel( object sender, MouseEventArgs e )
         {
             float zoom = e.Delta > 0 ? 0.1f : -0.1f;
             m_scale += zoom;
@@ -266,6 +256,20 @@ namespace GdiPlusVisualizer
         private void pbVisualizator_MouseEnter( object sender, EventArgs e )
         {
             pbVisualizator.Focus();
+        }
+
+        private void pbVisualizator_MouseDown_1( object sender, MouseEventArgs e )
+        {
+            if ( e.Button == System.Windows.Forms.MouseButtons.Left )
+            {
+                m_panPoint = e.Location;
+                pbVisualizator.Refresh();
+            }
+        }
+
+        private void pbVisualizator_MouseMove( object sender, MouseEventArgs e )
+        {
+            lblCursorPos.Text = "Cursor position (device): " + PointFToString( e.Location );
         }
     }
 

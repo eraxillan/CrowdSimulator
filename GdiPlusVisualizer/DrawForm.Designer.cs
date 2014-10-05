@@ -33,8 +33,9 @@
             this.cmbFloor = new System.Windows.Forms.ComboBox();
             this.stsMain = new System.Windows.Forms.StatusStrip();
             this.lblScale = new System.Windows.Forms.ToolStripStatusLabel();
-            this.lblBuildingExtent = new System.Windows.Forms.ToolStripStatusLabel();
             this.lblPan = new System.Windows.Forms.ToolStripStatusLabel();
+            this.lblBuildingExtent = new System.Windows.Forms.ToolStripStatusLabel();
+            this.lblCursorPos = new System.Windows.Forms.ToolStripStatusLabel();
             ((System.ComponentModel.ISupportInitialize)(this.pbVisualizator)).BeginInit();
             this.stsMain.SuspendLayout();
             this.SuspendLayout();
@@ -51,7 +52,9 @@
             this.pbVisualizator.TabIndex = 0;
             this.pbVisualizator.TabStop = false;
             this.pbVisualizator.Paint += new System.Windows.Forms.PaintEventHandler(this.pbVisualizator_Paint);
+            this.pbVisualizator.MouseDown += new System.Windows.Forms.MouseEventHandler(this.pbVisualizator_MouseDown_1);
             this.pbVisualizator.MouseEnter += new System.EventHandler(this.pbVisualizator_MouseEnter);
+            this.pbVisualizator.MouseMove += new System.Windows.Forms.MouseEventHandler(this.pbVisualizator_MouseMove);
             // 
             // lblFloor
             // 
@@ -79,6 +82,7 @@
             this.stsMain.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.lblScale,
             this.lblPan,
+            this.lblCursorPos,
             this.lblBuildingExtent});
             this.stsMain.Location = new System.Drawing.Point(0, 422);
             this.stsMain.Name = "stsMain";
@@ -92,17 +96,23 @@
             this.lblScale.Size = new System.Drawing.Size(68, 17);
             this.lblScale.Text = "Scale: 100%";
             // 
-            // lblBuildingExtent
-            // 
-            this.lblBuildingExtent.Name = "lblBuildingExtent";
-            this.lblBuildingExtent.Size = new System.Drawing.Size(138, 17);
-            this.lblBuildingExtent.Text = "Building extent:  <none>";
-            // 
             // lblPan
             // 
             this.lblPan.Name = "lblPan";
             this.lblPan.Size = new System.Drawing.Size(99, 17);
             this.lblPan.Text = "Pan: <unknown>";
+            // 
+            // lblBuildingExtent
+            // 
+            this.lblBuildingExtent.Name = "lblBuildingExtent";
+            this.lblBuildingExtent.Size = new System.Drawing.Size(161, 17);
+            this.lblBuildingExtent.Text = "Building extent:  <unknown>";
+            // 
+            // lblCursorPos
+            // 
+            this.lblCursorPos.Name = "lblCursorPos";
+            this.lblCursorPos.Size = new System.Drawing.Size(205, 17);
+            this.lblCursorPos.Text = "Cursor position (device): <unknown>";
             // 
             // DrawForm
             // 
@@ -134,6 +144,7 @@
         private System.Windows.Forms.ToolStripStatusLabel lblScale;
         private System.Windows.Forms.ToolStripStatusLabel lblBuildingExtent;
         private System.Windows.Forms.ToolStripStatusLabel lblPan;
+        private System.Windows.Forms.ToolStripStatusLabel lblCursorPos;
     }
 }
 
