@@ -395,27 +395,32 @@ namespace GdiPlusVisualizer
     class RoomWrapper : IExtentOwner, IDrawable
     {
         GeometryTypes.TRoom m_room = null;
+        BoxWrapper[] m_boxes = null;
 
         public RoomWrapper( GeometryTypes.TRoom room )
         {
             m_room = room;
+
+            m_boxes = new BoxWrapper[ room.Geometry.Count() ];
+            for ( int i = 0; i < room.Geometry.Count(); ++i )
+            {
+                m_boxes[ i ] = new BoxWrapper( room.Geometry[ i ] );
+            }
         }
 
         public RectangleF GetExtent()
         {
             RectangleF extent;
-            if ( m_room.Geometry.Count() >= 1 )
+            if ( m_boxes.Count() >= 1 )
             {
-                BoxWrapper bw = new BoxWrapper( m_room.Geometry[ 0 ] );
-                extent = bw.GetExtent();
+                extent = m_boxes[ 0 ].GetExtent();
             }
             else
                 extent = new RectangleF();
 
-            for ( int i = 1; i < m_room.Geometry.Count(); ++i )
+            for ( int i = 1; i < m_boxes.Count(); ++i )
             {
-                var bw = new BoxWrapper( m_room.Geometry[ i ] );
-                extent = RectangleF.Union( extent, bw.GetExtent() );
+                extent = RectangleF.Union( extent, m_boxes[ i ].GetExtent() );
             }
 
             return extent;
@@ -429,10 +434,9 @@ namespace GdiPlusVisualizer
             {
                 case 0: // Room itself
                     {
-                        foreach ( var box in m_room.Geometry )
+                        foreach ( var box in m_boxes )
                         {
-                            var bw = new BoxWrapper( box );
-                            bw.Draw( g );
+                            box.Draw( g );
                         }
                         break;
                     }
@@ -452,27 +456,37 @@ namespace GdiPlusVisualizer
     class FloorWrapper : IExtentOwner, IDrawable
     {
         GeometryTypes.TFloor m_floor = null;
+        RoomWrapper[] m_rooms = null;
 
         public FloorWrapper( GeometryTypes.TFloor floor )
         {
             m_floor = floor;
+
+            m_rooms = new RoomWrapper[ floor.RoomList.Count() ];
+            for ( int i = 0; i < floor.RoomList.Count(); ++i )
+            {
+                m_rooms[ i ] = new RoomWrapper( floor.RoomList[ i ] );
+            }
+        }
+
+        public int Number
+        {
+            get { return m_floor.Number; }
         }
 
         public RectangleF GetExtent()
         {
             RectangleF extent;
-            if ( m_floor.RoomList.Count() >= 1 )
+            if ( m_rooms.Count() >= 1 )
             {
-                RoomWrapper rw = new RoomWrapper( m_floor.RoomList[ 0 ] );
-                extent = rw.GetExtent();
+                extent = m_rooms[ 0 ].GetExtent();
             }
             else
                 extent = new RectangleF();
 
-            for ( int i = 1; i < m_floor.RoomList.Count(); ++i )
+            for ( int i = 1; i < m_rooms.Count(); ++i )
             {
-                RoomWrapper rw = new RoomWrapper( m_floor.RoomList[ i ] );
-                extent = RectangleF.Union( extent, rw.GetExtent() );
+                extent = RectangleF.Union( extent, m_rooms[ i ].GetExtent() );
             }
 
             return extent;
@@ -484,10 +498,9 @@ namespace GdiPlusVisualizer
             {
                 case 0:
                     {
-                        foreach ( var box in m_floor.RoomList )
+                        foreach ( var room in m_rooms )
                         {
-                            RoomWrapper rw = new RoomWrapper( box );
-                            rw.Draw( g );
+                            room.Draw( g );
                         }
                         break;
                     }
@@ -502,6 +515,7 @@ namespace GdiPlusVisualizer
     {
         GeometryTypes.TBuilding m_building = null;
         int m_floorNumber = -1;
+        FloorWrapper[] m_floors = null;
 
         #region Floor sorter class (by numbers of floor)
         class FloorComparer : IComparer
@@ -545,7 +559,13 @@ namespace GdiPlusVisualizer
         {
             m_building = building;
             SortFloors( building );
+
             m_floorNumber = building.FloorList.Count() > 0 ? building.FloorList[ 0 ].Number : -1;
+            m_floors = new FloorWrapper[ FloorCount ];
+            for( int i = 0; i < building.FloorList.Count(); ++i )
+            {
+                m_floors[ i ] = new FloorWrapper( building.FloorList[ i ] );
+            }
         }
 
         public int CurrentFloorNumber
@@ -572,6 +592,7 @@ namespace GdiPlusVisualizer
         {
             get
             {
+                // FIXME: think about negative floor numbers
                 return m_building.FloorList.Count();
             }
         }
@@ -580,11 +601,12 @@ namespace GdiPlusVisualizer
         {
             get
             {
-                foreach ( var floor in m_building.FloorList )
+                foreach ( var floor in m_floors )
                 {
                     if ( floor.Number == m_floorNumber )
-                        return new FloorWrapper( floor );
+                        return floor;
                 }
+
                 return null;
             }
         }
