@@ -31,8 +31,11 @@
             this.pbVisualizator = new System.Windows.Forms.PictureBox();
             this.lblFloor = new System.Windows.Forms.Label();
             this.cmbFloor = new System.Windows.Forms.ComboBox();
-            this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
+            this.stsMain = new System.Windows.Forms.StatusStrip();
+            this.lblScale = new System.Windows.Forms.ToolStripStatusLabel();
+            this.lblBuildingExtent = new System.Windows.Forms.ToolStripStatusLabel();
             ((System.ComponentModel.ISupportInitialize)(this.pbVisualizator)).BeginInit();
+            this.stsMain.SuspendLayout();
             this.SuspendLayout();
             // 
             // pbVisualizator
@@ -70,11 +73,35 @@
             this.cmbFloor.TabIndex = 2;
             this.cmbFloor.SelectedIndexChanged += new System.EventHandler(this.cmbFloor_SelectedIndexChanged);
             // 
+            // stsMain
+            // 
+            this.stsMain.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.lblScale,
+            this.lblBuildingExtent});
+            this.stsMain.Location = new System.Drawing.Point(0, 422);
+            this.stsMain.Name = "stsMain";
+            this.stsMain.Size = new System.Drawing.Size(907, 22);
+            this.stsMain.TabIndex = 3;
+            this.stsMain.Text = "statusStrip1";
+            // 
+            // lblScale
+            // 
+            this.lblScale.Name = "lblScale";
+            this.lblScale.Size = new System.Drawing.Size(68, 17);
+            this.lblScale.Text = "Scale: 100%";
+            // 
+            // lblBuildingExtent
+            // 
+            this.lblBuildingExtent.Name = "lblBuildingExtent";
+            this.lblBuildingExtent.Size = new System.Drawing.Size(138, 17);
+            this.lblBuildingExtent.Text = "Building extent:  <none>";
+            // 
             // DrawForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(907, 444);
+            this.Controls.Add(this.stsMain);
             this.Controls.Add(this.cmbFloor);
             this.Controls.Add(this.lblFloor);
             this.Controls.Add(this.pbVisualizator);
@@ -83,6 +110,8 @@
             this.Text = "Building schema";
             this.Resize += new System.EventHandler(this.DrawForm_Resize);
             ((System.ComponentModel.ISupportInitialize)(this.pbVisualizator)).EndInit();
+            this.stsMain.ResumeLayout(false);
+            this.stsMain.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -93,7 +122,9 @@
         private System.Windows.Forms.PictureBox pbVisualizator;
         private System.Windows.Forms.Label lblFloor;
         private System.Windows.Forms.ComboBox cmbFloor;
-        private System.ComponentModel.BackgroundWorker backgroundWorker1;
+        private System.Windows.Forms.StatusStrip stsMain;
+        private System.Windows.Forms.ToolStripStatusLabel lblScale;
+        private System.Windows.Forms.ToolStripStatusLabel lblBuildingExtent;
     }
 }
 

@@ -37,6 +37,28 @@ namespace GdiPlusVisualizer
             foreach ( var floor in building.FloorList )
                 cmbFloor.Items.Add( floor.Name );
             cmbFloor.SelectedIndex = 0;
+
+            lblBuildingExtent.Text = "Building extent: " + RectFToString( m_building.GetExtent() );
+        }
+
+        string RectFToString(RectangleF rect)
+        {
+            if ( rect.IsEmpty )
+                return "<Empty rect>";
+
+            string rectString = "{ ";
+            rectString += "( ";
+            rectString += rect.Left.ToString( "F3" );
+            rectString += "; ";
+            rectString += rect.Top.ToString( "F3" );
+            rectString += " )";
+            rectString += ", ";
+            rectString += "( ";
+            rectString += rect.Right.ToString( "F3" );
+            rectString += "; ";
+            rectString += rect.Bottom.ToString( "F3" );
+            rectString += ") }";
+            return rectString;
         }
 
         void DrawForm_MouseWheel( object sender, MouseEventArgs e )
@@ -46,7 +68,7 @@ namespace GdiPlusVisualizer
             if ( Math.Abs( m_scale ) <= 0.1 )
                 m_scale = 0.1f;
 
-//            Console.WriteLine("Scale: " + Math.Round(m_scale * 100) + "%");
+            lblScale.Text = "Scale: " + Math.Round( m_scale * 100 ) + "%";
             pbVisualizator.Invalidate();
         }
 
