@@ -34,8 +34,8 @@
             this.stsMain = new System.Windows.Forms.StatusStrip();
             this.lblScale = new System.Windows.Forms.ToolStripStatusLabel();
             this.lblPan = new System.Windows.Forms.ToolStripStatusLabel();
-            this.lblBuildingExtent = new System.Windows.Forms.ToolStripStatusLabel();
             this.lblCursorPos = new System.Windows.Forms.ToolStripStatusLabel();
+            this.lblBuildingExtent = new System.Windows.Forms.ToolStripStatusLabel();
             ((System.ComponentModel.ISupportInitialize)(this.pbVisualizator)).BeginInit();
             this.stsMain.SuspendLayout();
             this.SuspendLayout();
@@ -86,6 +86,7 @@
             this.lblBuildingExtent});
             this.stsMain.Location = new System.Drawing.Point(0, 422);
             this.stsMain.Name = "stsMain";
+            this.stsMain.RenderMode = System.Windows.Forms.ToolStripRenderMode.ManagerRenderMode;
             this.stsMain.Size = new System.Drawing.Size(907, 22);
             this.stsMain.TabIndex = 3;
             this.stsMain.Text = "statusStrip1";
@@ -102,17 +103,17 @@
             this.lblPan.Size = new System.Drawing.Size(99, 17);
             this.lblPan.Text = "Pan: <unknown>";
             // 
-            // lblBuildingExtent
-            // 
-            this.lblBuildingExtent.Name = "lblBuildingExtent";
-            this.lblBuildingExtent.Size = new System.Drawing.Size(161, 17);
-            this.lblBuildingExtent.Text = "Building extent:  <unknown>";
-            // 
             // lblCursorPos
             // 
             this.lblCursorPos.Name = "lblCursorPos";
             this.lblCursorPos.Size = new System.Drawing.Size(205, 17);
             this.lblCursorPos.Text = "Cursor position (device): <unknown>";
+            // 
+            // lblBuildingExtent
+            // 
+            this.lblBuildingExtent.Name = "lblBuildingExtent";
+            this.lblBuildingExtent.Size = new System.Drawing.Size(161, 17);
+            this.lblBuildingExtent.Text = "Building extent:  <unknown>";
             // 
             // DrawForm
             // 
