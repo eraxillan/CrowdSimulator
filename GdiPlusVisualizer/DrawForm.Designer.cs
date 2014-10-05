@@ -34,6 +34,7 @@
             this.stsMain = new System.Windows.Forms.StatusStrip();
             this.lblScale = new System.Windows.Forms.ToolStripStatusLabel();
             this.lblBuildingExtent = new System.Windows.Forms.ToolStripStatusLabel();
+            this.lblPan = new System.Windows.Forms.ToolStripStatusLabel();
             ((System.ComponentModel.ISupportInitialize)(this.pbVisualizator)).BeginInit();
             this.stsMain.SuspendLayout();
             this.SuspendLayout();
@@ -46,7 +47,7 @@
             this.pbVisualizator.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pbVisualizator.Location = new System.Drawing.Point(12, 12);
             this.pbVisualizator.Name = "pbVisualizator";
-            this.pbVisualizator.Size = new System.Drawing.Size(756, 420);
+            this.pbVisualizator.Size = new System.Drawing.Size(756, 407);
             this.pbVisualizator.TabIndex = 0;
             this.pbVisualizator.TabStop = false;
             this.pbVisualizator.Paint += new System.Windows.Forms.PaintEventHandler(this.pbVisualizator_Paint);
@@ -77,6 +78,7 @@
             // 
             this.stsMain.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.lblScale,
+            this.lblPan,
             this.lblBuildingExtent});
             this.stsMain.Location = new System.Drawing.Point(0, 422);
             this.stsMain.Name = "stsMain";
@@ -95,6 +97,12 @@
             this.lblBuildingExtent.Name = "lblBuildingExtent";
             this.lblBuildingExtent.Size = new System.Drawing.Size(138, 17);
             this.lblBuildingExtent.Text = "Building extent:  <none>";
+            // 
+            // lblPan
+            // 
+            this.lblPan.Name = "lblPan";
+            this.lblPan.Size = new System.Drawing.Size(99, 17);
+            this.lblPan.Text = "Pan: <unknown>";
             // 
             // DrawForm
             // 
@@ -125,6 +133,7 @@
         private System.Windows.Forms.StatusStrip stsMain;
         private System.Windows.Forms.ToolStripStatusLabel lblScale;
         private System.Windows.Forms.ToolStripStatusLabel lblBuildingExtent;
+        private System.Windows.Forms.ToolStripStatusLabel lblPan;
     }
 }
 

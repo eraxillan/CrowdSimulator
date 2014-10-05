@@ -19,12 +19,14 @@ namespace GdiPlusVisualizer
     {
         BuildingWrapper m_building = null;
         float m_scale = 1.0f;
+        PointF m_panPoint;
 
         public DrawForm()
         {
             InitializeComponent();
 
             pbVisualizator.MouseWheel += this.DrawForm_MouseWheel;
+            pbVisualizator.MouseDown += pbVisualizator_MouseDown;
 
             // Load building data from the XML file
             InputDataParser.Parser inputParser = new InputDataParser.Parser();
@@ -38,10 +40,32 @@ namespace GdiPlusVisualizer
                 cmbFloor.Items.Add( floor.Name );
             cmbFloor.SelectedIndex = 0;
 
-            lblBuildingExtent.Text = "Building extent: " + RectFToString( m_building.GetExtent() );
+            lblBuildingExtent.Text = "Building extent (world): " + RectFToString( m_building.GetExtent() );
         }
 
-        string RectFToString(RectangleF rect)
+        void pbVisualizator_MouseDown( object sender, MouseEventArgs e )
+        {
+            if ( e.Button == System.Windows.Forms.MouseButtons.Left )
+            {
+                m_panPoint = e.Location;
+                pbVisualizator.Refresh();
+            }
+        }
+
+        string PointFToString( PointF pnt )
+        {
+            if ( pnt.IsEmpty )
+                return "<Empty point>";
+
+            string pntString = "{ ";
+            pntString += pnt.X.ToString( "F3" );
+            pntString += "; ";
+            pntString += pnt.Y.ToString( "F3" );
+            pntString += " }";
+            return pntString;
+        }
+
+        string RectFToString( RectangleF rect )
         {
             if ( rect.IsEmpty )
                 return "<Empty rect>";
@@ -156,17 +180,28 @@ namespace GdiPlusVisualizer
             // Find the drawable area in pixels (control-margins)
             int W = control.Width - margin.Left - margin.Right;
             int H = control.Height - margin.Bottom - margin.Top;
+
             // Ensure drawable area is at least 1 pixel wide
             W = Math.Max( 1, W );
             H = Math.Max( 1, H );
+
             // Find the origin (0,0) in pixels
             float OX = margin.Left - W * ( domain.Left / domain.Width );
             float OY = margin.Top + H * ( 1 + domain.Top / domain.Height );
+
             // Find the scale to fit the control
             float SX = W / domain.Width;
             float SY = H / domain.Height;
+
             // Transform the Graphics scene
-            g.TranslateTransform( OX, OY );
+ //         g.TranslateTransform( OX, OY );
+            if ( m_panPoint.IsEmpty )
+                m_panPoint = new PointF( OX, OY );
+            PointF[] pt = { m_panPoint };
+            g.TransformPoints( CoordinateSpace.World, CoordinateSpace.Device, pt );
+            g.TranslateTransform( m_panPoint.X, m_panPoint.Y, MatrixOrder.Append );
+            lblPan.Text = "Pan (device): " + PointFToString( m_panPoint );
+
             g.ScaleTransform( SX * m_scale, -SY * m_scale );
         }
 
