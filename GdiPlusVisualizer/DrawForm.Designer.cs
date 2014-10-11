@@ -36,6 +36,7 @@
             this.lblPan = new System.Windows.Forms.ToolStripStatusLabel();
             this.lblCursorPos = new System.Windows.Forms.ToolStripStatusLabel();
             this.lblBuildingExtent = new System.Windows.Forms.ToolStripStatusLabel();
+            this.grdProps = new System.Windows.Forms.PropertyGrid();
             ((System.ComponentModel.ISupportInitialize)(this.pbVisualizator)).BeginInit();
             this.stsMain.SuspendLayout();
             this.SuspendLayout();
@@ -52,7 +53,7 @@
             this.pbVisualizator.TabIndex = 0;
             this.pbVisualizator.TabStop = false;
             this.pbVisualizator.Paint += new System.Windows.Forms.PaintEventHandler(this.pbVisualizator_Paint);
-            this.pbVisualizator.MouseDown += new System.Windows.Forms.MouseEventHandler(this.pbVisualizator_MouseDown_1);
+            this.pbVisualizator.MouseDown += new System.Windows.Forms.MouseEventHandler(this.pbVisualizator_MouseDown);
             this.pbVisualizator.MouseEnter += new System.EventHandler(this.pbVisualizator_MouseEnter);
             this.pbVisualizator.MouseMove += new System.Windows.Forms.MouseEventHandler(this.pbVisualizator_MouseMove);
             // 
@@ -115,11 +116,21 @@
             this.lblBuildingExtent.Size = new System.Drawing.Size(161, 17);
             this.lblBuildingExtent.Text = "Building extent:  <unknown>";
             // 
+            // grdProps
+            // 
+            this.grdProps.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.grdProps.Location = new System.Drawing.Point(774, 55);
+            this.grdProps.Name = "grdProps";
+            this.grdProps.Size = new System.Drawing.Size(130, 364);
+            this.grdProps.TabIndex = 4;
+            // 
             // DrawForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(907, 444);
+            this.Controls.Add(this.grdProps);
             this.Controls.Add(this.stsMain);
             this.Controls.Add(this.cmbFloor);
             this.Controls.Add(this.lblFloor);
@@ -146,6 +157,7 @@
         private System.Windows.Forms.ToolStripStatusLabel lblBuildingExtent;
         private System.Windows.Forms.ToolStripStatusLabel lblPan;
         private System.Windows.Forms.ToolStripStatusLabel lblCursorPos;
+        private System.Windows.Forms.PropertyGrid grdProps;
     }
 }
 

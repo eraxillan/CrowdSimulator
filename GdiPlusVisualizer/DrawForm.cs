@@ -1,16 +1,14 @@
-﻿//#define DEBUG_DRAW
+﻿// FIXME: Get rid of hard-coded type numbers - make them named constants
+
+//#define DEBUG_DRAW
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Printing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace GdiPlusVisualizer
@@ -28,9 +26,9 @@ namespace GdiPlusVisualizer
             pbVisualizator.MouseWheel += this.pbVisualizator_MouseWheel;
 
             // Load building data from the XML file
-            InputDataParser.Parser inputParser = new InputDataParser.Parser();
+            var inputParser = new InputDataParser.Parser();
             System.Diagnostics.Debug.Assert( System.IO.File.Exists( @"..\..\..\Data\KinderGarten\садик17_geometry.xml" ) );
-            GeometryTypes.TBuilding building = inputParser.LoadGeometryXMLRoot( @"..\..\..\Data\KinderGarten\садик17_geometry.xml" );
+            var building = inputParser.LoadGeometryXMLRoot( @"..\..\..\Data\KinderGarten\садик17_geometry.xml" );
             if ( building.FloorList.Count() == 0 )
                 throw new InvalidOperationException( "Building has no floors" );
 
@@ -42,7 +40,7 @@ namespace GdiPlusVisualizer
             lblBuildingExtent.Text = "Building extent (world): " + RectFToString( m_building.GetExtent() );
         }
 
-        string PointFToString( PointF pnt )
+        static string PointFToString( PointF pnt )
         {
             if ( pnt.IsEmpty )
                 return "<Empty point>";
@@ -83,7 +81,7 @@ namespace GdiPlusVisualizer
                 m_scale = 0.1f;
 
             lblScale.Text = "Scale: " + Math.Round( m_scale * 100 ) + "%";
-            pbVisualizator.Invalidate();
+            pbVisualizator.Refresh();
         }
 
         struct LineF : IComparable<LineF>
@@ -184,15 +182,29 @@ namespace GdiPlusVisualizer
             float SY = H / domain.Height;
 
             // Transform the Graphics scene
- //         g.TranslateTransform( OX, OY );
             if ( m_panPoint.IsEmpty )
+            {
                 m_panPoint = new PointF( OX, OY );
-            PointF[] pt = { m_panPoint };
-            g.TransformPoints( CoordinateSpace.World, CoordinateSpace.Device, pt );
-            g.TranslateTransform( m_panPoint.X, m_panPoint.Y, MatrixOrder.Append );
-            lblPan.Text = "Pan (device): " + PointFToString( m_panPoint );
+                lblPan.Text = "Pan (device): " + PointFToString( m_panPoint );
+            }
 
+            g.TranslateTransform( m_panPoint.X, m_panPoint.Y, MatrixOrder.Append );
             g.ScaleTransform( SX * m_scale, -SY * m_scale );
+        }
+
+        void ScaleGraphics( Graphics g )
+        {
+            // Set margins inside the control client area in pixels
+            var margin = new Margins( 16, 16, 16, 16 );
+
+            // Set the domain of (x,y) values
+            var range = m_building.GetExtent();
+
+            // Make it smaller by 5%
+            range.Inflate( 0.05f * range.Width, 0.05f * range.Height );
+
+            // Scale graphics
+            ScaleGraphics( g, pbVisualizator, range, margin );
         }
 
         private void DrawForm_Resize( object sender, EventArgs e )
@@ -203,19 +215,10 @@ namespace GdiPlusVisualizer
         private void pbVisualizator_Paint( object sender, PaintEventArgs e )
         {
             var g = e.Graphics;
-            // Smooth graphics output
-            g.SmoothingMode = SmoothingMode.AntiAlias;
 
-            // Set margins inside the control client area in pixels
-            var margin = new Margins( 16, 16, 16, 16 );
-
-            // Set the domain of (x,y) values
-            var range = m_building.GetExtent();
-            // Make it smaller by 5%
-            range.Inflate( 0.05f * range.Width, 0.05f * range.Height );
-
-            // Scale graphics
-            ScaleGraphics( g, pbVisualizator, range, margin );
+            // Smooth graphics output and scale
+            g.SmoothingMode = SmoothingMode.HighQuality;
+            ScaleGraphics( g );
 
 #if DEBUG_DRAW
             // Draw arrow axes
@@ -232,15 +235,6 @@ namespace GdiPlusVisualizer
                 g.DrawRectangle( pen, range.X, range.Y, range.Width, range.Height );
             }
 #endif
-
-            var thinGrayPen = new Pen( Color.Gray, 1.0f / g.DpiX );
-            thinGrayPen.DashStyle = DashStyle.Dash;
-            var bluePen = new Pen( Color.Blue, 1.0f / g.DpiX );
-            var grayBrush = new HatchBrush( HatchStyle.DiagonalCross, Color.LightGray, Color.White );
-            var fnt = new Font( "Arial", m_scale / g.DpiX, FontStyle.Bold, GraphicsUnit.Pixel );
-
-            // FIXME: Get rid of hard-coded type numbers - make them named constants
-
             m_building.Draw( g );
         }
 
@@ -258,18 +252,46 @@ namespace GdiPlusVisualizer
             pbVisualizator.Focus();
         }
 
-        private void pbVisualizator_MouseDown_1( object sender, MouseEventArgs e )
+        private void pbVisualizator_MouseDown( object sender, MouseEventArgs e )
         {
             if ( e.Button == System.Windows.Forms.MouseButtons.Left )
             {
                 m_panPoint = e.Location;
+
+                using ( Graphics g = Graphics.FromHwnd( IntPtr.Zero ) )
+                {
+                    ScaleGraphics( g );
+
+                    PointF[] pt = { m_panPoint };
+                    g.TransformPoints( CoordinateSpace.World, CoordinateSpace.Device, pt );
+                    lblPan.Text = "Pan (device): " + PointFToString( m_panPoint );
+                }
+
                 pbVisualizator.Refresh();
             }
         }
 
         private void pbVisualizator_MouseMove( object sender, MouseEventArgs e )
         {
-            lblCursorPos.Text = "Cursor position (device): " + PointFToString( e.Location );
+            PointF[] pt = { e.Location };
+            using ( Graphics g = Graphics.FromHwnd( IntPtr.Zero ) )
+            {
+                ScaleGraphics( g );
+    
+                g.TransformPoints( CoordinateSpace.World, CoordinateSpace.Device, pt );
+                lblCursorPos.Text = "Cursor position (world): " + PointFToString( pt[ 0 ] );
+            }
+
+            // FIXME: implement this in the separate thread to unhang GUI
+            BoxWrapper bw = m_building.CurrentFloor.FindBoxByPos( pt[ 0 ] );
+            if ( bw != null )
+            {
+                grdProps.SelectedObject = bw;
+            }
+            else
+                grdProps.SelectedObject = null;
+
+            grdProps.Refresh();
         }
     }
 
@@ -285,16 +307,94 @@ namespace GdiPlusVisualizer
         RectangleF GetExtent();
     }
 
+    class Point3F
+    {
+        float m_X = float.NaN;
+        float m_Y = float.NaN;
+        float m_Z = float.NaN;
+
+        public Point3F( float X, float Y, float Z = 0 )
+        {
+            m_X = X;
+            m_Y = Y;
+            m_Z = Z;
+        }
+
+        public bool IsNull
+        {
+            get { return ( float.IsNaN( m_X ) || float.IsNaN( m_Y ) || float.IsNaN( m_Z ) ); }
+        }
+
+        public float X
+        {
+            get { return m_X; }
+        }
+
+        public float Y
+        {
+            get { return m_Y; }
+        }
+
+        public float Z
+        {
+            get { return m_Z; }
+        }
+
+        public override string ToString()
+        {
+            if ( IsNull )
+                return "<Invalid>";
+
+            string pntString = "{ ";
+            pntString += X.ToString( "F3" );
+            pntString += "; ";
+            pntString += Y.ToString( "F3" );
+            pntString += "; ";
+            pntString += Z.ToString( "F3" );
+            pntString += " }";
+            return pntString;
+        }
+    }
+
     class BoxWrapper : IExtentOwner, IDrawable
     {
         GeometryTypes.TBox m_box = null;
         RectangleF m_extent = new RectangleF();
         Font m_textFont = null;
         RectangleF m_textRect;
+        Point3F m_nearLeft;
+        Point3F m_farRight;
 
         public BoxWrapper( GeometryTypes.TBox box )
         {
             m_box = box;
+            m_nearLeft = new Point3F( m_box.X1, m_box.Y1, m_box.Z1 );
+            m_farRight = new Point3F( m_box.X2, m_box.Y2, m_box.Z2 );
+        }
+
+        public int Id
+        {
+            get { return m_box.Id; }
+        }
+
+        public string Name
+        {
+            get { return m_box.Name; }
+        }
+
+        public int Type
+        {
+            get { return m_box.Type; }
+        }
+
+        public Point3F NearLeft
+        {
+            get { return m_nearLeft; }
+        }
+
+        public Point3F FarRight
+        {
+            get { return m_farRight; }
         }
 
         public RectangleF GetExtent()
@@ -318,18 +418,19 @@ namespace GdiPlusVisualizer
 
         public void Draw( Graphics g )
         {
-            var dashedGrayPen = new Pen( Color.Gray, 1.0f / g.DpiX ) { DashStyle = DashStyle.Dash };
-            var brownPen = new Pen( Color.Brown, 1.0f / g.DpiX );
             switch ( m_box.Type )
             {
                 case 0:
                     {
                         // Draw box rectangle
-                        RectangleF extent = GetExtent();
-                        g.DrawRectangle( brownPen, extent.X, extent.Y, extent.Width, extent.Height );
+                        var extent = GetExtent();
+                        using ( var brownPen = new Pen( Color.Brown, 1.0f / g.DpiX ) )
+                        {
+                            g.DrawRectangle( brownPen, extent.X, extent.Y, extent.Width, extent.Height );
+                        }
 
                         // Draw box properties as text on it
-                        PointF extentCenter = new PointF( ( extent.Left + extent.Right ) / 2, ( extent.Bottom + extent.Top ) / 2 );
+                        var extentCenter = new PointF( ( extent.Left + extent.Right ) / 2, ( extent.Bottom + extent.Top ) / 2 );
                         DrawText( g, "ID: " + m_box.Id + "\n" + "Height: " + ( m_box.Z2 - m_box.Z1 ), extentCenter, extent );
                         break;
                     }
@@ -379,14 +480,8 @@ namespace GdiPlusVisualizer
                 Alignment = StringAlignment.Center,
                 LineAlignment = StringAlignment.Center
             };
-
-            // FIXME: remove
-            /*float minScaleValue = Math.Min( g.Transform.Elements[ 0 ], g.Transform.Elements[ 3 ] );
-            var fnt = new Font( "Arial", 20.0f / g.DpiX, FontStyle.Bold, GraphicsUnit.Pixel );
-            var textSize = g.MeasureString( text, fnt );
-            var textRect = new RectangleF( new PointF( ptStart.X - textSize.Width / 2.0f, -ptStart.Y - textSize.Height / 2.0f ), textSize );*/
-
             g.DrawString( text, m_textFont, Brushes.Black, m_textRect, stringFormat );
+            stringFormat.Dispose();
 
             g.Restore( gs );
         }
@@ -406,6 +501,11 @@ namespace GdiPlusVisualizer
             {
                 m_boxes[ i ] = new BoxWrapper( room.Geometry[ i ] );
             }
+        }
+
+        public BoxWrapper[] Boxes
+        {
+            get { return m_boxes; }
         }
 
         public RectangleF GetExtent()
@@ -428,8 +528,6 @@ namespace GdiPlusVisualizer
 
         public void Draw( Graphics g )
         {
-            var brownPen = new Pen( Color.Brown, 1.0f / g.DpiX );
-            var grayBrush = new HatchBrush( HatchStyle.DiagonalCross, Color.LightGray, Color.White );
             switch ( m_room.Type )
             {
                 case 0: // Room itself
@@ -442,7 +540,10 @@ namespace GdiPlusVisualizer
                     }
                 case 1: // Corridor
                     {
-                        g.FillRectangle( grayBrush, GetExtent().X, GetExtent().Y, GetExtent().Width, GetExtent().Height );
+                        using ( var grayBrush = new HatchBrush( HatchStyle.DiagonalCross, Color.LightGray, Color.White ) )
+                        {
+                            g.FillRectangle( grayBrush, GetExtent().X, GetExtent().Y, GetExtent().Width, GetExtent().Height );
+                        }
                         break;
                     }
                 default:
@@ -472,6 +573,22 @@ namespace GdiPlusVisualizer
         public int Number
         {
             get { return m_floor.Number; }
+        }
+
+        public BoxWrapper FindBoxByPos( PointF pt )
+        {
+            foreach ( var room in m_rooms )
+            {
+                foreach ( var box in room.Boxes )
+                {
+                    if ( box.GetExtent().Contains( pt ) )
+                    {
+                        return box;
+                    }
+                }
+            }
+
+            return null;
         }
 
         public RectangleF GetExtent()
