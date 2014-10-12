@@ -254,20 +254,6 @@ namespace GdiPlusVisualizer
             }
         }
 
-        private void cmbFloor_SelectedIndexChanged( object sender, EventArgs e )
-        {
-            int newFloorNumber = cmbFloor.SelectedIndex + 1;
-            System.Diagnostics.Debug.Assert( newFloorNumber >= m_building.FirstFloorNumber && newFloorNumber <= m_building.FloorCount );
-
-            m_building.CurrentFloorNumber = newFloorNumber;
-            m_panPoint = new PointF();
-            m_boxMap = m_building.CurrentFloor.GetBoxMap();
-            m_currentBoxExtents = RectangleF.Empty;
-            m_fixedBoxExtents = RectangleF.Empty;
-
-            pbVisualizator.Refresh();
-        }
-
         private void pbVisualizator_MouseEnter( object sender, EventArgs e )
         {
             pbVisualizator.Focus();
@@ -382,12 +368,18 @@ namespace GdiPlusVisualizer
                 // FIXME:
 
                 m_building = new BuildingWrapper( building );
+
+                mnuVisualization.Enabled = true;
+                mnuCmbCurrentFloor.Items.Clear();
                 foreach ( var floor in building.FloorList )
-                    cmbFloor.Items.Add( floor.Name );
-                cmbFloor.SelectedIndex = 0;
+                    mnuCmbCurrentFloor.Items.Add( floor.Name );
+                mnuCmbCurrentFloor.SelectedIndex = 0;
 
                 lblBuildingExtent.Text = "Building extent (world): " + RectFToString( m_building.GetExtent() );
                 m_boxMap = m_building.CurrentFloor.GetBoxMap();
+
+                // FIXME: implement
+                //mnuProperties.Enabled = true;
 
                 // Updata data files load status
                 lstDataFiles.Items[ 0 ].ImageIndex = System.IO.File.Exists( dlgDataDir.SelectedPath + @"\geometry.xml" ) ? 0 : 1;
@@ -422,6 +414,21 @@ namespace GdiPlusVisualizer
         private void mnuExit_Click( object sender, EventArgs e )
         {
             this.Close();
+        }
+
+        private void mnuCmbCurrentFloor_SelectedIndexChanged( object sender, EventArgs e )
+        {
+            int newFloorNumber = mnuCmbCurrentFloor.SelectedIndex + 1;
+            System.Diagnostics.Debug.Assert( newFloorNumber >= m_building.FirstFloorNumber && newFloorNumber <= m_building.FloorCount );
+
+            m_building.CurrentFloorNumber = newFloorNumber;
+            m_panPoint = new PointF();
+            m_boxMap = m_building.CurrentFloor.GetBoxMap();
+            m_currentBoxExtents = RectangleF.Empty;
+            m_fixedBoxExtents = RectangleF.Empty;
+
+            lblFloor.Text = "Floor number: " + newFloorNumber.ToString();
+            pbVisualizator.Refresh();
         }
     }
 

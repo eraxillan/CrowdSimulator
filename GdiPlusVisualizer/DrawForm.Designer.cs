@@ -29,15 +29,14 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.ListViewItem listViewItem1 = new System.Windows.Forms.ListViewItem("Geometry", 1);
-            System.Windows.Forms.ListViewItem listViewItem2 = new System.Windows.Forms.ListViewItem("Apertures", 1);
-            System.Windows.Forms.ListViewItem listViewItem3 = new System.Windows.Forms.ListViewItem("Furniture", 1);
-            System.Windows.Forms.ListViewItem listViewItem4 = new System.Windows.Forms.ListViewItem("People", 1);
+            System.Windows.Forms.ListViewItem listViewItem5 = new System.Windows.Forms.ListViewItem("Geometry", 1);
+            System.Windows.Forms.ListViewItem listViewItem6 = new System.Windows.Forms.ListViewItem("Apertures", 1);
+            System.Windows.Forms.ListViewItem listViewItem7 = new System.Windows.Forms.ListViewItem("Furniture", 1);
+            System.Windows.Forms.ListViewItem listViewItem8 = new System.Windows.Forms.ListViewItem("People", 1);
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(DrawForm));
             this.pbVisualizator = new System.Windows.Forms.PictureBox();
-            this.lblFloor = new System.Windows.Forms.Label();
-            this.cmbFloor = new System.Windows.Forms.ComboBox();
             this.stsMain = new System.Windows.Forms.StatusStrip();
+            this.lblFloor = new System.Windows.Forms.ToolStripStatusLabel();
             this.lblScale = new System.Windows.Forms.ToolStripStatusLabel();
             this.lblPan = new System.Windows.Forms.ToolStripStatusLabel();
             this.lblCursorPos = new System.Windows.Forms.ToolStripStatusLabel();
@@ -85,40 +84,25 @@
             this.pbVisualizator.MouseEnter += new System.EventHandler(this.pbVisualizator_MouseEnter);
             this.pbVisualizator.MouseMove += new System.Windows.Forms.MouseEventHandler(this.pbVisualizator_MouseMove);
             // 
-            // lblFloor
-            // 
-            this.lblFloor.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblFloor.AutoSize = true;
-            this.lblFloor.Location = new System.Drawing.Point(791, 143);
-            this.lblFloor.Name = "lblFloor";
-            this.lblFloor.Size = new System.Drawing.Size(113, 13);
-            this.lblFloor.TabIndex = 1;
-            this.lblFloor.Text = "Select floor to display: ";
-            // 
-            // cmbFloor
-            // 
-            this.cmbFloor.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.cmbFloor.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cmbFloor.FormattingEnabled = true;
-            this.cmbFloor.Location = new System.Drawing.Point(794, 159);
-            this.cmbFloor.Name = "cmbFloor";
-            this.cmbFloor.Size = new System.Drawing.Size(113, 21);
-            this.cmbFloor.TabIndex = 2;
-            this.cmbFloor.SelectedIndexChanged += new System.EventHandler(this.cmbFloor_SelectedIndexChanged);
-            // 
             // stsMain
             // 
             this.stsMain.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.lblFloor,
             this.lblScale,
             this.lblPan,
             this.lblCursorPos,
             this.lblBuildingExtent});
             this.stsMain.Location = new System.Drawing.Point(0, 453);
             this.stsMain.Name = "stsMain";
-            this.stsMain.RenderMode = System.Windows.Forms.ToolStripRenderMode.ManagerRenderMode;
             this.stsMain.Size = new System.Drawing.Size(1032, 22);
             this.stsMain.TabIndex = 3;
             this.stsMain.Text = "statusStrip1";
+            // 
+            // lblFloor
+            // 
+            this.lblFloor.Name = "lblFloor";
+            this.lblFloor.Size = new System.Drawing.Size(128, 17);
+            this.lblFloor.Text = "Floor number: <none>";
             // 
             // lblScale
             // 
@@ -148,9 +132,9 @@
             // 
             this.grdProps.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.grdProps.Location = new System.Drawing.Point(794, 186);
+            this.grdProps.Location = new System.Drawing.Point(794, 133);
             this.grdProps.Name = "grdProps";
-            this.grdProps.Size = new System.Drawing.Size(235, 264);
+            this.grdProps.Size = new System.Drawing.Size(235, 317);
             this.grdProps.TabIndex = 4;
             // 
             // mnsMain
@@ -290,6 +274,7 @@
             this.mnuCmbCurrentFloor.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.mnuCmbCurrentFloor.Name = "mnuCmbCurrentFloor";
             this.mnuCmbCurrentFloor.Size = new System.Drawing.Size(121, 23);
+            this.mnuCmbCurrentFloor.SelectedIndexChanged += new System.EventHandler(this.mnuCmbCurrentFloor_SelectedIndexChanged);
             // 
             // dlgDataDir
             // 
@@ -297,21 +282,22 @@
             // 
             // lstDataFiles
             // 
+            this.lstDataFiles.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.lstDataFiles.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.clnFileType,
             this.clnName});
             this.lstDataFiles.FullRowSelect = true;
             this.lstDataFiles.GridLines = true;
             this.lstDataFiles.Items.AddRange(new System.Windows.Forms.ListViewItem[] {
-            listViewItem1,
-            listViewItem2,
-            listViewItem3,
-            listViewItem4});
+            listViewItem5,
+            listViewItem6,
+            listViewItem7,
+            listViewItem8});
             this.lstDataFiles.Location = new System.Drawing.Point(794, 27);
             this.lstDataFiles.MultiSelect = false;
             this.lstDataFiles.Name = "lstDataFiles";
             this.lstDataFiles.ShowItemToolTips = true;
-            this.lstDataFiles.Size = new System.Drawing.Size(235, 97);
+            this.lstDataFiles.Size = new System.Drawing.Size(235, 100);
             this.lstDataFiles.SmallImageList = this.imlDataStatus;
             this.lstDataFiles.TabIndex = 6;
             this.lstDataFiles.UseCompatibleStateImageBehavior = false;
@@ -343,8 +329,6 @@
             this.Controls.Add(this.grdProps);
             this.Controls.Add(this.stsMain);
             this.Controls.Add(this.mnsMain);
-            this.Controls.Add(this.cmbFloor);
-            this.Controls.Add(this.lblFloor);
             this.Controls.Add(this.pbVisualizator);
             this.DoubleBuffered = true;
             this.MainMenuStrip = this.mnsMain;
@@ -364,8 +348,6 @@
         #endregion
 
         private System.Windows.Forms.PictureBox pbVisualizator;
-        private System.Windows.Forms.Label lblFloor;
-        private System.Windows.Forms.ComboBox cmbFloor;
         private System.Windows.Forms.StatusStrip stsMain;
         private System.Windows.Forms.ToolStripStatusLabel lblScale;
         private System.Windows.Forms.ToolStripStatusLabel lblBuildingExtent;
@@ -393,6 +375,7 @@
         private System.Windows.Forms.ColumnHeader clnFileType;
         private System.Windows.Forms.ColumnHeader clnName;
         private System.Windows.Forms.ImageList imlDataStatus;
+        private System.Windows.Forms.ToolStripStatusLabel lblFloor;
     }
 }
 
