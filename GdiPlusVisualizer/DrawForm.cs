@@ -360,14 +360,16 @@ namespace GdiPlusVisualizer
             {
                 // Get the last directory of the path
                 m_currentDir = new DirectoryInfo( dlgDataDir.SelectedPath ).Name;
-
                 this.Text = "Building schema: " + m_currentDir;
 
                 // Load building data from the XML file
                 var inputParser = new InputDataParser.Parser();
                 var building = inputParser.LoadGeometryXMLRoot( dlgDataDir.SelectedPath + @"\geometry.xml" );
                 if ( building.FloorList.Count() == 0 )
-                    throw new InvalidOperationException( "Building has no floors" );
+                {
+                    MessageBox.Show( "Building has no floors", "Visualizer", MessageBoxButtons.OK, MessageBoxIcon.Exclamation );
+                    return;
+                }
 
                 // Load apertures
                 // FIXME:
@@ -397,6 +399,11 @@ namespace GdiPlusVisualizer
                 lstDataFiles.Items[ 1 ].SubItems[ 1 ].Text = @"apertures.xml";
                 lstDataFiles.Items[ 2 ].SubItems[ 1 ].Text = @"furniture.xml";
                 lstDataFiles.Items[ 3 ].SubItems[ 1 ].Text = @"people.xml";
+
+                lstDataFiles.Items[ 0 ].ToolTipText = dlgDataDir.SelectedPath + @"\geometry.xml";
+                lstDataFiles.Items[ 1 ].ToolTipText = dlgDataDir.SelectedPath + @"\apertures.xml";
+                lstDataFiles.Items[ 2 ].ToolTipText = dlgDataDir.SelectedPath + @"\furniture.xml";
+                lstDataFiles.Items[ 3 ].ToolTipText = dlgDataDir.SelectedPath + @"\people.xml";
             }
         }
 

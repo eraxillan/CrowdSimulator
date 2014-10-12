@@ -308,7 +308,9 @@
             listViewItem3,
             listViewItem4});
             this.lstDataFiles.Location = new System.Drawing.Point(794, 27);
+            this.lstDataFiles.MultiSelect = false;
             this.lstDataFiles.Name = "lstDataFiles";
+            this.lstDataFiles.ShowItemToolTips = true;
             this.lstDataFiles.Size = new System.Drawing.Size(235, 97);
             this.lstDataFiles.SmallImageList = this.imlDataStatus;
             this.lstDataFiles.TabIndex = 6;
