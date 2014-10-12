@@ -49,7 +49,7 @@
             this.pbVisualizator.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pbVisualizator.Location = new System.Drawing.Point(12, 12);
             this.pbVisualizator.Name = "pbVisualizator";
-            this.pbVisualizator.Size = new System.Drawing.Size(756, 407);
+            this.pbVisualizator.Size = new System.Drawing.Size(776, 407);
             this.pbVisualizator.TabIndex = 0;
             this.pbVisualizator.TabStop = false;
             this.pbVisualizator.Paint += new System.Windows.Forms.PaintEventHandler(this.pbVisualizator_Paint);
@@ -61,7 +61,7 @@
             // 
             this.lblFloor.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.lblFloor.AutoSize = true;
-            this.lblFloor.Location = new System.Drawing.Point(782, 12);
+            this.lblFloor.Location = new System.Drawing.Point(794, 12);
             this.lblFloor.Name = "lblFloor";
             this.lblFloor.Size = new System.Drawing.Size(113, 13);
             this.lblFloor.TabIndex = 1;
@@ -72,9 +72,9 @@
             this.cmbFloor.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.cmbFloor.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbFloor.FormattingEnabled = true;
-            this.cmbFloor.Location = new System.Drawing.Point(774, 28);
+            this.cmbFloor.Location = new System.Drawing.Point(794, 28);
             this.cmbFloor.Name = "cmbFloor";
-            this.cmbFloor.Size = new System.Drawing.Size(121, 21);
+            this.cmbFloor.Size = new System.Drawing.Size(113, 21);
             this.cmbFloor.TabIndex = 2;
             this.cmbFloor.SelectedIndexChanged += new System.EventHandler(this.cmbFloor_SelectedIndexChanged);
             // 
@@ -88,7 +88,7 @@
             this.stsMain.Location = new System.Drawing.Point(0, 422);
             this.stsMain.Name = "stsMain";
             this.stsMain.RenderMode = System.Windows.Forms.ToolStripRenderMode.ManagerRenderMode;
-            this.stsMain.Size = new System.Drawing.Size(907, 22);
+            this.stsMain.Size = new System.Drawing.Size(1032, 22);
             this.stsMain.TabIndex = 3;
             this.stsMain.Text = "statusStrip1";
             // 
@@ -120,16 +120,16 @@
             // 
             this.grdProps.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.grdProps.Location = new System.Drawing.Point(774, 55);
+            this.grdProps.Location = new System.Drawing.Point(794, 55);
             this.grdProps.Name = "grdProps";
-            this.grdProps.Size = new System.Drawing.Size(130, 364);
+            this.grdProps.Size = new System.Drawing.Size(235, 364);
             this.grdProps.TabIndex = 4;
             // 
             // DrawForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(907, 444);
+            this.ClientSize = new System.Drawing.Size(1032, 444);
             this.Controls.Add(this.grdProps);
             this.Controls.Add(this.stsMain);
             this.Controls.Add(this.cmbFloor);

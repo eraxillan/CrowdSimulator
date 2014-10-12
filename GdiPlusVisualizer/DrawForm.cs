@@ -18,6 +18,9 @@ namespace GdiPlusVisualizer
         BuildingWrapper m_building = null;
         float m_scale = 1.0f;
         PointF m_panPoint;
+        Dictionary<RectangleF, BoxWrapper> m_boxMap = null;
+        RectangleF m_currentBoxExtents;
+        RectangleF m_fixedBoxExtents;
 
         public DrawForm()
         {
@@ -38,6 +41,8 @@ namespace GdiPlusVisualizer
             cmbFloor.SelectedIndex = 0;
 
             lblBuildingExtent.Text = "Building extent (world): " + RectFToString( m_building.GetExtent() );
+
+            m_boxMap = m_building.CurrentFloor.GetBoxMap();
         }
 
         static string PointFToString( PointF pnt )
@@ -236,6 +241,24 @@ namespace GdiPlusVisualizer
             }
 #endif
             m_building.Draw( g );
+
+            // Highlight current box rectangle (the one under mouse cursor)
+            if ( !m_currentBoxExtents.IsEmpty )
+            {
+                using ( var bluePen = new Pen( Color.Blue, 1.0f / g.DpiX ) )
+                {
+                    g.DrawRectangle( bluePen, m_currentBoxExtents.X, m_currentBoxExtents.Y, m_currentBoxExtents.Width, m_currentBoxExtents.Height );
+                }
+            }
+
+            // Highlight fixed box rectangle (the one user clicks with the right mouse button)
+            if ( !m_fixedBoxExtents.IsEmpty )
+            {
+                using ( var redPen = new Pen( Color.Red, 1.0f / g.DpiX ) )
+                {
+                    g.DrawRectangle( redPen, m_fixedBoxExtents.X, m_fixedBoxExtents.Y, m_fixedBoxExtents.Width, m_fixedBoxExtents.Height );
+                }
+            }
         }
 
         private void cmbFloor_SelectedIndexChanged( object sender, EventArgs e )
@@ -244,6 +267,11 @@ namespace GdiPlusVisualizer
             System.Diagnostics.Debug.Assert( newFloorNumber >= m_building.FirstFloorNumber && newFloorNumber <= m_building.FloorCount );
 
             m_building.CurrentFloorNumber = newFloorNumber;
+            m_panPoint = new PointF();
+            m_boxMap = m_building.CurrentFloor.GetBoxMap();
+            m_currentBoxExtents = RectangleF.Empty;
+            m_fixedBoxExtents = RectangleF.Empty;
+
             pbVisualizator.Refresh();
         }
 
@@ -266,13 +294,23 @@ namespace GdiPlusVisualizer
                     g.TransformPoints( CoordinateSpace.World, CoordinateSpace.Device, pt );
                     lblPan.Text = "Pan (device): " + PointFToString( m_panPoint );
                 }
-
-                pbVisualizator.Refresh();
             }
+            else if ( e.Button == System.Windows.Forms.MouseButtons.Right )
+            {
+                // First click select ("fix") object, second - unselect
+                if ( m_fixedBoxExtents.IsEmpty )
+                    m_fixedBoxExtents = m_currentBoxExtents;
+                else
+                    m_fixedBoxExtents = RectangleF.Empty;
+            }
+
+            pbVisualizator.Refresh();
         }
 
         private void pbVisualizator_MouseMove( object sender, MouseEventArgs e )
         {
+            // Convert mouse cursor coordinates (device) to world ones (Cartesian)
+            // NOTE: We need separate Graphics object to do this; e.Graphics is valid only inside paint event handler
             PointF[] pt = { e.Location };
             using ( Graphics g = Graphics.FromHwnd( IntPtr.Zero ) )
             {
@@ -282,16 +320,30 @@ namespace GdiPlusVisualizer
                 lblCursorPos.Text = "Cursor position (world): " + PointFToString( pt[ 0 ] );
             }
 
-            // FIXME: implement this in the separate thread to unhang GUI
-            BoxWrapper bw = m_building.CurrentFloor.FindBoxByPos( pt[ 0 ] );
-            if ( bw != null )
-            {
-                grdProps.SelectedObject = bw;
-            }
-            else
-                grdProps.SelectedObject = null;
+            if ( m_currentBoxExtents.Contains( pt[ 0 ] ) || !m_fixedBoxExtents.IsEmpty )
+                return;
 
-            grdProps.Refresh();
+            foreach ( var bm in m_boxMap )
+            {
+                if ( bm.Key.Contains( pt[ 0 ] ) )
+                {
+                    m_currentBoxExtents = bm.Key;
+
+                    grdProps.SelectedObject = bm.Value;
+                    grdProps.Refresh();
+
+                    pbVisualizator.Refresh();
+                    return;
+                }
+            }
+
+            if ( ( grdProps.SelectedObject != null ) && m_fixedBoxExtents.IsEmpty )
+            {
+                grdProps.SelectedObject = null;
+                m_currentBoxExtents = RectangleF.Empty;
+                grdProps.Refresh();
+                pbVisualizator.Refresh();
+            }
         }
     }
 
@@ -356,6 +408,7 @@ namespace GdiPlusVisualizer
         }
     }
 
+    [System.ComponentModel.DefaultProperty( "Id" )]
     class BoxWrapper : IExtentOwner, IDrawable
     {
         GeometryTypes.TBox m_box = null;
@@ -372,29 +425,41 @@ namespace GdiPlusVisualizer
             m_farRight = new Point3F( m_box.X2, m_box.Y2, m_box.Z2 );
         }
 
+        [System.ComponentModel.Category("Base properties")]
         public int Id
         {
             get { return m_box.Id; }
         }
 
+        [System.ComponentModel.Category( "Base properties" )]
         public string Name
         {
             get { return m_box.Name; }
         }
 
+        [System.ComponentModel.Category( "Base properties" )]
         public int Type
         {
             get { return m_box.Type; }
         }
 
+        [System.ComponentModel.Category( "Placement" )]
         public Point3F NearLeft
         {
             get { return m_nearLeft; }
         }
 
+        [System.ComponentModel.Category( "Placement" )]
         public Point3F FarRight
         {
             get { return m_farRight; }
+        }
+
+        [System.ComponentModel.Category( "Placement" ),
+         System.ComponentModel.Description( "The 2D extent of the geometry object" )]
+        public RectangleF Extents
+        {
+            get { return GetExtent(); }
         }
 
         public RectangleF GetExtent()
@@ -575,20 +640,17 @@ namespace GdiPlusVisualizer
             get { return m_floor.Number; }
         }
 
-        public BoxWrapper FindBoxByPos( PointF pt )
+        public Dictionary<RectangleF, BoxWrapper> GetBoxMap()
         {
+            Dictionary<RectangleF, BoxWrapper> boxes = new Dictionary<RectangleF, BoxWrapper>();
             foreach ( var room in m_rooms )
             {
                 foreach ( var box in room.Boxes )
                 {
-                    if ( box.GetExtent().Contains( pt ) )
-                    {
-                        return box;
-                    }
+                    boxes.Add( box.GetExtent(), box );
                 }
             }
-
-            return null;
+            return boxes;
         }
 
         public RectangleF GetExtent()
