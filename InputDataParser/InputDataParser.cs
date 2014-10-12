@@ -50,68 +50,68 @@ namespace InputDataParser
         public PeopleMap LoadPeopleXML( string fileName )
         {
             var result = new PeopleMap();
-            var serializer = new XmlSerializer(typeof(PeopleTypes.TBuilding));
-            var reader = new FileStream(fileName, FileMode.Open);
-            var building = serializer.Deserialize(reader) as PeopleTypes.TBuilding;
-            foreach (var floor in building.FloorList)
+            var serializer = new XmlSerializer( typeof( PeopleTypes.TBuilding ) );
+            var reader = new FileStream( fileName, FileMode.Open );
+            var building = serializer.Deserialize( reader ) as PeopleTypes.TBuilding;
+            foreach ( var floor in building.FloorList )
             {
                 var peopleList = new List<PeopleTypes.TMan>();
-                foreach (var man in floor.People)
+                foreach ( var man in floor.People )
                 {
-                    peopleList.Add(man);
+                    peopleList.Add( man );
                 }
 
-                result.Add(floor.Number, peopleList);
+                result.Add( floor.Number, peopleList );
             }
             return result;
         }
 
-        public ApertureMap LoadApertureXML(string fileName)
+        public ApertureMap LoadApertureXML( string fileName )
         {
             var result = new ApertureMap();
-            var serializer = new XmlSerializer(typeof(ApertureTypes.TBuilding));
-            var reader = new FileStream(fileName, FileMode.Open);
-            var building = serializer.Deserialize(reader) as ApertureTypes.TBuilding;
-            foreach (var floor in building.FloorList)
+            var serializer = new XmlSerializer( typeof( ApertureTypes.TBuilding ) );
+            var reader = new FileStream( fileName, FileMode.Open );
+            var building = serializer.Deserialize( reader ) as ApertureTypes.TBuilding;
+            foreach ( var floor in building.FloorList )
             {
                 var apertureList = new List<ApertureTypes.TAperture>();
-                foreach (var aperture in floor.ApertureList)
+                foreach ( var aperture in floor.ApertureList )
                 {
-                    apertureList.Add(aperture);
+                    apertureList.Add( aperture );
                 }
 
-                result.Add(floor.Number, apertureList);
+                result.Add( floor.Number, apertureList );
             }
             return result;
         }
 
-        public GeometryMap LoadGeometryXML(string fileName)
+        public GeometryMap LoadGeometryXML( string fileName )
         {
             var result = new GeometryMap();
-            var serializer = new XmlSerializer(typeof(GeometryTypes.TBuilding));
-            var reader = new FileStream(fileName, FileMode.Open);
-            var building = serializer.Deserialize(reader) as GeometryTypes.TBuilding;
-            foreach (var floor in building.FloorList)
+            var serializer = new XmlSerializer( typeof( GeometryTypes.TBuilding ) );
+            var reader = new FileStream( fileName, FileMode.Open );
+            var building = serializer.Deserialize( reader ) as GeometryTypes.TBuilding;
+            foreach ( var floor in building.FloorList )
             {
                 var geometryList = new List<GeometryTypes.TGeometryItem>();
-                foreach (var room in floor.RoomList)
+                foreach ( var room in floor.RoomList )
                 {
-                    foreach(var geometryItem in room.Geometry)
-                        geometryList.Add(geometryItem);
+                    foreach ( var geometryItem in room.Geometry )
+                        geometryList.Add( geometryItem );
                 }
 
-                result.Add(floor.Number, geometryList);
+                result.Add( floor.Number, geometryList );
             }
             return result;
         }
 
-        public GeometryTypes.TBuilding LoadGeometryXMLRoot(string fileName)
+        public GeometryTypes.TBuilding LoadGeometryXMLRoot( string fileName )
         {
-            if (!File.Exists(fileName)) throw new InvalidOperationException("FILE NOT FOUND!");
+            if ( !File.Exists( fileName ) ) throw new InvalidOperationException( "Geometry file was not found" );
 
-            var serializer = new XmlSerializer(typeof(GeometryTypes.TBuilding));
-            var reader = new FileStream(fileName, FileMode.Open);
-            var building = serializer.Deserialize(reader) as GeometryTypes.TBuilding;
+            var serializer = new XmlSerializer( typeof( GeometryTypes.TBuilding ) );
+            var reader = new FileStream( fileName, FileMode.Open );
+            var building = serializer.Deserialize( reader ) as GeometryTypes.TBuilding;
             return building;
         }
     }

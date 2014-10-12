@@ -3,6 +3,7 @@
 //#define DEBUG_DRAW
 
 using System;
+using System.IO;
 using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
@@ -15,6 +16,7 @@ namespace GdiPlusVisualizer
 {
     public partial class DrawForm : Form
     {
+        string m_currentDir;
         BuildingWrapper m_building = null;
         float m_scale = 1.0f;
         PointF m_panPoint;
@@ -28,21 +30,10 @@ namespace GdiPlusVisualizer
 
             pbVisualizator.MouseWheel += this.pbVisualizator_MouseWheel;
 
-            // Load building data from the XML file
-            var inputParser = new InputDataParser.Parser();
-            System.Diagnostics.Debug.Assert( System.IO.File.Exists( @"..\..\..\Data\KinderGarten\садик17_geometry.xml" ) );
-            var building = inputParser.LoadGeometryXMLRoot( @"..\..\..\Data\KinderGarten\садик17_geometry.xml" );
-            if ( building.FloorList.Count() == 0 )
-                throw new InvalidOperationException( "Building has no floors" );
-
-            m_building = new BuildingWrapper( building );
-            foreach ( var floor in building.FloorList )
-                cmbFloor.Items.Add( floor.Name );
-            cmbFloor.SelectedIndex = 0;
-
-            lblBuildingExtent.Text = "Building extent (world): " + RectFToString( m_building.GetExtent() );
-
-            m_boxMap = m_building.CurrentFloor.GetBoxMap();
+            foreach ( ListViewItem item in lstDataFiles.Items )
+            {
+                item.SubItems.Add( "<None>" );
+            }
         }
 
         static string PointFToString( PointF pnt )
@@ -219,6 +210,8 @@ namespace GdiPlusVisualizer
 
         private void pbVisualizator_Paint( object sender, PaintEventArgs e )
         {
+            if ( m_building == null ) return;
+
             var g = e.Graphics;
 
             // Smooth graphics output and scale
@@ -254,9 +247,9 @@ namespace GdiPlusVisualizer
             // Highlight fixed box rectangle (the one user clicks with the right mouse button)
             if ( !m_fixedBoxExtents.IsEmpty )
             {
-                using ( var redPen = new Pen( Color.Red, 1.0f / g.DpiX ) )
+                using ( var limePen = new Pen( Color.Lime, 2.0f / g.DpiX ) )
                 {
-                    g.DrawRectangle( redPen, m_fixedBoxExtents.X, m_fixedBoxExtents.Y, m_fixedBoxExtents.Width, m_fixedBoxExtents.Height );
+                    g.DrawRectangle( limePen, m_fixedBoxExtents.X, m_fixedBoxExtents.Y, m_fixedBoxExtents.Width, m_fixedBoxExtents.Height );
                 }
             }
         }
@@ -282,6 +275,8 @@ namespace GdiPlusVisualizer
 
         private void pbVisualizator_MouseDown( object sender, MouseEventArgs e )
         {
+            if ( m_building == null ) return;
+
             if ( e.Button == System.Windows.Forms.MouseButtons.Left )
             {
                 m_panPoint = e.Location;
@@ -309,6 +304,8 @@ namespace GdiPlusVisualizer
 
         private void pbVisualizator_MouseMove( object sender, MouseEventArgs e )
         {
+            if ( m_building == null ) return;
+
             // Convert mouse cursor coordinates (device) to world ones (Cartesian)
             // NOTE: We need separate Graphics object to do this; e.Graphics is valid only inside paint event handler
             PointF[] pt = { e.Location };
@@ -344,6 +341,80 @@ namespace GdiPlusVisualizer
                 grdProps.Refresh();
                 pbVisualizator.Refresh();
             }
+        }
+
+        private void mnuLoadData_Click( object sender, EventArgs e )
+        {
+            // Unload previous building data
+            if ( m_building != null )
+            {
+                mnuUnloadData_Click( sender, e );
+            }
+
+            // FIXME: remove this after program release
+            var absolutePath = Path.Combine( Directory.GetCurrentDirectory(), @"..\..\..\Data\KinderGarten" );
+            dlgDataDir.SelectedPath = Path.GetFullPath( ( new Uri( absolutePath ) ).LocalPath );
+
+            // Let user select data directory
+            if ( dlgDataDir.ShowDialog() == System.Windows.Forms.DialogResult.OK )
+            {
+                // Get the last directory of the path
+                m_currentDir = new DirectoryInfo( dlgDataDir.SelectedPath ).Name;
+
+                this.Text = "Building schema: " + m_currentDir;
+
+                // Load building data from the XML file
+                var inputParser = new InputDataParser.Parser();
+                var building = inputParser.LoadGeometryXMLRoot( dlgDataDir.SelectedPath + @"\geometry.xml" );
+                if ( building.FloorList.Count() == 0 )
+                    throw new InvalidOperationException( "Building has no floors" );
+
+                // Load apertures
+                // FIXME:
+                //
+
+                // Load furniture
+                // FIXME:
+
+                // Load people
+                // FIXME:
+
+                m_building = new BuildingWrapper( building );
+                foreach ( var floor in building.FloorList )
+                    cmbFloor.Items.Add( floor.Name );
+                cmbFloor.SelectedIndex = 0;
+
+                lblBuildingExtent.Text = "Building extent (world): " + RectFToString( m_building.GetExtent() );
+                m_boxMap = m_building.CurrentFloor.GetBoxMap();
+
+                // Updata data files load status
+                lstDataFiles.Items[ 0 ].ImageIndex = System.IO.File.Exists( dlgDataDir.SelectedPath + @"\geometry.xml" ) ? 0 : 1;
+                lstDataFiles.Items[ 1 ].ImageIndex = System.IO.File.Exists( dlgDataDir.SelectedPath + @"\apertures.xml" ) ? 0 : 1;
+                lstDataFiles.Items[ 2 ].ImageIndex = System.IO.File.Exists( dlgDataDir.SelectedPath + @"\furniture.xml" ) ? 0 : 1;
+                lstDataFiles.Items[ 3 ].ImageIndex = System.IO.File.Exists( dlgDataDir.SelectedPath + @"\people.xml" ) ? 0 : 1;
+
+                lstDataFiles.Items[ 0 ].SubItems[ 1 ].Text = @"geometry.xml";
+                lstDataFiles.Items[ 1 ].SubItems[ 1 ].Text = @"apertures.xml";
+                lstDataFiles.Items[ 2 ].SubItems[ 1 ].Text = @"furniture.xml";
+                lstDataFiles.Items[ 3 ].SubItems[ 1 ].Text = @"people.xml";
+            }
+        }
+
+        private void mnuReload_Click( object sender, EventArgs e )
+        {
+            // FIXME: implement
+            throw new NotImplementedException();
+        }
+
+        private void mnuUnloadData_Click( object sender, EventArgs e )
+        {
+            // FIXME: implement
+            throw new NotImplementedException();
+        }
+
+        private void mnuExit_Click( object sender, EventArgs e )
+        {
+            this.Close();
         }
     }
 
