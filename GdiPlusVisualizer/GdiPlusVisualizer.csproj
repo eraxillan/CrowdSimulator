@@ -50,8 +50,11 @@
     <Compile Include="DrawForm.Designer.cs">
       <DependentUpon>DrawForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Interfaces.cs" />
+    <Compile Include="MathTypes.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="WrapperTypes.cs" />
     <EmbeddedResource Include="DrawForm.resx">
       <DependentUpon>DrawForm.cs</DependentUpon>
     </EmbeddedResource>

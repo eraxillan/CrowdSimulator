@@ -60,7 +60,7 @@ namespace ParserTest
                 }
             }*/
 
-            GeometryMap geometry = inputParser.LoadGeometryXML(@"..\..\KinderGarten\садик17_geometry.xml");
+            /*GeometryMap geometry = inputParser.LoadGeometryXML(@"..\..\KinderGarten\садик17_geometry.xml");
             foreach (var geometryPair in geometry)
             {
                 Console.WriteLine("Floor number: " + geometryPair.Key);
@@ -69,7 +69,7 @@ namespace ParserTest
                 {
                     Console.WriteLine("GeometryItem Id: " + geometryItem.Id);
                 }
-            }
+            }*/
 
             Console.ReadKey(false);
         }

@@ -12,6 +12,8 @@ using System.Drawing.Printing;
 using System.Linq;
 using System.Windows.Forms;
 
+using SigmaDC.Types;
+
 namespace GdiPlusVisualizer
 {
     public partial class DrawForm : Form
@@ -194,7 +196,7 @@ namespace GdiPlusVisualizer
             var margin = new Margins( 16, 16, 16, 16 );
 
             // Set the domain of (x,y) values
-            var range = m_building.GetExtent();
+            var range = m_building.Extents;
 
             // Make it smaller by 5%
             range.Inflate( 0.05f * range.Width, 0.05f * range.Height );
@@ -349,53 +351,35 @@ namespace GdiPlusVisualizer
                 this.Text = "Building schema: " + m_currentDir;
 
                 // Load building data from the XML file
-                var inputParser = new InputDataParser.Parser();
-                var building = inputParser.LoadGeometryXMLRoot( dlgDataDir.SelectedPath + @"\geometry.xml" );
-                if ( building.FloorList.Count() == 0 )
-                {
-                    MessageBox.Show( "Building has no floors", "Visualizer", MessageBoxButtons.OK, MessageBoxIcon.Exclamation );
-                    return;
-                }
-
-                // Load apertures
-                // FIXME:
-                //
-
-                // Load furniture
-                // FIXME:
-
-                // Load people
-                // FIXME:
-
-                m_building = new BuildingWrapper( building );
+                m_building = new BuildingWrapper( dlgDataDir.SelectedPath );
 
                 mnuVisualization.Enabled = true;
                 mnuCmbCurrentFloor.Items.Clear();
-                foreach ( var floor in building.FloorList )
+                foreach ( var floor in m_building.Floors )
                     mnuCmbCurrentFloor.Items.Add( floor.Name );
                 mnuCmbCurrentFloor.SelectedIndex = 0;
 
-                lblBuildingExtent.Text = "Building extent (world): " + RectFToString( m_building.GetExtent() );
+                lblBuildingExtent.Text = "Building extent (world): " + RectFToString( m_building.Extents );
                 m_boxMap = m_building.CurrentFloor.GetBoxMap();
 
-                // FIXME: implement
+                // FIXME: implement property browsing of building, floors, rooms
                 //mnuProperties.Enabled = true;
 
                 // Updata data files load status
-                lstDataFiles.Items[ 0 ].ImageIndex = System.IO.File.Exists( dlgDataDir.SelectedPath + @"\geometry.xml" ) ? 0 : 1;
-                lstDataFiles.Items[ 1 ].ImageIndex = System.IO.File.Exists( dlgDataDir.SelectedPath + @"\apertures.xml" ) ? 0 : 1;
-                lstDataFiles.Items[ 2 ].ImageIndex = System.IO.File.Exists( dlgDataDir.SelectedPath + @"\furniture.xml" ) ? 0 : 1;
-                lstDataFiles.Items[ 3 ].ImageIndex = System.IO.File.Exists( dlgDataDir.SelectedPath + @"\people.xml" ) ? 0 : 1;
+                lstDataFiles.Items[ 0 ].ImageIndex = System.IO.File.Exists( dlgDataDir.SelectedPath + Path.DirectorySeparatorChar + m_building.GetGeometryFileName() ) ? 0 : 1;
+                lstDataFiles.Items[ 1 ].ImageIndex = System.IO.File.Exists( dlgDataDir.SelectedPath + Path.DirectorySeparatorChar + m_building.GetAperturesFileName() ) ? 0 : 1;
+                lstDataFiles.Items[ 2 ].ImageIndex = System.IO.File.Exists( dlgDataDir.SelectedPath + Path.DirectorySeparatorChar + m_building.GetFurnitureFileName() ) ? 0 : 1;
+                lstDataFiles.Items[ 3 ].ImageIndex = System.IO.File.Exists( dlgDataDir.SelectedPath + Path.DirectorySeparatorChar + m_building.GetPeopleFileName() ) ? 0 : 1;
 
-                lstDataFiles.Items[ 0 ].SubItems[ 1 ].Text = @"geometry.xml";
-                lstDataFiles.Items[ 1 ].SubItems[ 1 ].Text = @"apertures.xml";
-                lstDataFiles.Items[ 2 ].SubItems[ 1 ].Text = @"furniture.xml";
-                lstDataFiles.Items[ 3 ].SubItems[ 1 ].Text = @"people.xml";
+                lstDataFiles.Items[ 0 ].SubItems[ 1 ].Text = m_building.GetGeometryFileName();
+                lstDataFiles.Items[ 1 ].SubItems[ 1 ].Text = m_building.GetAperturesFileName();
+                lstDataFiles.Items[ 2 ].SubItems[ 1 ].Text = m_building.GetFurnitureFileName();
+                lstDataFiles.Items[ 3 ].SubItems[ 1 ].Text = m_building.GetPeopleFileName();
 
-                lstDataFiles.Items[ 0 ].ToolTipText = dlgDataDir.SelectedPath + @"\geometry.xml";
-                lstDataFiles.Items[ 1 ].ToolTipText = dlgDataDir.SelectedPath + @"\apertures.xml";
-                lstDataFiles.Items[ 2 ].ToolTipText = dlgDataDir.SelectedPath + @"\furniture.xml";
-                lstDataFiles.Items[ 3 ].ToolTipText = dlgDataDir.SelectedPath + @"\people.xml";
+                lstDataFiles.Items[ 0 ].ToolTipText = dlgDataDir.SelectedPath + Path.DirectorySeparatorChar + m_building.GetGeometryFileName();
+                lstDataFiles.Items[ 1 ].ToolTipText = dlgDataDir.SelectedPath + Path.DirectorySeparatorChar + m_building.GetAperturesFileName();
+                lstDataFiles.Items[ 2 ].ToolTipText = dlgDataDir.SelectedPath + Path.DirectorySeparatorChar + m_building.GetFurnitureFileName();
+                lstDataFiles.Items[ 3 ].ToolTipText = dlgDataDir.SelectedPath + Path.DirectorySeparatorChar + m_building.GetPeopleFileName();
             }
         }
 
@@ -429,460 +413,6 @@ namespace GdiPlusVisualizer
 
             lblFloor.Text = "Floor number: " + newFloorNumber.ToString();
             pbVisualizator.Refresh();
-        }
-    }
-
-    // -------------------------------------------------------------------------------------------------------
-
-    interface IDrawable
-    {
-        void Draw( Graphics g );
-    }
-
-    interface IExtentOwner
-    {
-        RectangleF GetExtent();
-    }
-
-    class Point3F
-    {
-        float m_X = float.NaN;
-        float m_Y = float.NaN;
-        float m_Z = float.NaN;
-
-        public Point3F( float X, float Y, float Z = 0 )
-        {
-            m_X = X;
-            m_Y = Y;
-            m_Z = Z;
-        }
-
-        public bool IsNull
-        {
-            get { return ( float.IsNaN( m_X ) || float.IsNaN( m_Y ) || float.IsNaN( m_Z ) ); }
-        }
-
-        public float X
-        {
-            get { return m_X; }
-        }
-
-        public float Y
-        {
-            get { return m_Y; }
-        }
-
-        public float Z
-        {
-            get { return m_Z; }
-        }
-
-        public override string ToString()
-        {
-            if ( IsNull )
-                return "<Invalid>";
-
-            string pntString = "{ ";
-            pntString += X.ToString( "F3" );
-            pntString += "; ";
-            pntString += Y.ToString( "F3" );
-            pntString += "; ";
-            pntString += Z.ToString( "F3" );
-            pntString += " }";
-            return pntString;
-        }
-    }
-
-    [System.ComponentModel.DefaultProperty( "Id" )]
-    class BoxWrapper : IExtentOwner, IDrawable
-    {
-        GeometryTypes.TBox m_box = null;
-        RectangleF m_extent = new RectangleF();
-        Font m_textFont = null;
-        RectangleF m_textRect;
-        Point3F m_nearLeft;
-        Point3F m_farRight;
-
-        public BoxWrapper( GeometryTypes.TBox box )
-        {
-            m_box = box;
-            m_nearLeft = new Point3F( m_box.X1, m_box.Y1, m_box.Z1 );
-            m_farRight = new Point3F( m_box.X2, m_box.Y2, m_box.Z2 );
-        }
-
-        [System.ComponentModel.Category("Base properties")]
-        public int Id
-        {
-            get { return m_box.Id; }
-        }
-
-        [System.ComponentModel.Category( "Base properties" )]
-        public string Name
-        {
-            get { return m_box.Name; }
-        }
-
-        [System.ComponentModel.Category( "Base properties" )]
-        public int Type
-        {
-            get { return m_box.Type; }
-        }
-
-        [System.ComponentModel.Category( "Placement" )]
-        public Point3F NearLeft
-        {
-            get { return m_nearLeft; }
-        }
-
-        [System.ComponentModel.Category( "Placement" )]
-        public Point3F FarRight
-        {
-            get { return m_farRight; }
-        }
-
-        [System.ComponentModel.Category( "Placement" ),
-         System.ComponentModel.Description( "The 2D extent of the geometry object" )]
-        public RectangleF Extents
-        {
-            get { return GetExtent(); }
-        }
-
-        public RectangleF GetExtent()
-        {
-            if ( !m_extent.IsEmpty )
-                return m_extent;
-
-            float x1 = m_box.X1;
-            float y1 = m_box.Y1;
-            float x2 = m_box.X2;
-            float y2 = m_box.Y2;
-
-            float w = x2 - x1;
-            float h = y2 - y1;
-            System.Diagnostics.Debug.Assert( w > 0, "Box extent have negative width" );
-            System.Diagnostics.Debug.Assert( h > 0, "Box extent have negative height" );
-
-            m_extent = new RectangleF( x1, y1, w, h );
-            return m_extent;
-        }
-
-        public void Draw( Graphics g )
-        {
-            switch ( m_box.Type )
-            {
-                case 0:
-                    {
-                        // Draw box rectangle
-                        var extent = GetExtent();
-                        using ( var brownPen = new Pen( Color.Brown, 1.0f / g.DpiX ) )
-                        {
-                            g.DrawRectangle( brownPen, extent.X, extent.Y, extent.Width, extent.Height );
-                        }
-
-                        // Draw box properties as text on it
-                        var extentCenter = new PointF( ( extent.Left + extent.Right ) / 2, ( extent.Bottom + extent.Top ) / 2 );
-                        DrawText( g, "ID: " + m_box.Id + "\n" + "Height: " + ( m_box.Z2 - m_box.Z1 ), extentCenter, extent );
-                        break;
-                    }
-                default:
-                    System.Diagnostics.Debug.Assert( false, "Invalid TBox type" );
-                    break;
-            }
-        }
-
-        private void DrawText( Graphics g, string text, PointF ptStart, RectangleF extent )
-        {
-            var gs = g.Save();
-            // Inverse Y axis again - now it grow down;
-            // if we don't do this, text will be drawn inverted
-            g.ScaleTransform( 1.0f, -1.0f, MatrixOrder.Prepend );
-
-            if ( m_textFont == null )
-            {
-                // Find the maximum appropriate text size to fix the extent
-                float fontSize = 100.0f;
-                Font fnt;
-                SizeF textSize;
-                do
-                {
-                    fnt = new Font( "Arial", fontSize / g.DpiX, FontStyle.Bold, GraphicsUnit.Pixel );
-                    textSize = g.MeasureString( text, fnt );
-                    m_textRect = new RectangleF( new PointF( ptStart.X - textSize.Width / 2.0f, -ptStart.Y - textSize.Height / 2.0f ), textSize );
-
-                    var textRectInv = new RectangleF( m_textRect.X, -m_textRect.Y, m_textRect.Width, m_textRect.Height );
-                    if ( extent.Contains( textRectInv ) )
-                        break;
-
-                    fontSize -= 1.0f;
-                    if ( fontSize <= 0 )
-                    {
-                        fontSize = 1.0f;
-                        break;
-                    }
-                } while ( true );
-
-                m_textFont = fnt;
-            }
-
-            // Create a StringFormat object with the each line of text, and the block of text centered on the page
-            var stringFormat = new StringFormat()
-            {
-                Alignment = StringAlignment.Center,
-                LineAlignment = StringAlignment.Center
-            };
-            g.DrawString( text, m_textFont, Brushes.Black, m_textRect, stringFormat );
-            stringFormat.Dispose();
-
-            g.Restore( gs );
-        }
-    }
-
-    class RoomWrapper : IExtentOwner, IDrawable
-    {
-        GeometryTypes.TRoom m_room = null;
-        BoxWrapper[] m_boxes = null;
-
-        public RoomWrapper( GeometryTypes.TRoom room )
-        {
-            m_room = room;
-
-            m_boxes = new BoxWrapper[ room.Geometry.Count() ];
-            for ( int i = 0; i < room.Geometry.Count(); ++i )
-            {
-                m_boxes[ i ] = new BoxWrapper( room.Geometry[ i ] );
-            }
-        }
-
-        public BoxWrapper[] Boxes
-        {
-            get { return m_boxes; }
-        }
-
-        public RectangleF GetExtent()
-        {
-            RectangleF extent;
-            if ( m_boxes.Count() >= 1 )
-            {
-                extent = m_boxes[ 0 ].GetExtent();
-            }
-            else
-                extent = new RectangleF();
-
-            for ( int i = 1; i < m_boxes.Count(); ++i )
-            {
-                extent = RectangleF.Union( extent, m_boxes[ i ].GetExtent() );
-            }
-
-            return extent;
-        }
-
-        public void Draw( Graphics g )
-        {
-            switch ( m_room.Type )
-            {
-                case 0: // Room itself
-                    {
-                        foreach ( var box in m_boxes )
-                        {
-                            box.Draw( g );
-                        }
-                        break;
-                    }
-                case 1: // Corridor
-                    {
-                        using ( var grayBrush = new HatchBrush( HatchStyle.DiagonalCross, Color.LightGray, Color.White ) )
-                        {
-                            g.FillRectangle( grayBrush, GetExtent().X, GetExtent().Y, GetExtent().Width, GetExtent().Height );
-                        }
-                        break;
-                    }
-                default:
-                    System.Diagnostics.Debug.Assert( false, "Invalid TRoom type" );
-                    break;
-            }
-        }
-    }
-
-
-    class FloorWrapper : IExtentOwner, IDrawable
-    {
-        GeometryTypes.TFloor m_floor = null;
-        RoomWrapper[] m_rooms = null;
-
-        public FloorWrapper( GeometryTypes.TFloor floor )
-        {
-            m_floor = floor;
-
-            m_rooms = new RoomWrapper[ floor.RoomList.Count() ];
-            for ( int i = 0; i < floor.RoomList.Count(); ++i )
-            {
-                m_rooms[ i ] = new RoomWrapper( floor.RoomList[ i ] );
-            }
-        }
-
-        public int Number
-        {
-            get { return m_floor.Number; }
-        }
-
-        public Dictionary<RectangleF, BoxWrapper> GetBoxMap()
-        {
-            Dictionary<RectangleF, BoxWrapper> boxes = new Dictionary<RectangleF, BoxWrapper>();
-            foreach ( var room in m_rooms )
-            {
-                foreach ( var box in room.Boxes )
-                {
-                    boxes.Add( box.GetExtent(), box );
-                }
-            }
-            return boxes;
-        }
-
-        public RectangleF GetExtent()
-        {
-            RectangleF extent;
-            if ( m_rooms.Count() >= 1 )
-            {
-                extent = m_rooms[ 0 ].GetExtent();
-            }
-            else
-                extent = new RectangleF();
-
-            for ( int i = 1; i < m_rooms.Count(); ++i )
-            {
-                extent = RectangleF.Union( extent, m_rooms[ i ].GetExtent() );
-            }
-
-            return extent;
-        }
-
-        public void Draw( Graphics g )
-        {
-            switch ( m_floor.Type )
-            {
-                case 0:
-                    {
-                        foreach ( var room in m_rooms )
-                        {
-                            room.Draw( g );
-                        }
-                        break;
-                    }
-                default:
-                    System.Diagnostics.Debug.Assert( false, "Invalid TFloor type" );
-                    break;
-            }
-        }
-    }
-
-    class BuildingWrapper : IExtentOwner, IDrawable
-    {
-        GeometryTypes.TBuilding m_building = null;
-        int m_floorNumber = -1;
-        FloorWrapper[] m_floors = null;
-
-        #region Floor sorter class (by numbers of floor)
-        class FloorComparer : IComparer
-        {
-            public int Compare( object x, object y )
-            {
-                if ( x == null || y == null ) return 1;
-
-                var xx = x as GeometryTypes.TFloor;
-                var yy = y as GeometryTypes.TFloor;
-                if ( xx == null || yy == null )
-                    throw new ArgumentException( "Object is not a TFloor" );
-
-                if ( xx.Number == yy.Number )
-                    return 0;
-                if ( xx.Number > yy.Number )
-                    return 1;
-                return -1;
-            }
-        }
-
-        void SortFloors( GeometryTypes.TBuilding building )
-        {
-            Array.Sort( building.FloorList, new FloorComparer() );
-        }
-        #endregion
-
-        /*public BuildingWrapper( string fileName )
-        {
-            InputDataParser.Parser inputParser = new InputDataParser.Parser();
-            System.Diagnostics.Debug.Assert( System.IO.File.Exists( @"..\..\..\Data\KinderGarten\садик17_geometry.xml" ) );
-            m_building = inputParser.LoadGeometryXMLRoot( @"..\..\..\Data\KinderGarten\садик17_geometry.xml" );
-            if ( m_building.FloorList.Count() == 0 )
-                throw new InvalidOperationException( "Building has no floors" );
-
-            SortFloors( m_building );
-            m_floorNumber = m_building.FloorList[ 0 ].Number;
-        }*/
-
-        public BuildingWrapper( GeometryTypes.TBuilding building )
-        {
-            m_building = building;
-            SortFloors( building );
-
-            m_floorNumber = building.FloorList.Count() > 0 ? building.FloorList[ 0 ].Number : -1;
-            m_floors = new FloorWrapper[ FloorCount ];
-            for( int i = 0; i < building.FloorList.Count(); ++i )
-            {
-                m_floors[ i ] = new FloorWrapper( building.FloorList[ i ] );
-            }
-        }
-
-        public int CurrentFloorNumber
-        {
-            get { return m_floorNumber; }
-            set
-            {
-                if ( value >= FirstFloorNumber && value <= FloorCount )
-                    m_floorNumber = value;
-                else
-                    throw new ArgumentException( "Floor number must be in range " + FirstFloorNumber + " - " + FloorCount );
-            }
-        }
-
-        public int FirstFloorNumber
-        {
-            get
-            {
-                return m_building.FloorList[ 0 ].Number;
-            }
-        }
-
-        public int FloorCount
-        {
-            get
-            {
-                // FIXME: think about negative floor numbers
-                return m_building.FloorList.Count();
-            }
-        }
-
-        public FloorWrapper CurrentFloor
-        {
-            get
-            {
-                foreach ( var floor in m_floors )
-                {
-                    if ( floor.Number == m_floorNumber )
-                        return floor;
-                }
-
-                return null;
-            }
-        }
-
-        public RectangleF GetExtent()
-        {
-            return CurrentFloor.GetExtent();
-        }
-
-        public void Draw( Graphics g )
-        {
-            CurrentFloor.Draw( g );
         }
     }
 }
