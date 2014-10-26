@@ -29,10 +29,10 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.ListViewItem listViewItem5 = new System.Windows.Forms.ListViewItem("Geometry", 1);
-            System.Windows.Forms.ListViewItem listViewItem6 = new System.Windows.Forms.ListViewItem("Apertures", 1);
-            System.Windows.Forms.ListViewItem listViewItem7 = new System.Windows.Forms.ListViewItem("Furniture", 1);
-            System.Windows.Forms.ListViewItem listViewItem8 = new System.Windows.Forms.ListViewItem("People", 1);
+            System.Windows.Forms.ListViewItem listViewItem1 = new System.Windows.Forms.ListViewItem("Geometry", 1);
+            System.Windows.Forms.ListViewItem listViewItem2 = new System.Windows.Forms.ListViewItem("Apertures", 1);
+            System.Windows.Forms.ListViewItem listViewItem3 = new System.Windows.Forms.ListViewItem("Furniture", 1);
+            System.Windows.Forms.ListViewItem listViewItem4 = new System.Windows.Forms.ListViewItem("People", 1);
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(DrawForm));
             this.pbVisualizator = new System.Windows.Forms.PictureBox();
             this.stsMain = new System.Windows.Forms.StatusStrip();
@@ -73,6 +73,7 @@
             this.pbVisualizator.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.pbVisualizator.BackColor = System.Drawing.Color.White;
             this.pbVisualizator.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pbVisualizator.Location = new System.Drawing.Point(12, 27);
             this.pbVisualizator.Name = "pbVisualizator";
@@ -289,10 +290,10 @@
             this.lstDataFiles.FullRowSelect = true;
             this.lstDataFiles.GridLines = true;
             this.lstDataFiles.Items.AddRange(new System.Windows.Forms.ListViewItem[] {
-            listViewItem5,
-            listViewItem6,
-            listViewItem7,
-            listViewItem8});
+            listViewItem1,
+            listViewItem2,
+            listViewItem3,
+            listViewItem4});
             this.lstDataFiles.Location = new System.Drawing.Point(794, 27);
             this.lstDataFiles.MultiSelect = false;
             this.lstDataFiles.Name = "lstDataFiles";
