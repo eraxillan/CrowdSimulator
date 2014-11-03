@@ -329,10 +329,7 @@ namespace SigmaDC.Types
             {
                 case 0: // Room itself
                 {
-                    foreach ( var box in m_boxes )
-                    {
-                        box.Draw( g );
-                    }
+                    foreach ( var box in m_boxes ) box.Draw( g );
                     break;
                 }
                 case 1: // Corridor
@@ -344,8 +341,10 @@ namespace SigmaDC.Types
                     break;
                 }
                 default:
-                System.Diagnostics.Debug.Assert( false, "Invalid TRoom type" );
-                break;
+                {
+                    System.Diagnostics.Debug.Assert( false, "Invalid TRoom type" );
+                    break;
+                }
             }
         }
 
@@ -411,6 +410,7 @@ namespace SigmaDC.Types
             set { m_apertures = value; }
         }
 
+        // FIXME:
         public ApertureWrapper FindAperture( int id )
         {
             foreach ( var aperture in Apertures )
@@ -424,7 +424,7 @@ namespace SigmaDC.Types
 
         public Dictionary<RectangleF, BoxWrapper> GetBoxMap()
         {
-            Dictionary<RectangleF, BoxWrapper> boxes = new Dictionary<RectangleF, BoxWrapper>();
+            var boxes = new Dictionary<RectangleF, BoxWrapper>();
             foreach ( var room in m_rooms )
             {
                 foreach ( var box in room.Boxes )
@@ -447,8 +447,10 @@ namespace SigmaDC.Types
                     break;
                 }
                 default:
-                System.Diagnostics.Debug.Assert( false, "Invalid TFloor type" );
-                break;
+                {
+                    System.Diagnostics.Debug.Assert( false, "Invalid TFloor type" );
+                    break;
+                }
             }
         }
 
@@ -480,6 +482,7 @@ namespace SigmaDC.Types
         static readonly string FURNITURE_FILE_NAME = @"furniture.xml";
         static readonly string PEOPLE_FILE_NAME = @"people.xml";
 
+        // TODO: implement last error logic
         string m_lastError;
 
         #region Floor sorter class (by numbers of floor)
@@ -644,13 +647,13 @@ namespace SigmaDC.Types
 
         public bool LoadFurniture( InputDataParser.Parser parser, string fileName )
         {
-            //            throw new NotImplementedException();
+//            throw new NotImplementedException();
             return true;
         }
 
         public bool LoadPeople( InputDataParser.Parser parser, string fileName )
         {
-            //            throw new NotImplementedException();
+//            throw new NotImplementedException();
             return true;
         }
 

@@ -1,4 +1,24 @@
-﻿// FIXME: Get rid of hard-coded type numbers - make them named constants
+﻿/* DrawForm.cs - the main GUI logic
+ * 
+ * Copyright (C) 2014 Alexander Kamyshnikov
+ *
+ * This file is part of CrowdSimulator.
+ *
+ * CrowdSimulator is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * CrowdSimulator is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this program; if not, see <http://www.gnu.org/licenses/>.
+ */
+
+// FIXME: Get rid of hard-coded type numbers - make them named constants
 
 //#define DEBUG_DRAW
 
@@ -117,43 +137,6 @@ namespace GdiPlusVisualizer
             }
         }
 
-        class UniqueLineCollection
-        {
-            SortedSet<LineF> m_lines = new SortedSet<LineF>();
-
-            public void Add( LineF line )
-            {
-                if ( !Exists( line ) )
-                    m_lines.Add( line );
-            }
-
-            public bool Exists( LineF line )
-            {
-                return m_lines.Contains( line );
-            }
-
-            public void Draw( Graphics g, Pen p )
-            {
-                //System.Diagnostics.Debug.Assert( m_lines.Count % 4 == 0 );
-
-                foreach ( var line in m_lines )
-                {
-                    g.DrawLine( p, line.X1, line.Y1, line.X2, line.Y2 );
-
-                    /*var pnts = new[] 
-                    { 
-                        new PointF { X = line.X1, Y = line.Y1 },
-                        new PointF { X = line.X1, Y = line.Y2 },
-                        new PointF { X = line.X2, Y = line.Y2 },
-                        new PointF { X = line.X2, Y = line.Y1 },
-                        new PointF { X = line.X1, Y = line.Y1 }
-                    };
-
-                    g.DrawLines( p, pnts );*/
-                }
-            }
-        }
-
         /// <summary>
         /// Scales the Graphics to fit a Control, given a domain of x,y values and side margins in pixels
         /// </summary>
@@ -216,8 +199,10 @@ namespace GdiPlusVisualizer
 
             var g = e.Graphics;
 
+            // FIXME: this "blurs" line
             // Smooth graphics output and scale
-            g.SmoothingMode = SmoothingMode.HighQuality;
+ //           g.SmoothingMode = SmoothingMode.HighQuality;
+            g.SmoothingMode = SmoothingMode.None;
             ScaleGraphics( g );
 
 #if DEBUG_DRAW
