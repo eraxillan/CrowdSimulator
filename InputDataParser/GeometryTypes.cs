@@ -11,78 +11,13 @@ namespace GeometryTypes
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
     [System.Xml.Serialization.XmlRootAttribute("Building", Namespace = "", IsNullable = false)]
-    public partial class TBuilding : object, System.ComponentModel.INotifyPropertyChanged
+    public partial class TBuilding : TGeometryItem
     {
-
-        private string classNameField;
-
-        private int idField;
-
-        private int typeField;
-
-        private string nameField;
-
         private TFloor[] floorListField;
 
         private TStairway[] stairwayListField;
 
         private TBox roofField;
-
-        /// <remarks/>
-        public string ClassName
-        {
-            get
-            {
-                return this.classNameField;
-            }
-            set
-            {
-                this.classNameField = value;
-                this.RaisePropertyChanged("ClassName");
-            }
-        }
-
-        /// <remarks/>
-        public int Id
-        {
-            get
-            {
-                return this.idField;
-            }
-            set
-            {
-                this.idField = value;
-                this.RaisePropertyChanged("Id");
-            }
-        }
-
-        /// <remarks/>
-        public int Type
-        {
-            get
-            {
-                return this.typeField;
-            }
-            set
-            {
-                this.typeField = value;
-                this.RaisePropertyChanged("Type");
-            }
-        }
-
-        /// <remarks/>
-        public string Name
-        {
-            get
-            {
-                return this.nameField;
-            }
-            set
-            {
-                this.nameField = value;
-                this.RaisePropertyChanged("Name");
-            }
-        }
 
         /// <remarks/>
         [System.Xml.Serialization.XmlArrayItemAttribute("Floor", IsNullable = false)]
@@ -127,17 +62,6 @@ namespace GeometryTypes
                 this.RaisePropertyChanged("Roof");
             }
         }
-
-        public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
-
-        protected void RaisePropertyChanged(string propertyName)
-        {
-            System.ComponentModel.PropertyChangedEventHandler propertyChanged = this.PropertyChanged;
-            if ((propertyChanged != null))
-            {
-                propertyChanged(this, new System.ComponentModel.PropertyChangedEventArgs(propertyName));
-            }
-        }
     }
 
     /// <remarks/>
@@ -145,78 +69,13 @@ namespace GeometryTypes
     [System.SerializableAttribute()]
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
-    public partial class TFloor : object, System.ComponentModel.INotifyPropertyChanged
+    public partial class TFloor : TGeometryItem
     {
-
-        private string classNameField;
-
-        private int idField;
-
-        private int typeField;
-
-        private string nameField;
-
         private int numberField;
 
         private TRoom[] roomListField;
 
         private TAperture[] apertureListField;
-
-        /// <remarks/>
-        public string ClassName
-        {
-            get
-            {
-                return this.classNameField;
-            }
-            set
-            {
-                this.classNameField = value;
-                this.RaisePropertyChanged("ClassName");
-            }
-        }
-
-        /// <remarks/>
-        public int Id
-        {
-            get
-            {
-                return this.idField;
-            }
-            set
-            {
-                this.idField = value;
-                this.RaisePropertyChanged("Id");
-            }
-        }
-
-        /// <remarks/>
-        public int Type
-        {
-            get
-            {
-                return this.typeField;
-            }
-            set
-            {
-                this.typeField = value;
-                this.RaisePropertyChanged("Type");
-            }
-        }
-
-        /// <remarks/>
-        public string Name
-        {
-            get
-            {
-                return this.nameField;
-            }
-            set
-            {
-                this.nameField = value;
-                this.RaisePropertyChanged("Name");
-            }
-        }
 
         /// <remarks/>
         public int Number
@@ -261,17 +120,6 @@ namespace GeometryTypes
                 this.RaisePropertyChanged("ApertureList");
             }
         }
-
-        public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
-
-        protected void RaisePropertyChanged(string propertyName)
-        {
-            System.ComponentModel.PropertyChangedEventHandler propertyChanged = this.PropertyChanged;
-            if ((propertyChanged != null))
-            {
-                propertyChanged(this, new System.ComponentModel.PropertyChangedEventArgs(propertyName));
-            }
-        }
     }
 
     /// <remarks/>
@@ -279,78 +127,13 @@ namespace GeometryTypes
     [System.SerializableAttribute()]
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
-    public partial class TRoom : object, System.ComponentModel.INotifyPropertyChanged
+    public partial class TRoom : TGeometryItem
     {
-
-        private string classNameField;
-
-        private int idField;
-
-        private int typeField;
-
-        private string nameField;
-
         private TBox[] geometryField;
 
         private float fireLoadField;
 
         private float massField;
-
-        /// <remarks/>
-        public string ClassName
-        {
-            get
-            {
-                return this.classNameField;
-            }
-            set
-            {
-                this.classNameField = value;
-                this.RaisePropertyChanged("ClassName");
-            }
-        }
-
-        /// <remarks/>
-        public int Id
-        {
-            get
-            {
-                return this.idField;
-            }
-            set
-            {
-                this.idField = value;
-                this.RaisePropertyChanged("Id");
-            }
-        }
-
-        /// <remarks/>
-        public int Type
-        {
-            get
-            {
-                return this.typeField;
-            }
-            set
-            {
-                this.typeField = value;
-                this.RaisePropertyChanged("Type");
-            }
-        }
-
-        /// <remarks/>
-        public string Name
-        {
-            get
-            {
-                return this.nameField;
-            }
-            set
-            {
-                this.nameField = value;
-                this.RaisePropertyChanged("Name");
-            }
-        }
 
         /// <remarks/>
         [System.Xml.Serialization.XmlArrayItemAttribute("GeometryItem", IsNullable = false)]
@@ -394,17 +177,6 @@ namespace GeometryTypes
                 this.RaisePropertyChanged("Mass");
             }
         }
-
-        public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
-
-        protected void RaisePropertyChanged(string propertyName)
-        {
-            System.ComponentModel.PropertyChangedEventHandler propertyChanged = this.PropertyChanged;
-            if ((propertyChanged != null))
-            {
-                propertyChanged(this, new System.ComponentModel.PropertyChangedEventArgs(propertyName));
-            }
-        }
     }
 
     /// <remarks/>
@@ -414,9 +186,6 @@ namespace GeometryTypes
     [System.ComponentModel.DesignerCategoryAttribute("code")]
     public partial class TBox : TGeometryItem
     {
-
-        private string nameField;
-
         private float x1Field;
 
         private float y1Field;
@@ -428,20 +197,6 @@ namespace GeometryTypes
         private float y2Field;
 
         private float z2Field;
-
-        /// <remarks/>
-        public string Name
-        {
-            get
-            {
-                return this.nameField;
-            }
-            set
-            {
-                this.nameField = value;
-                this.RaisePropertyChanged("Name");
-            }
-        }
 
         /// <remarks/>
         public float X1
@@ -538,12 +293,11 @@ namespace GeometryTypes
     [System.ComponentModel.DesignerCategoryAttribute("code")]
     public abstract partial class TGeometryItem : object, System.ComponentModel.INotifyPropertyChanged
     {
-
         private string classNameField;
-
         private int idField;
-
         private int typeField;
+        private string nameField;
+        private bool nameFieldSpecified;
 
         /// <remarks/>
         public string ClassName
@@ -584,6 +338,35 @@ namespace GeometryTypes
             {
                 this.typeField = value;
                 this.RaisePropertyChanged("Type");
+            }
+        }
+
+        /// <remarks/>
+        public string Name
+        {
+            get
+            {
+                return this.nameField;
+            }
+            set
+            {
+                this.nameField = value;
+                this.RaisePropertyChanged( "Name" );
+            }
+        }
+
+        /// <remarks/>
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public bool NameSpecified
+        {
+            get
+            {
+                return this.nameFieldSpecified;
+            }
+            set
+            {
+                this.nameFieldSpecified = value;
+                this.RaisePropertyChanged( "NameSpecified" );
             }
         }
 
@@ -645,9 +428,6 @@ namespace GeometryTypes
     [System.ComponentModel.DesignerCategoryAttribute("code")]
     public partial class TFlight : TGeometryItem
     {
-
-        private string nameField;
-
         private float x1Field;
 
         private float y1Field;
@@ -673,20 +453,6 @@ namespace GeometryTypes
         private float widthField;
 
         private float angleField;
-
-        /// <remarks/>
-        public string Name
-        {
-            get
-            {
-                return this.nameField;
-            }
-            set
-            {
-                this.nameField = value;
-                this.RaisePropertyChanged("Name");
-            }
-        }
 
         /// <remarks/>
         public float X1
@@ -997,74 +763,9 @@ namespace GeometryTypes
     [System.SerializableAttribute()]
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
-    public partial class TStairway : object, System.ComponentModel.INotifyPropertyChanged
+    public partial class TStairway : TGeometryItem
     {
-
-        private string classNameField;
-
-        private int idField;
-
-        private int typeField;
-
-        private string nameField;
-
         private ArrayOfStairwayGeometry geometryField;
-
-        /// <remarks/>
-        public string ClassName
-        {
-            get
-            {
-                return this.classNameField;
-            }
-            set
-            {
-                this.classNameField = value;
-                this.RaisePropertyChanged("ClassName");
-            }
-        }
-
-        /// <remarks/>
-        public int Id
-        {
-            get
-            {
-                return this.idField;
-            }
-            set
-            {
-                this.idField = value;
-                this.RaisePropertyChanged("Id");
-            }
-        }
-
-        /// <remarks/>
-        public int Type
-        {
-            get
-            {
-                return this.typeField;
-            }
-            set
-            {
-                this.typeField = value;
-                this.RaisePropertyChanged("Type");
-            }
-        }
-
-        /// <remarks/>
-        public string Name
-        {
-            get
-            {
-                return this.nameField;
-            }
-            set
-            {
-                this.nameField = value;
-                this.RaisePropertyChanged("Name");
-            }
-        }
 
         /// <remarks/>
         public ArrayOfStairwayGeometry Geometry
@@ -1097,17 +798,8 @@ namespace GeometryTypes
     [System.SerializableAttribute()]
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
-    public partial class TAperture : object, System.ComponentModel.INotifyPropertyChanged
+    public partial class TAperture : TGeometryItem
     {
-
-        private string classNameField;
-
-        private int idField;
-
-        private int typeField;
-
-        private string nameField;
-
         private float x1Field;
 
         private bool x1FieldSpecified;
@@ -1155,62 +847,6 @@ namespace GeometryTypes
         private float angleField;
 
         private bool angleFieldSpecified;
-
-        /// <remarks/>
-        public string ClassName
-        {
-            get
-            {
-                return this.classNameField;
-            }
-            set
-            {
-                this.classNameField = value;
-                this.RaisePropertyChanged("ClassName");
-            }
-        }
-
-        /// <remarks/>
-        public int Id
-        {
-            get
-            {
-                return this.idField;
-            }
-            set
-            {
-                this.idField = value;
-                this.RaisePropertyChanged("Id");
-            }
-        }
-
-        /// <remarks/>
-        public int Type
-        {
-            get
-            {
-                return this.typeField;
-            }
-            set
-            {
-                this.typeField = value;
-                this.RaisePropertyChanged("Type");
-            }
-        }
-
-        /// <remarks/>
-        public string Name
-        {
-            get
-            {
-                return this.nameField;
-            }
-            set
-            {
-                this.nameField = value;
-                this.RaisePropertyChanged("Name");
-            }
-        }
 
         /// <remarks/>
         public float X1

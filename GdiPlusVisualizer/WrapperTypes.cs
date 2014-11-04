@@ -74,11 +74,40 @@ namespace SigmaDC.Types
         }
     }
 
-    class ApertureWrapper : CashableCuboid, IBaseObject, IVisualisable
+    [System.ComponentModel.DefaultProperty( "Id" )]
+    public abstract class GeometryItemWrapper : CashableCuboid, IBaseObject
+    {
+        protected GeometryTypes.TGeometryItem m_geometryItem = null;
+
+        protected GeometryItemWrapper( GeometryTypes.TGeometryItem geometryItem )
+        {
+            m_geometryItem = geometryItem;
+        }
+
+        public int Id
+        {
+            get { return m_geometryItem.Id; }
+        }
+
+        public string Name
+        {
+            get { return m_geometryItem.Name; }
+        }
+
+        public int Type
+        {
+            get { return m_geometryItem.Type; }
+        }
+    }
+
+    //---------------------------------------------------------------------------------------------
+
+    class ApertureWrapper : GeometryItemWrapper, IVisualisable
     {
         GeometryTypes.TAperture m_aperture = null;
 
         public ApertureWrapper( GeometryTypes.TAperture aperture )
+            : base( aperture )
         {
             m_aperture = aperture;
 
@@ -182,21 +211,6 @@ namespace SigmaDC.Types
             if ( h < 0 ) h *= -1.0f;
 
             return new RectangleF( x1, y1, w, h );
-        }
-
-        public int Id
-        {
-            get { return m_aperture.Id; }
-        }
-
-        public string Name
-        {
-            get { return m_aperture.Name; }
-        }
-
-        public int Type
-        {
-            get { return m_aperture.Type; }
         }
     }
 
@@ -312,36 +326,225 @@ namespace SigmaDC.Types
         }
     }
 
-    class BoxWrapper : CashableCuboid, IBaseObject, IVisualisable
+    class FlightWrapper : GeometryItemWrapper, IVisualisable
+    {
+        GeometryTypes.TFlight m_flight = null;
+
+        public FlightWrapper( GeometryTypes.TFlight flight )
+            : base( flight )
+        {
+            m_flight = flight;
+
+            NearLeft = new Point3F( flight.X1, flight.Y1, flight.Z1 );
+            FarRight = new Point3F( flight.X3, flight.Y3, flight.Z3 );
+            System.Diagnostics.Debug.Assert( Math.Abs( flight.Z1 - flight.Z2 ) <= 0.001f );
+        }
+
+        [System.ComponentModel.Category( "Flight" )]
+        public float Angle
+        {
+            get { return m_flight.Angle; }
+        }
+
+        [System.ComponentModel.Category( "Flight" )]
+        public Point3F NearRight
+        {
+            get { return new Point3F( m_flight.X2, m_flight.Y2, m_flight.Z2 ); }
+        }
+
+        protected override RectangleF GetExtents()
+        {
+            float x1 = Math.Min( m_flight.X1, m_flight.X3 );
+            float y1 = Math.Min( m_flight.Y1, m_flight.Y3 );
+            float x2 = x1 + m_flight.Width;
+            float y2 = y1 + m_flight.Length;
+
+            float w = x2 - x1;
+            float h = y2 - y1;
+
+            if ( w <= 0 || h <= 0 ) System.Diagnostics.Debugger.Break();
+            System.Diagnostics.Debug.Assert( w > 0, "Flight extent have negative width" );
+            System.Diagnostics.Debug.Assert( h > 0, "Flight extent have negative height" );
+
+            return new RectangleF( x1, y1, w, h );
+        }
+
+        public void Draw( Graphics g )
+        {
+            var extent = Extents;
+
+            using (var blackPen = new Pen( Color.Black, 1.0f / g.DpiX ))
+            {
+            switch ( m_flight.Type )
+            {
+                case 0:
+                {
+                    using ( var pinkBrush = new HatchBrush( HatchStyle.LargeGrid, Color.Brown, Color.White ) )
+                    {
+                        g.FillRectangle( pinkBrush, extent.X, extent.Y, extent.Width, extent.Height );
+                    }
+                    break;
+                }
+                default:
+                {
+                    System.Diagnostics.Debug.Assert( false, "Invalid TFlight type" );
+                    break;
+                }
+            }
+            g.DrawRectangle( blackPen, extent.X, extent.Y, extent.Width, extent.Height );
+            }
+        }
+    }
+
+    class PlatformWrapper : GeometryItemWrapper, IVisualisable
+    {
+        GeometryTypes.TPlatform m_platform = null;
+
+        public PlatformWrapper( GeometryTypes.TPlatform platform )
+            : base( platform )
+        {
+            m_platform = platform;
+
+            NearLeft = new Point3F( platform.X1, platform.Y1, platform.Z1 );
+            FarRight = new Point3F( platform.X2, platform.Y2, platform.Z2 );
+        }
+
+        protected override RectangleF GetExtents()
+        {
+            float x1 = m_platform.X1;
+            float y1 = m_platform.Y1;
+            float x2 = m_platform.X2;
+            float y2 = m_platform.Y2;
+
+            float w = x2 - x1;
+            float h = y2 - y1;
+
+            if ( w <= 0 || h <= 0 ) System.Diagnostics.Debugger.Break();
+            System.Diagnostics.Debug.Assert( w > 0, "Platform extent have negative width" );
+            System.Diagnostics.Debug.Assert( h > 0, "Platform extent have negative height" );
+
+            return new RectangleF( x1, y1, w, h );
+        }
+
+        public void Draw( Graphics g )
+        {
+            switch ( m_platform.Type )
+            {
+                case 0:
+                {
+                    // Draw box rectangle
+                    var extent = Extents;
+                    using ( var brownPen = new Pen( Color.Brown, 1.0f / g.DpiX ) )
+                    {
+                        g.DrawRectangle( brownPen, extent.X, extent.Y, extent.Width, extent.Height );
+                    }
+                    break;
+                }
+                default:
+                {
+                    System.Diagnostics.Debug.Assert( false, "Invalid TPlatform type" );
+                    break;
+                }
+            }
+        }
+    }
+
+    class StairwayWrapper : GeometryItemWrapper, IVisualisable
+    {
+        GeometryTypes.TStairway m_stairway = null;
+        List<GeometryItemWrapper> m_items = null;
+
+        public StairwayWrapper( GeometryTypes.TStairway stairway )
+            : base( stairway )
+        {
+            m_stairway = stairway;
+
+            m_items = new List<GeometryItemWrapper>( stairway.Geometry.Items.Count() );
+            for ( int i = 0; i < stairway.Geometry.Items.Count(); ++i )
+            {
+                // FIXME: ugly non-OOP code :/
+                if ( stairway.Geometry.Items[ i ] is GeometryTypes.TBox )
+                {
+                    GeometryTypes.TBox b = stairway.Geometry.Items[ i ] as GeometryTypes.TBox;
+                    m_items.Add( new BoxWrapper( b ) );
+                }
+                else if ( stairway.Geometry.Items[ i ] is GeometryTypes.TAperture )
+                {
+                    GeometryTypes.TAperture a = stairway.Geometry.Items[ i ] as GeometryTypes.TAperture;
+                    m_items.Add( new ApertureWrapper( a ) );
+                }
+                else if ( stairway.Geometry.Items[ i ] is GeometryTypes.TFlight )
+                {
+                    GeometryTypes.TFlight f = stairway.Geometry.Items[ i ] as GeometryTypes.TFlight;
+                    m_items.Add( new FlightWrapper( f ) );
+                }
+                else if ( stairway.Geometry.Items[ i ] is GeometryTypes.TPlatform )
+                {
+                    GeometryTypes.TPlatform p = stairway.Geometry.Items[ i ] as GeometryTypes.TPlatform;
+                    m_items.Add( new PlatformWrapper( p ) );
+                }
+                else System.Diagnostics.Debug.Assert( false, "Unknown TStairway geometry item type" );
+            }
+        }
+
+        public List<GeometryItemWrapper> Geometry
+        {
+            get { return m_items; }
+        }
+
+        public void Draw( Graphics g )
+        {
+            switch ( m_stairway.Type )
+            {
+                case 1: // 0 - Default
+                {
+                    using ( var blackPen = new Pen( Color.Black, 1.0f / g.DpiX ) )
+                    {
+                        using ( var grayBrush = new HatchBrush( HatchStyle.Horizontal, Color.LightGray, Color.White ) )
+                        {
+                            g.FillRectangle( grayBrush, Extents.X, Extents.Y, Extents.Width, Extents.Height );
+                            g.DrawRectangle( blackPen, Extents.X, Extents.Y, Extents.Width, Extents.Height );
+                        }
+                    }
+                    break;
+                }
+                default:
+                {
+                    System.Diagnostics.Debug.Assert( false, "Invalid TStairway type" );
+                    break;
+                }
+            }
+        }
+
+        protected override RectangleF GetExtents()
+        {
+            var extent = new RectangleF();
+            if ( m_items.Count >= 1 )
+            {
+                extent = m_items[ 0 ].Extents;
+            }
+
+            for ( int i = 1; i < m_items.Count; ++i )
+            {
+                extent = RectangleF.Union( extent, m_items[ i ].Extents );
+            }
+            return extent;
+        }
+    }
+
+    class BoxWrapper : GeometryItemWrapper, IVisualisable
     {
         GeometryTypes.TBox m_box = null;
         Font m_textFont = null;
         RectangleF m_textRect;
 
         public BoxWrapper( GeometryTypes.TBox box )
+            : base( box )
         {
             m_box = box;
 
             NearLeft = new Point3F( m_box.X1, m_box.Y1, m_box.Z1 );
             FarRight = new Point3F( m_box.X2, m_box.Y2, m_box.Z2 );
-        }
-
-        [System.ComponentModel.Category( "Base properties" )]
-        public int Id
-        {
-            get { return m_box.Id; }
-        }
-
-        [System.ComponentModel.Category( "Base properties" )]
-        public string Name
-        {
-            get { return m_box.Name; }
-        }
-
-        [System.ComponentModel.Category( "Base properties" )]
-        public int Type
-        {
-            get { return m_box.Type; }
         }
 
         protected override RectangleF GetExtents()
@@ -361,15 +564,23 @@ namespace SigmaDC.Types
             return new RectangleF( x1, y1, w, h );
         }
 
+        private bool m_pink = false;
+        public bool PinkPen
+        {
+            get { return m_pink; }
+            set { m_pink = value; }
+        }
+
         public void Draw( Graphics g )
         {
             switch ( m_box.Type )
             {
                 case 0:
+                case 1: // FIXME: What means this type?
                 {
                     // Draw box rectangle
                     var extent = Extents;
-                    using ( var brownPen = new Pen( Color.Brown, 1.0f / g.DpiX ) )
+                    using ( var brownPen = new Pen( PinkPen ? Color.Pink : Color.Brown, 1.0f / g.DpiX ) )
                     {
                         g.DrawRectangle( brownPen, extent.X, extent.Y, extent.Width, extent.Height );
                     }
@@ -434,12 +645,13 @@ namespace SigmaDC.Types
         }
     }
 
-    class RoomWrapper : CashableExtentOwner, IVisualisable
+    class RoomWrapper : GeometryItemWrapper, IVisualisable
     {
         GeometryTypes.TRoom m_room = null;
         BoxWrapper[] m_boxes = null;
 
         public RoomWrapper( GeometryTypes.TRoom room )
+            : base( room )
         {
             m_room = room;
 
@@ -457,6 +669,8 @@ namespace SigmaDC.Types
 
         public void Draw( Graphics g )
         {
+            
+
             switch ( m_room.Type )
             {
                 case 0: // Room itself
@@ -466,6 +680,12 @@ namespace SigmaDC.Types
                 }
                 case 1: // Corridor
                 {
+                    foreach ( var box in m_boxes )
+                    {
+                        box.PinkPen = true;
+                        box.Draw( g );
+                    }
+
                     using ( var grayBrush = new HatchBrush( HatchStyle.DottedGrid, Color.LightGray, Color.White ) )
                     {
                         g.FillRectangle( grayBrush,Extents.X, Extents.Y, Extents.Width, Extents.Height );
@@ -497,19 +717,19 @@ namespace SigmaDC.Types
         }
     }
 
-
-    class FloorWrapper : CashableExtentOwner, IVisualisable
+    class FloorWrapper : GeometryItemWrapper, IVisualisable
     {
         GeometryTypes.TFloor m_floor = null;
         RoomWrapper[] m_rooms = null;
         ApertureWrapper[] m_apertures = null;
         FurnitureWrapper[] m_furniture = null;
-        // FIXME: implement
-        //StairwayWrapper[] m_stairways = null;
+        StairwayWrapper[] m_stairways = null;
 
+        // FIXME: implement
         //PeopleWrapper[] m_people = null;
 
         public FloorWrapper( GeometryTypes.TFloor floor )
+            : base( floor )
         {
             m_floor = floor;
 
@@ -533,11 +753,6 @@ namespace SigmaDC.Types
             {
                 m_furniture[ i ] = new FurnitureWrapper( furnFloor.Furniture[ i ] );
             }
-        }
-
-        public string Name
-        {
-            get { return m_floor.Name; }
         }
 
         public int Number
@@ -589,7 +804,7 @@ namespace SigmaDC.Types
                     foreach ( var furnitureItem in m_furniture ) furnitureItem.Draw( g );
                     foreach ( var room in m_rooms ) room.Draw( g );
                     foreach ( var aperture in m_apertures ) aperture.Draw( g );
-                    //foreach ( var stairway in m_stairways ) stairway.Draw( g );
+//                   foreach ( var stairway in m_stairways ) stairway.Draw( g );
                     //foreach ( var human in m_people ) human.Draw( g );
                     break;
                 }
@@ -618,11 +833,12 @@ namespace SigmaDC.Types
         }
     }
 
-    class BuildingWrapper : CashableExtentOwner, IVisualisable
+    class BuildingWrapper : GeometryItemWrapper, IVisualisable
     {
         GeometryTypes.TBuilding m_building = null;
         int m_floorNumber = -1;
         FloorWrapper[] m_floors = null;
+        StairwayWrapper[] m_stairways = null;
 
         static readonly string GEOMETRY_FILE_NAME = @"geometry.xml";
         static readonly string APERTURES_FILE_NAME = @"apertures.xml";
@@ -711,6 +927,7 @@ namespace SigmaDC.Types
         #endregion
 
         public BuildingWrapper( string dataDir )
+            : base( null )
         {
             System.Diagnostics.Debug.Assert( Directory.Exists( dataDir ) );
 
@@ -737,6 +954,7 @@ namespace SigmaDC.Types
 
             SortFloors( m_building.FloorList );
 
+            // Load floors
             m_floorNumber = m_building.FloorList.Count() > 0 ? m_building.FloorList[ 0 ].Number : -1;
             m_floors = new FloorWrapper[ FloorCount ];
             for ( int i = 0; i < m_building.FloorList.Count(); ++i )
@@ -744,6 +962,14 @@ namespace SigmaDC.Types
                 m_floors[ i ] = new FloorWrapper( m_building.FloorList[ i ] );
             }
 
+            // Load stairways
+            m_stairways = new StairwayWrapper[ FloorCount ];
+            for ( int i = 0; i < m_building.StairwayList.Count(); ++i )
+            {
+                m_stairways[ i ] = new StairwayWrapper( m_building.StairwayList[ i ] );
+            }
+
+            m_geometryItem = m_building;
             return true;
         }
 
@@ -876,7 +1102,10 @@ namespace SigmaDC.Types
 
         public void Draw( Graphics g )
         {
+            // FIXME:
             CurrentFloor.Draw( g );
+            foreach ( var st in m_stairways )
+                st.Draw( g );
         }
 
         protected override RectangleF GetExtents()
