@@ -329,7 +329,7 @@ namespace GdiPlusVisualizer
             dlgDataDir.SelectedPath = Path.GetFullPath( ( new Uri( absolutePath ) ).LocalPath );
 
             // Let user select data directory
-            if ( dlgDataDir.ShowDialog() == System.Windows.Forms.DialogResult.OK )
+            if ( dlgDataDir.ShowDialog() == DialogResult.OK )
             {
                 // Get the last directory of the path
                 m_currentDir = new DirectoryInfo( dlgDataDir.SelectedPath ).Name;

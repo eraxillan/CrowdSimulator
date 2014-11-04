@@ -1140,6 +1140,22 @@ namespace GeometryTypes
 
         private bool boxId2FieldSpecified;
 
+        private int lockField;
+
+        private bool lockFieldSpecified;
+
+        private int closerField;
+
+        private bool closerFieldSpecified;
+
+        private int antiFireField;
+
+        private bool antiFireFieldSpecified;
+
+        private float angleField;
+
+        private bool angleFieldSpecified;
+
         /// <remarks/>
         public string ClassName
         {
@@ -1425,6 +1441,122 @@ namespace GeometryTypes
             {
                 this.boxId2FieldSpecified = value;
                 this.RaisePropertyChanged("BoxId2Specified");
+            }
+        }
+
+        /// <remarks/>
+        public int Lock
+        {
+            get
+            {
+                return this.lockField;
+            }
+            set
+            {
+                this.lockField = value;
+                this.RaisePropertyChanged( "Lock" );
+            }
+        }
+
+        /// <remarks/>
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public bool LockSpecified
+        {
+            get
+            {
+                return this.lockFieldSpecified;
+            }
+            set
+            {
+                this.lockFieldSpecified = value;
+                this.RaisePropertyChanged( "LockSpecified" );
+            }
+        }
+
+        /// <remarks/>
+        public int Closer
+        {
+            get
+            {
+                return this.closerField;
+            }
+            set
+            {
+                this.closerField = value;
+                this.RaisePropertyChanged( "Closer" );
+            }
+        }
+
+        /// <remarks/>
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public bool CloserSpecified
+        {
+            get
+            {
+                return this.closerFieldSpecified;
+            }
+            set
+            {
+                this.closerFieldSpecified = value;
+                this.RaisePropertyChanged( "CloserSpecified" );
+            }
+        }
+
+        /// <remarks/>
+        public int AntiFire
+        {
+            get
+            {
+                return this.antiFireField;
+            }
+            set
+            {
+                this.antiFireField = value;
+                this.RaisePropertyChanged( "AntiFire" );
+            }
+        }
+
+        /// <remarks/>
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public bool AntiFireSpecified
+        {
+            get
+            {
+                return this.antiFireFieldSpecified;
+            }
+            set
+            {
+                this.antiFireFieldSpecified = value;
+                this.RaisePropertyChanged( "AntiFireSpecified" );
+            }
+        }
+
+        /// <remarks/>
+        public float Angle
+        {
+            get
+            {
+                return this.angleField;
+            }
+            set
+            {
+                this.angleField = value;
+                this.RaisePropertyChanged( "Angle" );
+            }
+        }
+
+        /// <remarks/>
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public bool AngleSpecified
+        {
+            get
+            {
+                return this.angleFieldSpecified;
+            }
+            set
+            {
+                this.angleFieldSpecified = value;
+                this.RaisePropertyChanged( "AngleSpecified" );
             }
         }
 

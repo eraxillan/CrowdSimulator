@@ -86,10 +86,23 @@ namespace SigmaDC.Types
             FarRight = new Point3F( aperture.X2, aperture.Y2, aperture.Z2 );
         }
 
-        // FIXME: Implement loading from the custom Aperture file
-        void UpdateWith( ApertureTypes.TAperture other )
+        public void MergeProperties( ApertureTypes.TAperture aperture )
         {
-            throw new NotImplementedException();
+            if ( aperture.x1Specified ) m_aperture.X1 = aperture.x1;
+            if ( aperture.y1Specified ) m_aperture.Y1 = aperture.y1;
+            if ( aperture.z1Specified ) m_aperture.Z1 = aperture.z1;
+
+            if ( aperture.x2Specified ) m_aperture.X2 = aperture.x2;
+            if ( aperture.y2Specified ) m_aperture.Y2 = aperture.y2;
+            if ( aperture.z2Specified ) m_aperture.Z2 = aperture.z2;
+
+            if ( aperture.BoxId1Specified ) m_aperture.BoxId1 = aperture.BoxId1;
+            if ( aperture.BoxId2Specified ) m_aperture.BoxId2 = aperture.BoxId2;
+
+            if ( aperture.LockSpecified ) m_aperture.Lock = aperture.Lock;
+            if ( aperture.CloserSpecified ) m_aperture.Closer = aperture.Closer;
+            if ( aperture.AntiFireSpecified ) m_aperture.AntiFire = aperture.AntiFire;
+            if ( aperture.AngleSpecified ) m_aperture.Angle = aperture.Angle;
         }
 
         public void Draw( Graphics g )
@@ -100,12 +113,11 @@ namespace SigmaDC.Types
             {
                 case 0: // Inner door
                 {
-                    using ( var whitePen = new Pen( Color.Gray, 3.0f / g.DpiX ) )
+                    using ( var grayPen = new Pen( Color.Gray, 3.0f / g.DpiX ) )
                     {
-                        //whitePen.DashStyle = DashStyle.Dash;
-                        whitePen.StartCap = LineCap.SquareAnchor;
-                        whitePen.EndCap = LineCap.SquareAnchor;
-                        g.DrawLine( whitePen, extent.Left, extent.Top, extent.Right, extent.Bottom );
+                        grayPen.StartCap = LineCap.SquareAnchor;
+                        grayPen.EndCap = LineCap.SquareAnchor;
+                        g.DrawLine( grayPen, extent.Left, extent.Top, extent.Right, extent.Bottom );
                     }
                     break;
                 }
@@ -119,9 +131,15 @@ namespace SigmaDC.Types
                 }
                 case 2: // Fake ("clue")
                 {
-                    if ( m_aperture.BoxId1 == m_aperture.BoxId2 )
+                    using ( var pinkPen = new Pen( Color.Pink, 1.0f / g.DpiX ) )
                     {
-                        using ( var whitePen = new Pen( Color.White, 1.0f / g.DpiX ) )
+                        g.DrawLine( pinkPen, extent.Left, extent.Top, extent.Right, extent.Bottom );
+                    }
+
+                    // TODO: check the clue aperture data correctness in the KinderGarten file
+                   /* if ( m_aperture.BoxId1 == m_aperture.BoxId2 )
+                    {
+                        using ( var whitePen = new Pen( Color.Lime, 1.0f / g.DpiX ) )
                         {
                             g.DrawLine( whitePen, extent.Left, extent.Top, extent.Right, extent.Bottom );
                         }
@@ -132,7 +150,7 @@ namespace SigmaDC.Types
                         {
                             g.DrawLine( brownPen, extent.Left, extent.Top, extent.Right, extent.Bottom );
                         }
-                    }
+                    }*/
                     break;
                 }
                 case 3: // Exit from building door
@@ -179,6 +197,118 @@ namespace SigmaDC.Types
         public int Type
         {
             get { return m_aperture.Type; }
+        }
+    }
+
+    class FurnitureWrapper : CashableCuboid, IBaseObject, IVisualisable
+    {
+        FurnitureTypes.TFurnitureItem m_furniture = null;
+
+        public FurnitureWrapper( FurnitureTypes.TFurnitureItem furniture )
+        {
+            m_furniture = furniture;
+
+            NearLeft = new Point3F( m_furniture.X, m_furniture.Y, m_furniture.Z );
+            FarRight = new Point3F( m_furniture.X + m_furniture.Width,
+                m_furniture.Y + m_furniture.Length,
+                m_furniture.Z + m_furniture.Height );
+        }
+
+        [System.ComponentModel.Category( "Base properties" )]
+        public int Id
+        {
+            get { return m_furniture.Id; }
+        }
+
+        [System.ComponentModel.Category( "Base properties" )]
+        public string Name
+        {
+            get { return m_furniture.Name; }
+        }
+
+        [System.ComponentModel.Category( "Base properties" )]
+        public int Type
+        {
+            get { return m_furniture.Type; }
+        }
+
+        [System.ComponentModel.Category( "Furniture" )]
+        public float Angle
+        {
+            get { return m_furniture.Angle; }
+        }
+
+        [System.ComponentModel.Category( "Furniture" )]
+        public int SeatNumber
+        {
+            get { return m_furniture.Set; }
+        }
+
+        protected override RectangleF GetExtents()
+        {
+            float x1 = m_furniture.X;
+            float y1 = m_furniture.Y;
+            float x2 = m_furniture.X + m_furniture.Width;
+            float y2 = m_furniture.Y + m_furniture.Length;
+
+            float w = x2 - x1;
+            float h = y2 - y1;
+
+            if ( w <= 0 || h <= 0 ) System.Diagnostics.Debugger.Break();
+            System.Diagnostics.Debug.Assert( w > 0, "Furniture extent have negative width" );
+            System.Diagnostics.Debug.Assert( h > 0, "Furniture extent have negative height" );
+
+            return new RectangleF( x1, y1, w, h );
+        }
+
+        public void Draw( Graphics g )
+        {
+            var extent = Extents;
+
+            using (var blackPen = new Pen( Color.Black, 1.0f / g.DpiX ))
+            {
+            switch ( m_furniture.Type )
+            {
+                case 1: // Bed
+                {
+                    using ( var pinkBrush = new HatchBrush( HatchStyle.Divot, Color.Brown, Color.White ) )
+                    {
+                        g.FillRectangle( pinkBrush, extent.X, extent.Y, extent.Width, extent.Height );
+                    }
+                    break;
+                }
+                case 2: // Table
+                {
+                    using ( var blackBrush = new HatchBrush( HatchStyle.ZigZag, Color.Brown, Color.White ) )
+                    {
+                        g.FillRectangle( blackBrush, extent.X, extent.Y, extent.Width, extent.Height );
+                    }
+                    break;
+                }
+                case 3: // Case
+                {
+                    using ( var greenBrush = new HatchBrush( HatchStyle.Weave, Color.Brown, Color.White ) )
+                    {
+                        g.FillRectangle( greenBrush, extent.X, extent.Y, extent.Width, extent.Height );
+                    }
+                    break;
+                }
+                case 5: // Geometry stuff
+                {
+                    using ( var brownBrush = new SolidBrush( Color.Brown ) )
+                    {
+                        g.FillRectangle( brownBrush, extent.X, extent.Y, extent.Width, extent.Height );
+                    }
+                    break;
+                }
+                default:
+                {
+                    System.Diagnostics.Debug.Assert( false, "Invalid TFurniture type" );
+                    break;
+                }
+            }
+            g.DrawRectangle( blackPen, extent.X, extent.Y, extent.Width, extent.Height );
+            }
         }
     }
 
@@ -250,8 +380,10 @@ namespace SigmaDC.Types
                     break;
                 }
                 default:
+                {
                     System.Diagnostics.Debug.Assert( false, "Invalid TBox type" );
                     break;
+                }
             }
         }
 
@@ -334,7 +466,7 @@ namespace SigmaDC.Types
                 }
                 case 1: // Corridor
                 {
-                    using ( var grayBrush = new HatchBrush( HatchStyle.DiagonalCross, Color.LightGray, Color.White ) )
+                    using ( var grayBrush = new HatchBrush( HatchStyle.DottedGrid, Color.LightGray, Color.White ) )
                     {
                         g.FillRectangle( grayBrush,Extents.X, Extents.Y, Extents.Width, Extents.Height );
                     }
@@ -371,8 +503,8 @@ namespace SigmaDC.Types
         GeometryTypes.TFloor m_floor = null;
         RoomWrapper[] m_rooms = null;
         ApertureWrapper[] m_apertures = null;
+        FurnitureWrapper[] m_furniture = null;
         // FIXME: implement
-        //FurnitureWrapper[] m_furniture = null;
         //StairwayWrapper[] m_stairways = null;
 
         //PeopleWrapper[] m_people = null;
@@ -394,6 +526,15 @@ namespace SigmaDC.Types
             }
         }
 
+        public void LoadFurniture( FurnitureTypes.TFloor furnFloor )
+        {
+            m_furniture = new FurnitureWrapper[ furnFloor.Furniture.Count() ];
+            for ( int i = 0; i < furnFloor.Furniture.Count(); ++i )
+            {
+                m_furniture[ i ] = new FurnitureWrapper( furnFloor.Furniture[ i ] );
+            }
+        }
+
         public string Name
         {
             get { return m_floor.Name; }
@@ -407,10 +548,13 @@ namespace SigmaDC.Types
         public ApertureWrapper[] Apertures
         {
             get { return m_apertures; }
-            set { m_apertures = value; }
         }
 
-        // FIXME:
+        public FurnitureWrapper[] Furniture
+        {
+            get { return m_furniture; }
+        }
+
         public ApertureWrapper FindAperture( int id )
         {
             foreach ( var aperture in Apertures )
@@ -442,8 +586,11 @@ namespace SigmaDC.Types
                 case 0:
                 {
                     // FIXME: draw other stuff
+                    foreach ( var furnitureItem in m_furniture ) furnitureItem.Draw( g );
                     foreach ( var room in m_rooms ) room.Draw( g );
                     foreach ( var aperture in m_apertures ) aperture.Draw( g );
+                    //foreach ( var stairway in m_stairways ) stairway.Draw( g );
+                    //foreach ( var human in m_people ) human.Draw( g );
                     break;
                 }
                 default:
@@ -563,19 +710,6 @@ namespace SigmaDC.Types
         }
         #endregion
 
-        /*public BuildingWrapper( GeometryTypes.TBuilding building )
-        {
-            m_building = building;
-            SortFloors( building );
-
-            m_floorNumber = building.FloorList.Count() > 0 ? building.FloorList[ 0 ].Number : -1;
-            m_floors = new FloorWrapper[ FloorCount ];
-            for( int i = 0; i < building.FloorList.Count(); ++i )
-            {
-                m_floors[ i ] = new FloorWrapper( building.FloorList[ i ] );
-            }
-        }*/
-
         public BuildingWrapper( string dataDir )
         {
             System.Diagnostics.Debug.Assert( Directory.Exists( dataDir ) );
@@ -590,7 +724,6 @@ namespace SigmaDC.Types
             LoadApertures( parser, aperturesFileNameAbs );
             LoadFurniture( parser, furnitureFileNameAbs );
             LoadPeople( parser, peopleFileNameAbs );
-
         }
 
         public bool LoadGeometry( InputDataParser.Parser parser, string fileName )
@@ -622,23 +755,21 @@ namespace SigmaDC.Types
                 m_lastError = "Building has no floors";
                 return false;
             }
-
             System.Diagnostics.Debug.Assert( building.FloorList.Count() == m_floors.Count() );
 
             SortFloors( building.FloorList );
 
-            foreach(var floor in building.FloorList)
+            foreach ( var floor in building.FloorList )
             {
                 FloorWrapper fw = GetSpecifiedFloor( floor.Number );
                 System.Diagnostics.Debug.Assert( fw.Number == floor.Number );
 
-                
                 for ( int i = 0; i < floor.ApertureList.Count(); ++i )
                 {
-                    //fw.Apertures[ i ] = new ApertureWrapper( floor.ApertureList[ i ] );
-                    
-                    // Search for specified aperuture in the geometry file ones
-                    //for (int )
+                    // Search for aperture with the same ID in the geometry file
+                    var aw = fw.FindAperture( floor.ApertureList[ i ].Id );
+                    if ( aw != null )
+                        aw.MergeProperties( floor.ApertureList[ i ] );
                 }
             }
 
@@ -647,7 +778,23 @@ namespace SigmaDC.Types
 
         public bool LoadFurniture( InputDataParser.Parser parser, string fileName )
         {
-//            throw new NotImplementedException();
+            var building = parser.LoadFurnitureXMLRoot( fileName );
+            if ( building.FloorList.Count() == 0 )
+            {
+                m_lastError = "Building has no floors";
+                return false;
+            }
+            System.Diagnostics.Debug.Assert( building.FloorList.Count() == m_floors.Count() );
+
+            SortFloors( building.FloorList );
+
+            foreach ( var floor in building.FloorList )
+            {
+                FloorWrapper fw = GetSpecifiedFloor( floor.Number );
+                System.Diagnostics.Debug.Assert( fw.Number == floor.Number );
+
+                fw.LoadFurniture( floor );
+            }
             return true;
         }
 

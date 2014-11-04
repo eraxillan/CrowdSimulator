@@ -262,6 +262,14 @@ namespace ApertureTypes
 
         private bool z2FieldSpecified;
 
+        private int boxId1Field;
+
+        private bool boxId1FieldSpecified;
+
+        private int boxId2Field;
+
+        private bool boxId2FieldSpecified;
+
         private int lockField;
 
         private bool lockFieldSpecified;
@@ -477,6 +485,64 @@ namespace ApertureTypes
             {
                 this.z2FieldSpecified = value;
                 this.RaisePropertyChanged("z2Specified");
+            }
+        }
+
+        /// <remarks/>
+        public int BoxId1
+        {
+            get
+            {
+                return this.boxId1Field;
+            }
+            set
+            {
+                this.boxId1Field = value;
+                this.RaisePropertyChanged( "BoxId1" );
+            }
+        }
+
+        /// <remarks/>
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public bool BoxId1Specified
+        {
+            get
+            {
+                return this.boxId1FieldSpecified;
+            }
+            set
+            {
+                this.boxId1FieldSpecified = value;
+                this.RaisePropertyChanged( "BoxId1Specified" );
+            }
+        }
+
+        /// <remarks/>
+        public int BoxId2
+        {
+            get
+            {
+                return this.boxId2Field;
+            }
+            set
+            {
+                this.boxId2Field = value;
+                this.RaisePropertyChanged( "BoxId2" );
+            }
+        }
+
+        /// <remarks/>
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public bool BoxId2Specified
+        {
+            get
+            {
+                return this.boxId2FieldSpecified;
+            }
+            set
+            {
+                this.boxId2FieldSpecified = value;
+                this.RaisePropertyChanged( "BoxId2Specified" );
             }
         }
 
