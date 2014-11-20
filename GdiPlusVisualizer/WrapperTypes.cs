@@ -115,6 +115,16 @@ namespace SigmaDC.Types
             FarRight = new Point3F( aperture.X2, aperture.Y2, aperture.Z2 );
         }
 
+        public int BoxId1
+        {
+            get { return m_aperture.BoxId1; }
+        }
+
+        public int BoxId2
+        {
+            get { return m_aperture.BoxId2; }
+        }
+
         public void MergeProperties( ApertureTypes.TAperture aperture )
         {
             if ( aperture.x1Specified ) m_aperture.X1 = aperture.x1;
@@ -487,6 +497,16 @@ namespace SigmaDC.Types
             }
         }
 
+        public StairwayWrapper( StairwayWrapper stairway, int start, int count )
+            : base( stairway.m_stairway )
+        {
+            if ( start < 0 || start >= stairway.Geometry.Count ) throw new ArgumentException();
+            if ( count < 1 || count > stairway.Geometry.Count ) throw new ArgumentException();
+
+            m_stairway = stairway.m_stairway;
+            m_items = stairway.m_items.GetRange( start, count );
+        }
+
         public List<GeometryItemWrapper> Geometry
         {
             get { return m_items; }
@@ -723,7 +743,7 @@ namespace SigmaDC.Types
         RoomWrapper[] m_rooms = null;
         ApertureWrapper[] m_apertures = null;
         FurnitureWrapper[] m_furniture = null;
-        StairwayWrapper[] m_stairways = null;
+        List<StairwayWrapper> m_stairways = null;
 
         // FIXME: implement
         //PeopleWrapper[] m_people = null;
@@ -744,6 +764,8 @@ namespace SigmaDC.Types
             {
                 m_apertures[ i ] = new ApertureWrapper( floor.ApertureList[ i ] );
             }
+
+            m_stairways = new List<StairwayWrapper>();
         }
 
         public void LoadFurniture( FurnitureTypes.TFloor furnFloor )
@@ -763,6 +785,12 @@ namespace SigmaDC.Types
         public ApertureWrapper[] Apertures
         {
             get { return m_apertures; }
+        }
+
+        public List<StairwayWrapper> Stairways
+        {
+            get { return m_stairways; }
+            set { m_stairways = value; }
         }
 
         public FurnitureWrapper[] Furniture
@@ -804,7 +832,7 @@ namespace SigmaDC.Types
                     foreach ( var furnitureItem in m_furniture ) furnitureItem.Draw( g );
                     foreach ( var room in m_rooms ) room.Draw( g );
                     foreach ( var aperture in m_apertures ) aperture.Draw( g );
-//                   foreach ( var stairway in m_stairways ) stairway.Draw( g );
+                    foreach ( var stairway in m_stairways ) stairway.Draw( g );
                     //foreach ( var human in m_people ) human.Draw( g );
                     break;
                 }
@@ -967,6 +995,34 @@ namespace SigmaDC.Types
             for ( int i = 0; i < m_building.StairwayList.Count(); ++i )
             {
                 m_stairways[ i ] = new StairwayWrapper( m_building.StairwayList[ i ] );
+
+                if ( m_stairways[ i ].Geometry.Count % 2 != 0 ) throw new NotImplementedException( "Stairway with odd number of items" );
+                int halfOfItemCount = m_stairways[ i ].Geometry.Count / 2;
+
+                foreach ( var gi in m_stairways[ i ].Geometry )
+                {
+                    // FIXME: replace this ugly OOP-forbidden construction to the virtual function/property
+                    if ( !( gi is BoxWrapper ) && !( gi is PlatformWrapper ) ) continue;
+
+                    // FIXME: ensure that one stairway has added only one time to each floor; i.e. no duplicates are allowed
+                    foreach ( var floor in Floors )
+                    {
+                        foreach ( var aper in floor.Apertures )
+                        {
+                            if ( ( aper.BoxId1 == gi.Id ) && ( aper.BoxId2 == -1 ) )
+                            {
+                                var sw = new StairwayWrapper( m_stairways[ i ], 0, halfOfItemCount );
+                                floor.Stairways.Add( sw );
+                            }
+
+                            if ( aper.BoxId2 == gi.Id )
+                            {
+                                var sw = new StairwayWrapper( m_stairways[ i ], halfOfItemCount, halfOfItemCount );
+                                floor.Stairways.Add( sw );
+                            }
+                        }
+                    }
+                }
             }
 
             m_geometryItem = m_building;
@@ -1102,10 +1158,7 @@ namespace SigmaDC.Types
 
         public void Draw( Graphics g )
         {
-            // FIXME:
             CurrentFloor.Draw( g );
-            foreach ( var st in m_stairways )
-                st.Draw( g );
         }
 
         protected override RectangleF GetExtents()
