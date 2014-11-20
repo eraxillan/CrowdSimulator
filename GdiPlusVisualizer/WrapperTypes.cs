@@ -668,29 +668,27 @@ namespace SigmaDC.Types
     class RoomWrapper : GeometryItemWrapper, IVisualisable
     {
         GeometryTypes.TRoom m_room = null;
-        BoxWrapper[] m_boxes = null;
+        List<BoxWrapper> m_boxes = null;
 
         public RoomWrapper( GeometryTypes.TRoom room )
             : base( room )
         {
             m_room = room;
 
-            m_boxes = new BoxWrapper[ room.Geometry.Count() ];
+            m_boxes = new List<BoxWrapper>( room.Geometry.Count() );
             for ( int i = 0; i < room.Geometry.Count(); ++i )
             {
-                m_boxes[ i ] = new BoxWrapper( room.Geometry[ i ] );
+                m_boxes.Add( new BoxWrapper( room.Geometry[ i ] ) );
             }
         }
 
-        public BoxWrapper[] Boxes
+        public List<BoxWrapper> Boxes
         {
             get { return m_boxes; }
         }
 
         public void Draw( Graphics g )
         {
-            
-
             switch ( m_room.Type )
             {
                 case 0: // Room itself
@@ -723,12 +721,12 @@ namespace SigmaDC.Types
         protected override RectangleF GetExtents()
         {
             RectangleF extent = new RectangleF();
-            if ( m_boxes.Count() >= 1 )
+            if ( m_boxes.Count >= 1 )
             {
                 extent = m_boxes[ 0 ].Extents;
             }
 
-            for ( int i = 1; i < m_boxes.Count(); ++i )
+            for ( int i = 1; i < m_boxes.Count; ++i )
             {
                 extent = RectangleF.Union( extent, m_boxes[ i ].Extents );
             }
@@ -740,40 +738,36 @@ namespace SigmaDC.Types
     class FloorWrapper : GeometryItemWrapper, IVisualisable
     {
         GeometryTypes.TFloor m_floor = null;
-        RoomWrapper[] m_rooms = null;
-        ApertureWrapper[] m_apertures = null;
-        FurnitureWrapper[] m_furniture = null;
+        List<RoomWrapper> m_rooms = null;
+        List<ApertureWrapper> m_apertures = null;
+        List<FurnitureWrapper> m_furniture = null;
         List<StairwayWrapper> m_stairways = null;
 
         // FIXME: implement
-        //PeopleWrapper[] m_people = null;
+        //List<PeopleWrapper> m_people = null;
 
         public FloorWrapper( GeometryTypes.TFloor floor )
             : base( floor )
         {
             m_floor = floor;
 
-            m_rooms = new RoomWrapper[ floor.RoomList.Count() ];
+            m_rooms = new List<RoomWrapper>( floor.RoomList.Count() );
             for ( int i = 0; i < floor.RoomList.Count(); ++i )
-            {
-                m_rooms[ i ] = new RoomWrapper( floor.RoomList[ i ] );
-            }
+                m_rooms.Add( new RoomWrapper( floor.RoomList[ i ] ) );
 
-            m_apertures = new ApertureWrapper[ floor.ApertureList.Count() ];
+            m_apertures = new List<ApertureWrapper>( floor.ApertureList.Count() );
             for ( int i = 0; i < floor.ApertureList.Count(); ++i )
-            {
-                m_apertures[ i ] = new ApertureWrapper( floor.ApertureList[ i ] );
-            }
+                m_apertures.Add( new ApertureWrapper( floor.ApertureList[ i ] ) );
 
             m_stairways = new List<StairwayWrapper>();
         }
 
         public void LoadFurniture( FurnitureTypes.TFloor furnFloor )
         {
-            m_furniture = new FurnitureWrapper[ furnFloor.Furniture.Count() ];
+            m_furniture = new List<FurnitureWrapper>( furnFloor.Furniture.Count() );
             for ( int i = 0; i < furnFloor.Furniture.Count(); ++i )
             {
-                m_furniture[ i ] = new FurnitureWrapper( furnFloor.Furniture[ i ] );
+                m_furniture.Add( new FurnitureWrapper( furnFloor.Furniture[ i ] ) );
             }
         }
 
@@ -782,7 +776,7 @@ namespace SigmaDC.Types
             get { return m_floor.Number; }
         }
 
-        public ApertureWrapper[] Apertures
+        public List<ApertureWrapper> Apertures
         {
             get { return m_apertures; }
         }
@@ -793,10 +787,10 @@ namespace SigmaDC.Types
             set { m_stairways = value; }
         }
 
-        public FurnitureWrapper[] Furniture
+        /*public List<FurnitureWrapper> Furniture
         {
             get { return m_furniture; }
-        }
+        }*/
 
         public ApertureWrapper FindAperture( int id )
         {
@@ -847,12 +841,12 @@ namespace SigmaDC.Types
         protected override RectangleF GetExtents()
         {
             RectangleF extent = new RectangleF();
-            if ( m_rooms.Count() >= 1 )
+            if ( m_rooms.Count >= 1 )
             {
                 extent = m_rooms[ 0 ].Extents;
             }
 
-            for ( int i = 1; i < m_rooms.Count(); ++i )
+            for ( int i = 1; i < m_rooms.Count; ++i )
             {
                 extent = RectangleF.Union( extent, m_rooms[ i ].Extents );
             }
@@ -865,8 +859,8 @@ namespace SigmaDC.Types
     {
         GeometryTypes.TBuilding m_building = null;
         int m_floorNumber = -1;
-        FloorWrapper[] m_floors = null;
-        StairwayWrapper[] m_stairways = null;
+        List<FloorWrapper> m_floors = null;
+        List<StairwayWrapper> m_stairways = null;
 
         static readonly string GEOMETRY_FILE_NAME = @"geometry.xml";
         static readonly string APERTURES_FILE_NAME = @"apertures.xml";
@@ -984,17 +978,17 @@ namespace SigmaDC.Types
 
             // Load floors
             m_floorNumber = m_building.FloorList.Count() > 0 ? m_building.FloorList[ 0 ].Number : -1;
-            m_floors = new FloorWrapper[ FloorCount ];
-            for ( int i = 0; i < m_building.FloorList.Count(); ++i )
+            m_floors = new List<FloorWrapper>( FloorCount );
+            for ( int i = 0; i < FloorCount; ++i )
             {
-                m_floors[ i ] = new FloorWrapper( m_building.FloorList[ i ] );
+                m_floors.Add( new FloorWrapper( m_building.FloorList[ i ] ) );
             }
 
             // Load stairways
-            m_stairways = new StairwayWrapper[ FloorCount ];
+            m_stairways = new List<StairwayWrapper>( FloorCount );
             for ( int i = 0; i < m_building.StairwayList.Count(); ++i )
             {
-                m_stairways[ i ] = new StairwayWrapper( m_building.StairwayList[ i ] );
+                m_stairways.Add( new StairwayWrapper( m_building.StairwayList[ i ] ) );
 
                 if ( m_stairways[ i ].Geometry.Count % 2 != 0 ) throw new NotImplementedException( "Stairway with odd number of items" );
                 int halfOfItemCount = m_stairways[ i ].Geometry.Count / 2;
@@ -1037,7 +1031,7 @@ namespace SigmaDC.Types
                 m_lastError = "Building has no floors";
                 return false;
             }
-            System.Diagnostics.Debug.Assert( building.FloorList.Count() == m_floors.Count() );
+            System.Diagnostics.Debug.Assert( building.FloorList.Count() == m_floors.Count );
 
             SortFloors( building.FloorList );
 
@@ -1066,7 +1060,7 @@ namespace SigmaDC.Types
                 m_lastError = "Building has no floors";
                 return false;
             }
-            System.Diagnostics.Debug.Assert( building.FloorList.Count() == m_floors.Count() );
+            System.Diagnostics.Debug.Assert( building.FloorList.Count() == m_floors.Count );
 
             SortFloors( building.FloorList );
 
@@ -1106,7 +1100,7 @@ namespace SigmaDC.Types
             return PEOPLE_FILE_NAME;
         }
 
-        public FloorWrapper[] Floors
+        public List<FloorWrapper> Floors
         {
             get { return m_floors; }
         }
