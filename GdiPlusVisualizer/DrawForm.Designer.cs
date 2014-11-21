@@ -63,21 +63,25 @@
             this.clnFileType = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.clnName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.imlDataStatus = new System.Windows.Forms.ImageList(this.components);
+            this.splMain = new System.Windows.Forms.SplitContainer();
+            this.mnuVisualizationKeepAspectRatio = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)(this.pbVisualizator)).BeginInit();
             this.stsMain.SuspendLayout();
             this.mnsMain.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.splMain)).BeginInit();
+            this.splMain.Panel1.SuspendLayout();
+            this.splMain.Panel2.SuspendLayout();
+            this.splMain.SuspendLayout();
             this.SuspendLayout();
             // 
             // pbVisualizator
             // 
-            this.pbVisualizator.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
             this.pbVisualizator.BackColor = System.Drawing.Color.White;
             this.pbVisualizator.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pbVisualizator.Location = new System.Drawing.Point(12, 27);
+            this.pbVisualizator.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pbVisualizator.Location = new System.Drawing.Point(0, 0);
             this.pbVisualizator.Name = "pbVisualizator";
-            this.pbVisualizator.Size = new System.Drawing.Size(776, 423);
+            this.pbVisualizator.Size = new System.Drawing.Size(722, 429);
             this.pbVisualizator.TabIndex = 0;
             this.pbVisualizator.TabStop = false;
             this.pbVisualizator.Paint += new System.Windows.Forms.PaintEventHandler(this.pbVisualizator_Paint);
@@ -131,11 +135,10 @@
             // 
             // grdProps
             // 
-            this.grdProps.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.grdProps.Location = new System.Drawing.Point(794, 133);
+            this.grdProps.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.grdProps.Location = new System.Drawing.Point(0, 106);
             this.grdProps.Name = "grdProps";
-            this.grdProps.Size = new System.Drawing.Size(235, 317);
+            this.grdProps.Size = new System.Drawing.Size(306, 323);
             this.grdProps.TabIndex = 4;
             // 
             // mnsMain
@@ -256,7 +259,8 @@
             // mnuVisualization
             // 
             this.mnuVisualization.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.mnuVisCurrentFloor});
+            this.mnuVisCurrentFloor,
+            this.mnuVisualizationKeepAspectRatio});
             this.mnuVisualization.Enabled = false;
             this.mnuVisualization.Name = "mnuVisualization";
             this.mnuVisualization.Size = new System.Drawing.Size(85, 20);
@@ -267,7 +271,7 @@
             this.mnuVisCurrentFloor.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.mnuCmbCurrentFloor});
             this.mnuVisCurrentFloor.Name = "mnuVisCurrentFloor";
-            this.mnuVisCurrentFloor.Size = new System.Drawing.Size(142, 22);
+            this.mnuVisCurrentFloor.Size = new System.Drawing.Size(164, 22);
             this.mnuVisCurrentFloor.Text = "Current floor";
             // 
             // mnuCmbCurrentFloor
@@ -283,10 +287,10 @@
             // 
             // lstDataFiles
             // 
-            this.lstDataFiles.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.lstDataFiles.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.clnFileType,
             this.clnName});
+            this.lstDataFiles.Dock = System.Windows.Forms.DockStyle.Top;
             this.lstDataFiles.FullRowSelect = true;
             this.lstDataFiles.GridLines = true;
             this.lstDataFiles.Items.AddRange(new System.Windows.Forms.ListViewItem[] {
@@ -294,11 +298,11 @@
             listViewItem2,
             listViewItem3,
             listViewItem4});
-            this.lstDataFiles.Location = new System.Drawing.Point(794, 27);
+            this.lstDataFiles.Location = new System.Drawing.Point(0, 0);
             this.lstDataFiles.MultiSelect = false;
             this.lstDataFiles.Name = "lstDataFiles";
             this.lstDataFiles.ShowItemToolTips = true;
-            this.lstDataFiles.Size = new System.Drawing.Size(235, 100);
+            this.lstDataFiles.Size = new System.Drawing.Size(306, 100);
             this.lstDataFiles.SmallImageList = this.imlDataStatus;
             this.lstDataFiles.TabIndex = 6;
             this.lstDataFiles.UseCompatibleStateImageBehavior = false;
@@ -321,16 +325,42 @@
             this.imlDataStatus.Images.SetKeyName(0, "imgOk");
             this.imlDataStatus.Images.SetKeyName(1, "imgError");
             // 
+            // splMain
+            // 
+            this.splMain.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splMain.Location = new System.Drawing.Point(0, 24);
+            this.splMain.Name = "splMain";
+            // 
+            // splMain.Panel1
+            // 
+            this.splMain.Panel1.Controls.Add(this.pbVisualizator);
+            // 
+            // splMain.Panel2
+            // 
+            this.splMain.Panel2.Controls.Add(this.lstDataFiles);
+            this.splMain.Panel2.Controls.Add(this.grdProps);
+            this.splMain.Size = new System.Drawing.Size(1032, 429);
+            this.splMain.SplitterDistance = 722;
+            this.splMain.TabIndex = 7;
+            // 
+            // mnuVisualizationKeepAspectRatio
+            // 
+            this.mnuVisualizationKeepAspectRatio.Checked = true;
+            this.mnuVisualizationKeepAspectRatio.CheckOnClick = true;
+            this.mnuVisualizationKeepAspectRatio.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.mnuVisualizationKeepAspectRatio.Name = "mnuVisualizationKeepAspectRatio";
+            this.mnuVisualizationKeepAspectRatio.Size = new System.Drawing.Size(164, 22);
+            this.mnuVisualizationKeepAspectRatio.Text = "Keep aspect ratio";
+            this.mnuVisualizationKeepAspectRatio.Click += new System.EventHandler(this.mnuVisualizationKeepAspectRatio_Click);
+            // 
             // DrawForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1032, 475);
-            this.Controls.Add(this.lstDataFiles);
-            this.Controls.Add(this.grdProps);
+            this.Controls.Add(this.splMain);
             this.Controls.Add(this.stsMain);
             this.Controls.Add(this.mnsMain);
-            this.Controls.Add(this.pbVisualizator);
             this.DoubleBuffered = true;
             this.MainMenuStrip = this.mnsMain;
             this.Name = "DrawForm";
@@ -341,6 +371,10 @@
             this.stsMain.PerformLayout();
             this.mnsMain.ResumeLayout(false);
             this.mnsMain.PerformLayout();
+            this.splMain.Panel1.ResumeLayout(false);
+            this.splMain.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.splMain)).EndInit();
+            this.splMain.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -377,6 +411,8 @@
         private System.Windows.Forms.ColumnHeader clnName;
         private System.Windows.Forms.ImageList imlDataStatus;
         private System.Windows.Forms.ToolStripStatusLabel lblFloor;
+        private System.Windows.Forms.SplitContainer splMain;
+        private System.Windows.Forms.ToolStripMenuItem mnuVisualizationKeepAspectRatio;
     }
 }
 

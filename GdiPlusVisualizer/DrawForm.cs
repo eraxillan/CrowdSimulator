@@ -45,6 +45,7 @@ namespace GdiPlusVisualizer
         Dictionary<RectangleF, BoxWrapper> m_boxMap = null;
         RectangleF m_currentBoxExtents;
         RectangleF m_fixedBoxExtents;
+        bool m_keepAspectRatio = true;
 
         public DrawForm()
         {
@@ -159,8 +160,19 @@ namespace GdiPlusVisualizer
             float OY = margin.Top + H * ( 1 + domain.Top / domain.Height );
 
             // Find the scale to fit the control
-            float SX = W / domain.Width;
-            float SY = H / domain.Height;
+            float SX, SY;
+            if ( m_keepAspectRatio )
+            {
+                // Canvas space will be fully used, but circle will looks like ellipse
+                SX = W / domain.Width;
+                SY = H / domain.Height;
+            }
+            else
+            {
+                // Not effective space usage, but picture looks like it should be
+                SX = Math.Min( W / domain.Width, H / domain.Height );
+                SY = SX;
+            }
 
             // Transform the Graphics scene
             if ( m_panPoint.IsEmpty )
@@ -397,6 +409,12 @@ namespace GdiPlusVisualizer
             m_fixedBoxExtents = RectangleF.Empty;
 
             lblFloor.Text = "Floor number: " + newFloorNumber.ToString();
+            pbVisualizator.Refresh();
+        }
+
+        private void mnuVisualizationKeepAspectRatio_Click( object sender, EventArgs e )
+        {
+            m_keepAspectRatio = !m_keepAspectRatio;
             pbVisualizator.Refresh();
         }
     }

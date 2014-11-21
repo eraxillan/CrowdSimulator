@@ -31,6 +31,54 @@ using System.Windows.Forms;
 
 namespace SigmaDC.Types
 {
+    class HumanWrapper : IBaseObject, IVisualisable
+    {
+        PeopleTypes.TMan m_human;
+
+        public HumanWrapper( PeopleTypes.TMan human )
+        {
+            m_human = human;
+        }
+
+        public int Id
+        {
+            get { return m_human.Id; }
+        }
+
+        // NOTE: "Name" property is absent yet on XML TMan type
+        public string Name
+        {
+            get { return string.Empty; }
+        }
+
+        public int Type
+        {
+            get { return m_human.Type; }
+        }
+
+        public void Draw( Graphics g )
+        {
+            switch ( Type )
+            {
+                case 0:
+                {
+                    using ( var brownBrush = new SolidBrush( Color.Red ) )
+                    {
+                        // S = Pi*(R^2), R > 0 ==> R=sqrt(S/Pi)
+                        var radius = (float)Math.Sqrt( m_human.Size / Math.PI );
+                        var extent = new RectangleF(
+                            new PointF( m_human.px - radius, m_human.py - radius ),
+                            new SizeF( 2 * radius, 2 * radius ) );
+                        g.FillEllipse( brownBrush, extent.X, extent.Y, extent.Width, extent.Height );
+                    }
+                    break;
+                }
+                default: throw new NotImplementedException();
+            }
+        }
+    }
+
+    // --------------------------------------------------------------------------------------------
     [System.ComponentModel.DefaultProperty( "Id" )]
     public abstract class CashableExtentOwner : IExtentOwner
     {
@@ -54,7 +102,7 @@ namespace SigmaDC.Types
     }
 
     [System.ComponentModel.DefaultProperty( "Id" )]
-    public abstract class CashableCuboid : CashableExtentOwner
+    public abstract class CashableCuboid : CashableExtentOwner, ICuboid
     {
         private Point3F m_nearLeft;
         private Point3F m_farRight;
@@ -742,9 +790,7 @@ namespace SigmaDC.Types
         List<ApertureWrapper> m_apertures = null;
         List<FurnitureWrapper> m_furniture = null;
         List<StairwayWrapper> m_stairways = null;
-
-        // FIXME: implement
-        //List<PeopleWrapper> m_people = null;
+        List<HumanWrapper> m_people = null;
 
         public FloorWrapper( GeometryTypes.TFloor floor )
             : base( floor )
@@ -771,6 +817,12 @@ namespace SigmaDC.Types
             }
         }
 
+        public void LoadPeople( PeopleTypes.TFloor peopleFloor )
+        {
+            m_people = new List<HumanWrapper>( peopleFloor.People.Count() );
+            foreach ( var human in peopleFloor.People ) m_people.Add( new HumanWrapper( human ) );
+        }
+
         public int Number
         {
             get { return m_floor.Number; }
@@ -790,6 +842,11 @@ namespace SigmaDC.Types
         /*public List<FurnitureWrapper> Furniture
         {
             get { return m_furniture; }
+        }
+
+        public List<HumanWrapper> People
+        {
+            get { return m_people; }
         }*/
 
         public ApertureWrapper FindAperture( int id )
@@ -822,12 +879,11 @@ namespace SigmaDC.Types
             {
                 case 0:
                 {
-                    // FIXME: draw other stuff
                     foreach ( var furnitureItem in m_furniture ) furnitureItem.Draw( g );
                     foreach ( var room in m_rooms ) room.Draw( g );
                     foreach ( var aperture in m_apertures ) aperture.Draw( g );
                     foreach ( var stairway in m_stairways ) stairway.Draw( g );
-                    //foreach ( var human in m_people ) human.Draw( g );
+                    foreach ( var human in m_people ) human.Draw( g );
                     break;
                 }
                 default:
@@ -1076,7 +1132,24 @@ namespace SigmaDC.Types
 
         public bool LoadPeople( InputDataParser.Parser parser, string fileName )
         {
-//            throw new NotImplementedException();
+            var building = parser.LoadPeopleXMLRoot( fileName );
+            // TODO: try to move such error checks to the aspect
+            if ( building.FloorList.Count() == 0 )
+            {
+                m_lastError = "Building has no floors";
+                return false;
+            }
+            System.Diagnostics.Debug.Assert( building.FloorList.Count() == m_floors.Count );
+
+            SortFloors( building.FloorList );
+
+            foreach ( var floor in building.FloorList )
+            {
+                FloorWrapper fw = GetSpecifiedFloor( floor.Number );
+                System.Diagnostics.Debug.Assert( fw.Number == floor.Number );
+
+                fw.LoadPeople( floor );
+            }
             return true;
         }
 
