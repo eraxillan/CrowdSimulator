@@ -644,34 +644,12 @@ namespace GeometryTypes
     [System.ComponentModel.DesignerCategoryAttribute("code")]
     public partial class TPlatform : TGeometryItem
     {
-
-        private string nameField;
-
         private float x1Field;
-
         private float y1Field;
-
         private float z1Field;
-
         private float x2Field;
-
         private float y2Field;
-
         private float z2Field;
-
-        /// <remarks/>
-        public string Name
-        {
-            get
-            {
-                return this.nameField;
-            }
-            set
-            {
-                this.nameField = value;
-                this.RaisePropertyChanged("Name");
-            }
-        }
 
         /// <remarks/>
         public float X1
@@ -778,17 +756,6 @@ namespace GeometryTypes
             {
                 this.geometryField = value;
                 this.RaisePropertyChanged("Geometry");
-            }
-        }
-
-        public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
-
-        protected void RaisePropertyChanged(string propertyName)
-        {
-            System.ComponentModel.PropertyChangedEventHandler propertyChanged = this.PropertyChanged;
-            if ((propertyChanged != null))
-            {
-                propertyChanged(this, new System.ComponentModel.PropertyChangedEventArgs(propertyName));
             }
         }
     }
@@ -1193,17 +1160,6 @@ namespace GeometryTypes
             {
                 this.angleFieldSpecified = value;
                 this.RaisePropertyChanged( "AngleSpecified" );
-            }
-        }
-
-        public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
-
-        protected void RaisePropertyChanged(string propertyName)
-        {
-            System.ComponentModel.PropertyChangedEventHandler propertyChanged = this.PropertyChanged;
-            if ((propertyChanged != null))
-            {
-                propertyChanged(this, new System.ComponentModel.PropertyChangedEventArgs(propertyName));
             }
         }
     }

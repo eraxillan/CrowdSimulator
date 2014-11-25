@@ -18,6 +18,22 @@
  * License along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+using System;
+
+public static class MathUtils
+{
+    public static bool NearlyEqual( float a, float b, float epsilon = 0.001f )
+    {
+        float diff = Math.Abs( a - b );
+        return( diff < epsilon );
+    }
+
+    public static bool NearlyZero(float x, float epsilon=0.001f)
+    {
+        return NearlyEqual( x, 0.0f, epsilon );
+    }
+}
+
 public class Point3F
 {
     float m_X = float.NaN;

@@ -60,7 +60,9 @@ namespace SigmaDC.Types
         {
             switch ( Type )
             {
+                // TODO: check the difference with TMan type 1 and type 2
                 case 0:
+                case 1:
                 {
                     using ( var brownBrush = new SolidBrush( Color.Red ) )
                     {
@@ -194,8 +196,12 @@ namespace SigmaDC.Types
 
         public void Draw( Graphics g )
         {
-            // FIXME: aperture have only one valid size: width or height; another is null
             var extent = Extents;
+
+            // NOTE: aperture have only one valid size: width or height; another is null
+            if ( !MathUtils.NearlyZero( extent.Width ) && !MathUtils.NearlyZero( extent.Height ) )
+                throw new InvalidOperationException( "Aperture is a flat structure and can have only width or height in one time" );
+
             switch ( m_aperture.Type )
             {
                 case 0: // Inner door
@@ -250,9 +256,7 @@ namespace SigmaDC.Types
                     }
                     break;
                 }
-                default:
-                    System.Diagnostics.Debug.Assert( false, "Invalid TBox type" );
-                    break;
+                default: throw new InvalidOperationException( "Invalid TBox type" );
             }
         }
 
@@ -327,8 +331,8 @@ namespace SigmaDC.Types
             float h = y2 - y1;
 
             if ( w <= 0 || h <= 0 ) System.Diagnostics.Debugger.Break();
-            System.Diagnostics.Debug.Assert( w > 0, "Furniture extent have negative width" );
-            System.Diagnostics.Debug.Assert( h > 0, "Furniture extent have negative height" );
+            if ( w < 0 || MathUtils.NearlyZero( w ) || h < 0 || MathUtils.NearlyZero( h ) )
+                throw new InvalidOperationException( "Furniture could not have null or negative extent width or height" );
 
             return new RectangleF( x1, y1, w, h );
         }
@@ -373,11 +377,7 @@ namespace SigmaDC.Types
                     }
                     break;
                 }
-                default:
-                {
-                    System.Diagnostics.Debug.Assert( false, "Invalid TFurniture type" );
-                    break;
-                }
+                default: throw new InvalidOperationException( "Invalid TFurniture type" );
             }
             g.DrawRectangle( blackPen, extent.X, extent.Y, extent.Width, extent.Height );
             }
@@ -395,7 +395,7 @@ namespace SigmaDC.Types
 
             NearLeft = new Point3F( flight.X1, flight.Y1, flight.Z1 );
             FarRight = new Point3F( flight.X3, flight.Y3, flight.Z3 );
-            System.Diagnostics.Debug.Assert( Math.Abs( flight.Z1 - flight.Z2 ) <= 0.001f );
+            if ( !MathUtils.NearlyEqual( flight.Z1, flight.Z2 ) ) throw new InvalidOperationException( "Z1 != Z2" );
         }
 
         [System.ComponentModel.Category( "Flight" )]
@@ -421,8 +421,8 @@ namespace SigmaDC.Types
             float h = y2 - y1;
 
             if ( w <= 0 || h <= 0 ) System.Diagnostics.Debugger.Break();
-            System.Diagnostics.Debug.Assert( w > 0, "Flight extent have negative width" );
-            System.Diagnostics.Debug.Assert( h > 0, "Flight extent have negative height" );
+            if ( w < 0 || MathUtils.NearlyZero( w ) || h < 0 || MathUtils.NearlyZero( h ) )
+                throw new InvalidOperationException( "Flight could not have null or negative extent width or height" );
 
             return new RectangleF( x1, y1, w, h );
         }
@@ -443,11 +443,7 @@ namespace SigmaDC.Types
                     }
                     break;
                 }
-                default:
-                {
-                    System.Diagnostics.Debug.Assert( false, "Invalid TFlight type" );
-                    break;
-                }
+                default: throw new InvalidOperationException( "Invalid TFlight type" );
             }
             g.DrawRectangle( blackPen, extent.X, extent.Y, extent.Width, extent.Height );
             }
@@ -478,8 +474,8 @@ namespace SigmaDC.Types
             float h = y2 - y1;
 
             if ( w <= 0 || h <= 0 ) System.Diagnostics.Debugger.Break();
-            System.Diagnostics.Debug.Assert( w > 0, "Platform extent have negative width" );
-            System.Diagnostics.Debug.Assert( h > 0, "Platform extent have negative height" );
+            if ( w < 0 || MathUtils.NearlyZero( w ) || h < 0 || MathUtils.NearlyZero( h ) )
+                throw new InvalidOperationException( "Platform could not have null or negative extent width or height" );
 
             return new RectangleF( x1, y1, w, h );
         }
@@ -498,11 +494,7 @@ namespace SigmaDC.Types
                     }
                     break;
                 }
-                default:
-                {
-                    System.Diagnostics.Debug.Assert( false, "Invalid TPlatform type" );
-                    break;
-                }
+                default: throw new InvalidOperationException( "Invalid TPlatform type" );
             }
         }
     }
@@ -541,7 +533,7 @@ namespace SigmaDC.Types
                     GeometryTypes.TPlatform p = stairway.Geometry.Items[ i ] as GeometryTypes.TPlatform;
                     m_items.Add( new PlatformWrapper( p ) );
                 }
-                else System.Diagnostics.Debug.Assert( false, "Unknown TStairway geometry item type" );
+                else throw new InvalidOperationException( "Unknown TStairway geometry item type" );
             }
         }
 
@@ -576,11 +568,7 @@ namespace SigmaDC.Types
                     }
                     break;
                 }
-                default:
-                {
-                    System.Diagnostics.Debug.Assert( false, "Invalid TStairway type" );
-                    break;
-                }
+                default: throw new InvalidOperationException( "Invalid TStairway type" );
             }
         }
 
@@ -624,10 +612,8 @@ namespace SigmaDC.Types
 
             float w = x2 - x1;
             float h = y2 - y1;
-
-            if ( w <= 0 || h <= 0 ) System.Diagnostics.Debugger.Break();
-            System.Diagnostics.Debug.Assert( w > 0, "Box extent have negative width" );
-            System.Diagnostics.Debug.Assert( h > 0, "Box extent have negative height" );
+            if ( w < 0 || MathUtils.NearlyZero( w ) || h < 0 || MathUtils.NearlyZero( h ) )
+                throw new InvalidOperationException( "Furniture could not have null or negative extent width or height" );
 
             return new RectangleF( x1, y1, w, h );
         }
@@ -658,11 +644,7 @@ namespace SigmaDC.Types
                     DrawText( g, "ID: " + m_box.Id + "\n" + "Height: " + ( m_box.Z2 - m_box.Z1 ), extentCenter, extent );
                     break;
                 }
-                default:
-                {
-                    System.Diagnostics.Debug.Assert( false, "Invalid TBox type" );
-                    break;
-                }
+                default: throw new InvalidOperationException( "Invalid TBox type" );
             }
         }
 
@@ -758,11 +740,7 @@ namespace SigmaDC.Types
                     }
                     break;
                 }
-                default:
-                {
-                    System.Diagnostics.Debug.Assert( false, "Invalid TRoom type" );
-                    break;
-                }
+                default: throw new InvalidOperationException( "Invalid TRoom type" );
             }
         }
 
@@ -886,11 +864,7 @@ namespace SigmaDC.Types
                     foreach ( var human in m_people ) human.Draw( g );
                     break;
                 }
-                default:
-                {
-                    System.Diagnostics.Debug.Assert( false, "Invalid TFloor type" );
-                    break;
-                }
+                default: throw new InvalidOperationException( "Invalid TFloor type" );
             }
         }
 
@@ -922,9 +896,6 @@ namespace SigmaDC.Types
         static readonly string APERTURES_FILE_NAME = @"apertures.xml";
         static readonly string FURNITURE_FILE_NAME = @"furniture.xml";
         static readonly string PEOPLE_FILE_NAME = @"people.xml";
-
-        // TODO: implement last error logic
-        string m_lastError;
 
         #region Floor sorter class (by numbers of floor)
         // FIXME: inherit all floors from one class to remove switch(type) ugly construction
@@ -989,12 +960,8 @@ namespace SigmaDC.Types
                         return 1;
                     return -1;
                 }
-                else
-                {
-                    System.Diagnostics.Debug.Assert( false, "Invalid Floor type" );
-                }
-
-                return 1;
+                
+                throw new InvalidOperationException( "Invalid Floor type" );
             }
         }
 
@@ -1007,7 +974,7 @@ namespace SigmaDC.Types
         public BuildingWrapper( string dataDir )
             : base( null )
         {
-            System.Diagnostics.Debug.Assert( Directory.Exists( dataDir ) );
+            if ( !Directory.Exists( dataDir ) ) throw new DirectoryNotFoundException( "Building data directory was not found" );
 
             var geometryFileNameAbs = dataDir + Path.DirectorySeparatorChar + GEOMETRY_FILE_NAME;
             var aperturesFileNameAbs = dataDir + Path.DirectorySeparatorChar + APERTURES_FILE_NAME;
@@ -1026,8 +993,7 @@ namespace SigmaDC.Types
             m_building = parser.LoadGeometryXMLRoot( fileName );
             if ( m_building.FloorList.Count() == 0 )
             {
-                m_lastError = "Building has no floors";
-                return false;
+                throw new InvalidOperationException( "Building has no floors" );
             }
 
             SortFloors( m_building.FloorList );
@@ -1084,18 +1050,15 @@ namespace SigmaDC.Types
             var building = parser.LoadAperturesXMLRoot( fileName );
             if ( building.FloorList.Count() == 0 )
             {
-                m_lastError = "Building has no floors";
-                return false;
+                throw new InvalidOperationException( "Building has no floors" );
             }
-            System.Diagnostics.Debug.Assert( building.FloorList.Count() == m_floors.Count );
+            if ( building.FloorList.Count() != m_floors.Count ) throw new InvalidOperationException( "Invalid aperture file" );
 
             SortFloors( building.FloorList );
 
             foreach ( var floor in building.FloorList )
             {
                 FloorWrapper fw = GetSpecifiedFloor( floor.Number );
-                System.Diagnostics.Debug.Assert( fw.Number == floor.Number );
-
                 for ( int i = 0; i < floor.ApertureList.Count(); ++i )
                 {
                     // Search for aperture with the same ID in the geometry file
@@ -1113,18 +1076,15 @@ namespace SigmaDC.Types
             var building = parser.LoadFurnitureXMLRoot( fileName );
             if ( building.FloorList.Count() == 0 )
             {
-                m_lastError = "Building has no floors";
-                return false;
+                throw new InvalidOperationException( "Building has no floors" );
             }
-            System.Diagnostics.Debug.Assert( building.FloorList.Count() == m_floors.Count );
+            if ( building.FloorList.Count() != m_floors.Count ) throw new InvalidOperationException( "Invalid furniture file" );
 
             SortFloors( building.FloorList );
 
             foreach ( var floor in building.FloorList )
             {
                 FloorWrapper fw = GetSpecifiedFloor( floor.Number );
-                System.Diagnostics.Debug.Assert( fw.Number == floor.Number );
-
                 fw.LoadFurniture( floor );
             }
             return true;
@@ -1136,18 +1096,15 @@ namespace SigmaDC.Types
             // TODO: try to move such error checks to the aspect
             if ( building.FloorList.Count() == 0 )
             {
-                m_lastError = "Building has no floors";
-                return false;
+                throw new InvalidOperationException( "Building has no floors" );
             }
-            System.Diagnostics.Debug.Assert( building.FloorList.Count() == m_floors.Count );
+            if ( building.FloorList.Count() != m_floors.Count ) throw new InvalidOperationException( "Invalid people file" );
 
             SortFloors( building.FloorList );
 
             foreach ( var floor in building.FloorList )
             {
                 FloorWrapper fw = GetSpecifiedFloor( floor.Number );
-                System.Diagnostics.Debug.Assert( fw.Number == floor.Number );
-
                 fw.LoadPeople( floor );
             }
             return true;
