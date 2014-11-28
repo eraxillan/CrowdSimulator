@@ -308,13 +308,18 @@ namespace GeometryTypes
     }
 
     /// <remarks/>
-    [System.Xml.Serialization.XmlIncludeAttribute(typeof(TFlight))]
-    [System.Xml.Serialization.XmlIncludeAttribute(typeof(TPlatform))]
-    [System.Xml.Serialization.XmlIncludeAttribute(typeof(TBox))]
-    [System.CodeDom.Compiler.GeneratedCodeAttribute("xsd", "4.0.30319.33440")]
+    [System.Xml.Serialization.XmlIncludeAttribute( typeof( TAperture ) )]
+    [System.Xml.Serialization.XmlIncludeAttribute( typeof( TStairway ) )]
+    [System.Xml.Serialization.XmlIncludeAttribute( typeof( TFlight ) )]
+    [System.Xml.Serialization.XmlIncludeAttribute( typeof( TPlatform ) )]
+    [System.Xml.Serialization.XmlIncludeAttribute( typeof( TBox ) )]
+    [System.Xml.Serialization.XmlIncludeAttribute( typeof( TRoom ) )]
+    [System.Xml.Serialization.XmlIncludeAttribute( typeof( TFloor ) )]
+    [System.Xml.Serialization.XmlIncludeAttribute( typeof( TBuilding ) )]
+    [System.CodeDom.Compiler.GeneratedCodeAttribute( "xsd", "4.0.30319.33440" )]
     [System.SerializableAttribute()]
     [System.Diagnostics.DebuggerStepThroughAttribute()]
-    [System.ComponentModel.DesignerCategoryAttribute("code")]
+    [System.ComponentModel.DesignerCategoryAttribute( "code" )]
     public abstract partial class TGeometryItem : object, System.ComponentModel.INotifyPropertyChanged
     {
         private string classNameField;
@@ -333,7 +338,7 @@ namespace GeometryTypes
             set
             {
                 this.classNameField = value;
-                this.RaisePropertyChanged("ClassName");
+                this.RaisePropertyChanged( "ClassName" );
             }
         }
 
@@ -347,7 +352,7 @@ namespace GeometryTypes
             set
             {
                 this.idField = value;
-                this.RaisePropertyChanged("Id");
+                this.RaisePropertyChanged( "Id" );
             }
         }
 
@@ -361,7 +366,7 @@ namespace GeometryTypes
             set
             {
                 this.typeField = value;
-                this.RaisePropertyChanged("Type");
+                this.RaisePropertyChanged( "Type" );
             }
         }
 
@@ -402,12 +407,12 @@ namespace GeometryTypes
 
         public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
 
-        protected void RaisePropertyChanged(string propertyName)
+        protected void RaisePropertyChanged( string propertyName )
         {
             System.ComponentModel.PropertyChangedEventHandler propertyChanged = this.PropertyChanged;
-            if ((propertyChanged != null))
+            if ( ( propertyChanged != null ) )
             {
-                propertyChanged(this, new System.ComponentModel.PropertyChangedEventArgs(propertyName));
+                propertyChanged( this, new System.ComponentModel.PropertyChangedEventArgs( propertyName ) );
             }
         }
     }
