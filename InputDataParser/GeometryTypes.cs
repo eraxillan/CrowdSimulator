@@ -62,6 +62,12 @@ namespace GeometryTypes
                 this.RaisePropertyChanged("Roof");
             }
         }
+
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public override bool CanBeApertureTarget
+        {
+            get { return false; }
+        }
     }
 
     /// <remarks/>
@@ -120,6 +126,12 @@ namespace GeometryTypes
                 this.RaisePropertyChanged("ApertureList");
             }
         }
+
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public override bool CanBeApertureTarget
+        {
+            get { return false; }
+        }
     }
 
     /// <remarks/>
@@ -176,6 +188,12 @@ namespace GeometryTypes
                 this.massField = value;
                 this.RaisePropertyChanged("Mass");
             }
+        }
+
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public override bool CanBeApertureTarget
+        {
+            get { return false; }
         }
     }
 
@@ -281,6 +299,12 @@ namespace GeometryTypes
                 this.RaisePropertyChanged("Z2");
             }
         }
+
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public override bool CanBeApertureTarget
+        {
+            get { return true; }
+        }
     }
 
     /// <remarks/>
@@ -368,6 +392,12 @@ namespace GeometryTypes
                 this.nameFieldSpecified = value;
                 this.RaisePropertyChanged( "NameSpecified" );
             }
+        }
+
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public abstract bool CanBeApertureTarget
+        {
+            get;
         }
 
         public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
@@ -635,6 +665,12 @@ namespace GeometryTypes
                 this.RaisePropertyChanged("Angle");
             }
         }
+
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public override bool CanBeApertureTarget
+        {
+            get { return false; }
+        }
     }
 
     /// <remarks/>
@@ -734,6 +770,12 @@ namespace GeometryTypes
                 this.RaisePropertyChanged("Z2");
             }
         }
+
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public override bool CanBeApertureTarget
+        {
+            get { return true; }
+        }
     }
 
     /// <remarks/>
@@ -757,6 +799,12 @@ namespace GeometryTypes
                 this.geometryField = value;
                 this.RaisePropertyChanged("Geometry");
             }
+        }
+
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public override bool CanBeApertureTarget
+        {
+            get { return false; }
         }
     }
 
@@ -1161,6 +1209,12 @@ namespace GeometryTypes
                 this.angleFieldSpecified = value;
                 this.RaisePropertyChanged( "AngleSpecified" );
             }
+        }
+
+        [System.Xml.Serialization.XmlIgnoreAttribute()]
+        public override bool CanBeApertureTarget
+        {
+            get { return false; }
         }
     }
 }

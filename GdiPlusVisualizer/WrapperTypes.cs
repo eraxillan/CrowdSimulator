@@ -148,6 +148,11 @@ namespace SigmaDC.Types
         {
             get { return m_geometryItem.Type; }
         }
+
+        public bool CanBeApertureTarget
+        {
+            get { return m_geometryItem.CanBeApertureTarget; }
+        }
     }
 
     //---------------------------------------------------------------------------------------------
@@ -1007,6 +1012,9 @@ namespace SigmaDC.Types
             }
 
             // Load stairways
+            // Assign each stairway to floors: one half to i-th floor and another to the i+1-th
+            // Detection method: each floor must have apertures opening/closing to the some stairway items,
+            // currently boxes and platforms
             m_stairways = new List<StairwayWrapper>( FloorCount );
             for ( int i = 0; i < m_building.StairwayList.Count(); ++i )
             {
@@ -1017,8 +1025,7 @@ namespace SigmaDC.Types
 
                 foreach ( var gi in m_stairways[ i ].Geometry )
                 {
-                    // FIXME: replace this ugly OOP-forbidden construction to the virtual function/property
-                    if ( !( gi is BoxWrapper ) && !( gi is PlatformWrapper ) ) continue;
+                    if ( !gi.CanBeApertureTarget ) continue;
 
                     // FIXME: ensure that one stairway has added only one time to each floor; i.e. no duplicates are allowed
                     foreach ( var floor in Floors )
@@ -1040,6 +1047,7 @@ namespace SigmaDC.Types
                     }
                 }
             }
+            m_stairways = null;
 
             m_geometryItem = m_building;
             return true;
