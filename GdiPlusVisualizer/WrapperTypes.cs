@@ -31,13 +31,15 @@ using System.Windows.Forms;
 
 namespace SigmaDC.Types
 {
-    class HumanWrapper : IBaseObject, IVisualisable
+    public class HumanWrapper : IBaseObject, IVisualisable
     {
         PeopleTypes.TMan m_human;
+        float m_diameter;
 
         public HumanWrapper( PeopleTypes.TMan human )
         {
             m_human = human;
+            m_diameter = 2 * ( float )Math.Sqrt( m_human.Size / ( float )Math.PI );
         }
 
         public int Id
@@ -54,6 +56,11 @@ namespace SigmaDC.Types
         public int Type
         {
             get { return m_human.Type; }
+        }
+
+        public float Diameter
+        {
+            get { return m_diameter; }
         }
 
         public void Draw( Graphics g )
@@ -157,7 +164,7 @@ namespace SigmaDC.Types
 
     //---------------------------------------------------------------------------------------------
 
-    class ApertureWrapper : GeometryItemWrapper, IVisualisable
+    public class ApertureWrapper : GeometryItemWrapper, IVisualisable
     {
         GeometryTypes.TAperture m_aperture = null;
 
@@ -281,7 +288,7 @@ namespace SigmaDC.Types
         }
     }
 
-    class FurnitureWrapper : CashableCuboid, IBaseObject, IVisualisable
+    public class FurnitureWrapper : CashableCuboid, IBaseObject, IVisualisable
     {
         FurnitureTypes.TFurnitureItem m_furniture = null;
 
@@ -389,7 +396,7 @@ namespace SigmaDC.Types
         }
     }
 
-    class FlightWrapper : GeometryItemWrapper, IVisualisable
+    public class FlightWrapper : GeometryItemWrapper, IVisualisable
     {
         GeometryTypes.TFlight m_flight = null;
 
@@ -455,7 +462,7 @@ namespace SigmaDC.Types
         }
     }
 
-    class PlatformWrapper : GeometryItemWrapper, IVisualisable
+    public class PlatformWrapper : GeometryItemWrapper, IVisualisable
     {
         GeometryTypes.TPlatform m_platform = null;
 
@@ -504,7 +511,7 @@ namespace SigmaDC.Types
         }
     }
 
-    class StairwayWrapper : GeometryItemWrapper, IVisualisable
+    public class StairwayWrapper : GeometryItemWrapper, IVisualisable
     {
         GeometryTypes.TStairway m_stairway = null;
         List<GeometryItemWrapper> m_items = null;
@@ -593,7 +600,7 @@ namespace SigmaDC.Types
         }
     }
 
-    class BoxWrapper : GeometryItemWrapper, IVisualisable
+    public class BoxWrapper : GeometryItemWrapper, IVisualisable
     {
         GeometryTypes.TBox m_box = null;
         Font m_textFont = null;
@@ -700,7 +707,7 @@ namespace SigmaDC.Types
         }
     }
 
-    class RoomWrapper : GeometryItemWrapper, IVisualisable
+    public class RoomWrapper : GeometryItemWrapper, IVisualisable
     {
         GeometryTypes.TRoom m_room = null;
         List<BoxWrapper> m_boxes = null;
@@ -766,7 +773,7 @@ namespace SigmaDC.Types
         }
     }
 
-    class FloorWrapper : GeometryItemWrapper, IVisualisable
+    public class FloorWrapper : GeometryItemWrapper, IVisualisable
     {
         GeometryTypes.TFloor m_floor = null;
         List<RoomWrapper> m_rooms = null;
@@ -811,6 +818,22 @@ namespace SigmaDC.Types
             get { return m_floor.Number; }
         }
 
+        public List<BoxWrapper> Geometry
+        {
+            get
+            {
+                List<BoxWrapper> boxes = new List<BoxWrapper>();
+                foreach( var r in m_rooms )
+                {
+                    foreach( var b in r.Boxes )
+                    {
+                        boxes.Add( b );
+                    }
+                }
+                return boxes;
+            }
+        }
+
         public List<ApertureWrapper> Apertures
         {
             get { return m_apertures; }
@@ -822,7 +845,7 @@ namespace SigmaDC.Types
             set { m_stairways = value; }
         }
 
-        /*public List<FurnitureWrapper> Furniture
+        public List<FurnitureWrapper> Furniture
         {
             get { return m_furniture; }
         }
@@ -830,7 +853,7 @@ namespace SigmaDC.Types
         public List<HumanWrapper> People
         {
             get { return m_people; }
-        }*/
+        }
 
         public ApertureWrapper FindAperture( int id )
         {
@@ -854,6 +877,54 @@ namespace SigmaDC.Types
                 }
             }
             return boxes;
+        }
+
+        public List<ApertureWrapper> Exits
+        {
+            get
+            {
+                var exits = new List<ApertureWrapper>();
+                foreach ( var aper in m_apertures )
+                {
+                    if ( aper.Type == 3 )
+                    {
+                        exits.Add( aper );
+                    }
+                }
+                return exits;
+            }
+        }
+
+        public List<ApertureWrapper> Windows
+        {
+            get
+            {
+                var windows = new List<ApertureWrapper>();
+                foreach ( var aper in m_apertures )
+                {
+                    if ( ( aper.Type == 1 ) )
+                    {
+                        windows.Add( aper );
+                    }
+                }
+                return windows;
+            }
+        }
+
+        public List<ApertureWrapper> FakeApertures
+        {
+            get
+            {
+                var fakes = new List<ApertureWrapper>();
+                foreach ( var aper in m_apertures )
+                {
+                    if ( ( aper.Type == 2 ) )
+                    {
+                        fakes.Add( aper );
+                    }
+                }
+                return fakes;
+            }
         }
 
         public void Draw( Graphics g )
@@ -890,7 +961,7 @@ namespace SigmaDC.Types
         }
     }
 
-    class BuildingWrapper : GeometryItemWrapper, IVisualisable
+    public class BuildingWrapper : GeometryItemWrapper, IVisualisable
     {
         GeometryTypes.TBuilding m_building = null;
         int m_floorNumber = -1;
@@ -1186,6 +1257,20 @@ namespace SigmaDC.Types
         public FloorWrapper CurrentFloor
         {
             get { return GetSpecifiedFloor( m_floorNumber ); }
+        }
+
+        public float MinHumanDiameter
+        {
+            get
+            {
+                float minHumanDiameter = float.PositiveInfinity;
+                foreach ( var human in CurrentFloor.People )
+                {
+                    if ( human.Diameter < minHumanDiameter )
+                        minHumanDiameter = human.Diameter;
+                }
+                return minHumanDiameter;
+            }
         }
 
         public void Draw( Graphics g )
