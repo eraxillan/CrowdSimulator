@@ -41,11 +41,15 @@ namespace GdiPlusVisualizer
         string m_currentDir;
         BuildingWrapper m_building = null;
         float m_scale = 1.0f;
-        PointF m_panPoint;
+        PointF m_panPoint, m_panPointOrig;
         Dictionary<RectangleF, BoxWrapper> m_boxMap = null;
         RectangleF m_currentBoxExtents;
         RectangleF m_fixedBoxExtents;
-        bool m_keepAspectRatio = true;
+        bool m_keepAspectRatio = false;
+        bool m_drawBuilding = true;
+        bool m_drawGrid = false;
+        bool m_imageIsPanning = false;
+        float m_a = 0.1f;
 
         public DrawForm()
         {
@@ -161,7 +165,7 @@ namespace GdiPlusVisualizer
 
             // Find the scale to fit the control
             float SX, SY;
-            if ( m_keepAspectRatio )
+            if ( !m_keepAspectRatio )
             {
                 // Canvas space will be fully used, but circle will looks like ellipse
                 SX = W / domain.Width;
@@ -179,6 +183,8 @@ namespace GdiPlusVisualizer
             {
                 m_panPoint = new PointF( OX, OY );
                 lblPan.Text = "Pan (device): " + PointFToString( m_panPoint );
+
+                m_panPointOrig = m_panPoint;
             }
 
             g.TranslateTransform( m_panPoint.X, m_panPoint.Y, MatrixOrder.Append );
@@ -200,6 +206,47 @@ namespace GdiPlusVisualizer
             ScaleGraphics( g, pbVisualizator, range, margin );
         }
 
+        void DrawCellularGrid( Graphics g )
+        {
+            float w = m_building.Extents.Width;
+            float h = m_building.Extents.Height;
+
+            int M = 0;
+            int N = 0;
+
+            float x0 = m_building.Extents.Left - m_a;
+            float y0 = m_building.Extents.Top - m_a;
+
+            float x = x0;
+            while ( x <= m_building.Extents.Right + m_a )
+            {
+                M++;
+                x += m_a;
+            }
+
+            float y = y0;
+            while ( y <= m_building.Extents.Bottom + m_a )
+            {
+                N++;
+                y += m_a;
+            }
+
+            for ( int i = 0; i < M; ++i )
+            {
+                for ( int j = 0; j < N; ++j )
+                {
+                    RectangleF cellRect = new RectangleF( x0 + i * m_a, y0 + j * m_a, m_a, m_a );
+                    using ( var aquaPen = new Pen( Color.LightSteelBlue, 0.5f / g.DpiX ) )
+                    {
+                        g.DrawRectangle( aquaPen, cellRect.Left, cellRect.Top, m_a, m_a );
+                    }
+                }
+            }
+
+            // FIXME: implement
+//            CalcDistanceField( M, N, a, x0, y0, g );
+        }
+
         private void DrawForm_Resize( object sender, EventArgs e )
         {
             Refresh();
@@ -213,7 +260,7 @@ namespace GdiPlusVisualizer
 
             // FIXME: this "blurs" line
             // Smooth graphics output and scale
- //           g.SmoothingMode = SmoothingMode.HighQuality;
+//           g.SmoothingMode = SmoothingMode.HighQuality;
             g.SmoothingMode = SmoothingMode.None;
             ScaleGraphics( g );
 
@@ -232,7 +279,8 @@ namespace GdiPlusVisualizer
                 g.DrawRectangle( pen, range.X, range.Y, range.Width, range.Height );
             }
 #endif
-            m_building.Draw( g );
+
+            if ( m_drawBuilding ) m_building.Draw( g );
 
             // Highlight current box rectangle (the one under mouse cursor)
             if ( !m_currentBoxExtents.IsEmpty )
@@ -251,6 +299,8 @@ namespace GdiPlusVisualizer
                     g.DrawRectangle( limePen, m_fixedBoxExtents.X, m_fixedBoxExtents.Y, m_fixedBoxExtents.Width, m_fixedBoxExtents.Height );
                 }
             }
+
+            if ( m_drawGrid ) DrawCellularGrid( g );
         }
 
         private void pbVisualizator_MouseEnter( object sender, EventArgs e )
@@ -262,18 +312,9 @@ namespace GdiPlusVisualizer
         {
             if ( m_building == null ) return;
 
-            if ( e.Button == System.Windows.Forms.MouseButtons.Left )
+            if ( e.Button == MouseButtons.Left )
             {
-                m_panPoint = e.Location;
-
-                using ( Graphics g = Graphics.FromHwnd( IntPtr.Zero ) )
-                {
-                    ScaleGraphics( g );
-
-                    PointF[] pt = { m_panPoint };
-                    g.TransformPoints( CoordinateSpace.World, CoordinateSpace.Device, pt );
-                    lblPan.Text = "Pan (device): " + PointFToString( m_panPoint );
-                }
+                m_imageIsPanning = true;
             }
             else if ( e.Button == System.Windows.Forms.MouseButtons.Right )
             {
@@ -287,9 +328,60 @@ namespace GdiPlusVisualizer
             pbVisualizator.Refresh();
         }
 
+        private void pbVisualizator_MouseUp( object sender, MouseEventArgs e )
+        {
+            if ( m_imageIsPanning )
+            {
+                m_imageIsPanning = false;
+            }
+        }
+
         private void pbVisualizator_MouseMove( object sender, MouseEventArgs e )
         {
             if ( m_building == null ) return;
+
+            if ( m_drawGrid )
+            {
+                float x0 = m_building.Extents.Left - m_a;
+                float y0 = m_building.Extents.Top - m_a;
+                float xMax = m_building.Extents.Right + m_a;
+                float yMax = m_building.Extents.Bottom + m_a;
+                System.Diagnostics.Debug.Assert( m_building.Extents.Bottom > m_building.Extents.Top );
+                float x;
+                float y;
+                using ( Graphics g = Graphics.FromHwnd( IntPtr.Zero ) )
+                {
+                    ScaleGraphics( g );
+
+                    PointF[] ptDevice = { e.Location };
+                    g.TransformPoints( CoordinateSpace.World, CoordinateSpace.Device, ptDevice );
+//                    this.Text = PointFToString( ptDevice[ 0 ] );
+
+                    PointF ptWorld = ptDevice[ 0 ];
+                    x = ptWorld.X;
+                    y = ptWorld.Y;
+                }
+
+                if ( x < x0 || y < y0 || x > xMax || y > yMax )
+                {
+                    lblCurrentCell.Text = "Current cell: <unknown>";
+                }
+                else
+                {
+                    int i = ( int )( ( x - x0 ) / m_a );
+                    int j = ( int )( ( y - y0 ) / m_a );
+                    lblCurrentCell.Text = "Current cell: ( " + i + ", " + j + " )";
+                }
+            }
+
+            if ( m_imageIsPanning )
+            {
+                // NOTE: device coords
+                m_panPoint = e.Location;
+                pbVisualizator.Refresh();
+
+                lblPan.Text = "Pan (device): " + PointFToString( m_panPoint );
+            }
 
             // Convert mouse cursor coordinates (device) to world ones (Cartesian)
             // NOTE: We need separate Graphics object to do this; e.Graphics is valid only inside paint event handler
@@ -297,7 +389,7 @@ namespace GdiPlusVisualizer
             using ( Graphics g = Graphics.FromHwnd( IntPtr.Zero ) )
             {
                 ScaleGraphics( g );
-    
+
                 g.TransformPoints( CoordinateSpace.World, CoordinateSpace.Device, pt );
                 lblCursorPos.Text = "Cursor position (world): " + PointFToString( pt[ 0 ] );
             }
@@ -377,6 +469,10 @@ namespace GdiPlusVisualizer
                 lstDataFiles.Items[ 1 ].ToolTipText = dlgDataDir.SelectedPath + Path.DirectorySeparatorChar + m_building.GetAperturesFileName();
                 lstDataFiles.Items[ 2 ].ToolTipText = dlgDataDir.SelectedPath + Path.DirectorySeparatorChar + m_building.GetFurnitureFileName();
                 lstDataFiles.Items[ 3 ].ToolTipText = dlgDataDir.SelectedPath + Path.DirectorySeparatorChar + m_building.GetPeopleFileName();
+
+                // NOTE: cellular grid step should be smaller than the smallest human diameter, i.e. a <= min( d )
+                float minHumanDiameter = m_building.MinHumanDiameter;
+                m_a = minHumanDiameter * 0.30f; // Default: 0.1 meter, i.e. 10 cm
             }
         }
 
@@ -417,5 +513,94 @@ namespace GdiPlusVisualizer
             m_keepAspectRatio = !m_keepAspectRatio;
             pbVisualizator.Refresh();
         }
+
+        private void mnuVisualizationDrawBulding_Click( object sender, EventArgs e )
+        {
+            m_drawBuilding = !m_drawBuilding;
+            pbVisualizator.Refresh();
+        }
+
+        private void mnuVisualizationDrawCellularGrid_Click( object sender, EventArgs e )
+        {
+            m_drawGrid = !m_drawGrid;
+            lblCurrentCell.Visible = m_drawGrid;
+            pbVisualizator.Refresh();
+        }
+
+        private void DrawForm_KeyPress( object sender, KeyPressEventArgs e )
+        {
+            const float zoomConst = 0.1f;
+            const int moveConst = 20;
+            switch ( char.ToLower( e.KeyChar ) )
+            {
+                case 'w':
+                {
+                    m_panPoint.Y -= moveConst;
+                    break;
+                }
+                case 's':
+                {
+                    m_panPoint.Y += moveConst;
+                    break;
+                }
+                case 'a':
+                {
+                    m_panPoint.X -= moveConst;
+                    break;
+                }
+                case 'd':
+                {
+                    m_panPoint.X += moveConst;
+                    break;
+                }
+                case 'n':
+                {
+                    m_panPoint = m_panPointOrig;
+                    m_scale = 1;
+                    break;
+                }
+                case '+':
+                {
+                    m_scale += zoomConst;
+                    if ( Math.Abs( m_scale ) <= 0.1 ) m_scale = 0.1f;
+                    break;
+                }
+                case '-':
+                {
+                    m_scale -= zoomConst;
+                    if ( Math.Abs( m_scale ) <= 0.1 ) m_scale = 0.1f;
+                    break;
+                }
+                case 'b':
+                {
+                    m_drawBuilding = !m_drawBuilding;
+                    break;
+                }
+                case 'g':
+                {
+                    m_drawGrid = !m_drawGrid;
+                    lblCurrentCell.Visible = m_drawGrid;
+                    break;
+                }
+            }
+
+            if ( e.KeyChar == 'w' || e.KeyChar == 's' || e.KeyChar == 'a' || e.KeyChar == 'd' || e.KeyChar == 'n' )
+            {
+                lblPan.Text = "Pan (device): " + PointFToString( m_panPoint );
+                pbVisualizator.Refresh();
+            }
+
+            if ( e.KeyChar == '+' || e.KeyChar == '-' )
+            {
+                lblScale.Text = "Scale: " + Math.Round( m_scale * 100 ) + "%";
+                pbVisualizator.Refresh();
+            }
+
+            if ( e.KeyChar == 'b' || e.KeyChar == 'g' )
+            {
+                pbVisualizator.Refresh();
+            }
+        }     
     }
 }
+
