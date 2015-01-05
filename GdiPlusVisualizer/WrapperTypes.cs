@@ -919,19 +919,24 @@ namespace SigmaDC.Types
             return boxes;
         }
 
+        List<ApertureWrapper> GetAperturesOfType( int type )
+        {
+            var apertures = new List<ApertureWrapper>();
+            foreach ( var aper in m_apertures )
+            {
+                if ( ( aper.Type == type ) )
+                {
+                    apertures.Add( aper );
+                }
+            }
+            return apertures;
+        }
+
         public List<ApertureWrapper> Doors
         {
             get
             {
-                var windows = new List<ApertureWrapper>();
-                foreach ( var aper in m_apertures )
-                {
-                    if ( ( aper.Type == 0 ) )
-                    {
-                        windows.Add( aper );
-                    }
-                }
-                return windows;
+                return GetAperturesOfType( 0 );
             }
         }
 
@@ -939,15 +944,7 @@ namespace SigmaDC.Types
         {
             get
             {
-                var windows = new List<ApertureWrapper>();
-                foreach ( var aper in m_apertures )
-                {
-                    if ( ( aper.Type == 1 ) )
-                    {
-                        windows.Add( aper );
-                    }
-                }
-                return windows;
+                return GetAperturesOfType( 1 );
             }
         }
 
@@ -955,15 +952,7 @@ namespace SigmaDC.Types
         {
             get
             {
-                var fakes = new List<ApertureWrapper>();
-                foreach ( var aper in m_apertures )
-                {
-                    if ( ( aper.Type == 2 ) )
-                    {
-                        fakes.Add( aper );
-                    }
-                }
-                return fakes;
+                return GetAperturesOfType( 2 );
             }
         }
 
@@ -971,15 +960,7 @@ namespace SigmaDC.Types
         {
             get
             {
-                var exits = new List<ApertureWrapper>();
-                foreach ( var aper in m_apertures )
-                {
-                    if ( aper.Type == 3 )
-                    {
-                        exits.Add( aper );
-                    }
-                }
-                return exits;
+                return GetAperturesOfType( 3 );
             }
         }
 
