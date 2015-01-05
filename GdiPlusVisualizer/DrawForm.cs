@@ -612,12 +612,14 @@ namespace GdiPlusVisualizer
                 case 'g':
                 {
                     m_drawGrid = !m_drawGrid;
+                    if ( !m_drawGrid ) m_fieldVisMode = MathModel.DistanceField.DrawMode.None;
+
                     lblCurrentCell.Visible = m_drawGrid;
                     break;
                 }
                 case 'm':   // mode
                 {
-                    if( m_drawGrid )
+                    if ( m_drawGrid )
                     {
                         m_fieldVisMode = ( MathModel.DistanceField.DrawMode )( ( int )m_fieldVisMode + 1 );
                         if ( ( int )m_fieldVisMode > ( int )MathModel.DistanceField.DrawMode.Count )
@@ -626,6 +628,7 @@ namespace GdiPlusVisualizer
                         }
                         m_distField.SetDrawMode( m_fieldVisMode );
                     }
+
                     break;
                 }
             }
@@ -860,9 +863,10 @@ namespace MathModel
             return false;
         }
 
-        public double[,] CalcDistanceField()
+        public int[,] CalcGField()
         {
             var G = new int[ m_M, m_N ];
+
             for ( int i = 0; i < m_M; ++i )
             {
                 for ( int j = 0; j < m_N; ++j )
@@ -883,7 +887,7 @@ namespace MathModel
                     }
 
                     // Check whether G[i,j] intersects with an door aperture/exit aperture part
-                    if( IntersectInnerDoor( cellRect ) )
+                    if ( IntersectInnerDoor( cellRect ) )
                     {
                         continue;
                     }
@@ -924,9 +928,13 @@ namespace MathModel
                 }
             }
 
-            m_G = G;
+            return G;
+        }
 
-            int nullCellsCount = 0;
+        public double[,] InitSField( out int emptyCellCount )
+        {
+            emptyCellCount = 0;
+
             var S = new double[ m_M, m_N ];
             // Init distance field
             for ( int i = 0; i < m_M; ++i )
@@ -936,27 +944,32 @@ namespace MathModel
                     float cellX = m_x0 + m_a * i;
                     float cellY = m_y0 + m_a * j;
 
-                    if ( G[ i, j ] == 0 )   // obstacle
+                    if ( m_G[ i, j ] == 0 )   // obstacle
                     {
                         S[ i, j ] = m_M * m_N;
                     }
-                    else if ( G[ i, j ] > 0 ) // exit
+                    else if ( m_G[ i, j ] > 0 ) // exit
                     {
                         S[ i, j ] = 1;
                     }
                     else
                     {
                         S[ i, j ] = 0;
-                        nullCellsCount++;
+                        emptyCellCount++;
                     }
                 }
             }
 
+            return S;
+        }
+
+        public void CalcSField( double[ , ] S, ref int emptyCellCount )
+        {
             double sqrt_2 = Math.Sqrt( 2 );
             double sqrt_5 = Math.Sqrt( 5 );
 
             // Field traversal
-            while ( nullCellsCount >= 1 )
+            while ( emptyCellCount >= 1 )
             {
                 for ( int i = 0; i < m_M; ++i )
                 {
@@ -1081,14 +1094,22 @@ namespace MathModel
                             System.Diagnostics.Debug.Assert( minStep > 0 );
 
                             S[ i, j ] = minStep;
-                            nullCellsCount--;
+                            emptyCellCount--;
                         }
                     }
                 }
             }
+        }
 
-            m_S = S;
-            return S;
+        public double[,] CalcDistanceField()
+        {
+            m_G = CalcGField();
+
+            int emptyCellCount;
+            m_S = InitSField( out emptyCellCount );
+            CalcSField( m_S, ref emptyCellCount );
+
+            return m_S;
         }
 
         public void SetDrawMode( DrawMode dm )
