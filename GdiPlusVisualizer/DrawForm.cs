@@ -47,9 +47,13 @@ namespace GdiPlusVisualizer
         RectangleF m_fixedBoxExtents;
         bool m_keepAspectRatio = false;
         bool m_drawBuilding = true;
+        bool m_drawFurniture = true;
+        bool m_drawPeople = true;
         bool m_drawGrid = false;
         bool m_imageIsPanning = false;
         float m_a = 0.1f;
+        bool m_highlightBoxes = false;
+        double[ , ] m_S = null;
 
         public DrawForm()
         {
@@ -214,8 +218,8 @@ namespace GdiPlusVisualizer
             int M = 0;
             int N = 0;
 
-            float x0 = m_building.Extents.Left - m_a;
-            float y0 = m_building.Extents.Top - m_a;
+            float x0 = m_building.Extents.Left - m_a/2;
+            float y0 = m_building.Extents.Top - m_a/2;
 
             float x = x0;
             while ( x <= m_building.Extents.Right + m_a )
@@ -231,7 +235,7 @@ namespace GdiPlusVisualizer
                 y += m_a;
             }
 
-            for ( int i = 0; i < M; ++i )
+            /*for ( int i = 0; i < M; ++i )
             {
                 for ( int j = 0; j < N; ++j )
                 {
@@ -241,10 +245,10 @@ namespace GdiPlusVisualizer
                         g.DrawRectangle( aquaPen, cellRect.Left, cellRect.Top, m_a, m_a );
                     }
                 }
-            }
+            }*/
 
-            // FIXME: implement
-//            CalcDistanceField( M, N, a, x0, y0, g );
+            var S = new MathModel.DistanceField( m_building, m_a, true, false );
+            m_S = S.CalcDistanceField( M, N, x0, y0, g );
         }
 
         private void DrawForm_Resize( object sender, EventArgs e )
@@ -280,23 +284,33 @@ namespace GdiPlusVisualizer
             }
 #endif
 
-            if ( m_drawBuilding ) m_building.Draw( g );
-
-            // Highlight current box rectangle (the one under mouse cursor)
-            if ( !m_currentBoxExtents.IsEmpty )
+            if ( m_drawBuilding )
             {
-                using ( var bluePen = new Pen( Color.Blue, 1.0f / g.DpiX ) )
-                {
-                    g.DrawRectangle( bluePen, m_currentBoxExtents.X, m_currentBoxExtents.Y, m_currentBoxExtents.Width, m_currentBoxExtents.Height );
-                }
+                Dictionary<string, object> options = new Dictionary<string, object>();
+                options[ "drawFurniture" ] = m_drawFurniture;
+                options[ "drawPeople" ] = m_drawPeople;
+                m_building.SetDrawOptions( options );
+                m_building.Draw( g );
             }
 
-            // Highlight fixed box rectangle (the one user clicks with the right mouse button)
-            if ( !m_fixedBoxExtents.IsEmpty )
+            if ( m_highlightBoxes )
             {
-                using ( var limePen = new Pen( Color.Lime, 2.0f / g.DpiX ) )
+                // Highlight current box rectangle (the one under mouse cursor)
+                if ( !m_currentBoxExtents.IsEmpty )
                 {
-                    g.DrawRectangle( limePen, m_fixedBoxExtents.X, m_fixedBoxExtents.Y, m_fixedBoxExtents.Width, m_fixedBoxExtents.Height );
+                    using ( var bluePen = new Pen( Color.Blue, 1.0f / g.DpiX ) )
+                    {
+                        g.DrawRectangle( bluePen, m_currentBoxExtents.X, m_currentBoxExtents.Y, m_currentBoxExtents.Width, m_currentBoxExtents.Height );
+                    }
+                }
+
+                // Highlight fixed box rectangle (the one user clicks with the right mouse button)
+                if ( !m_fixedBoxExtents.IsEmpty )
+                {
+                    using ( var limePen = new Pen( Color.Lime, 2.0f / g.DpiX ) )
+                    {
+                        g.DrawRectangle( limePen, m_fixedBoxExtents.X, m_fixedBoxExtents.Y, m_fixedBoxExtents.Width, m_fixedBoxExtents.Height );
+                    }
                 }
             }
 
@@ -342,8 +356,8 @@ namespace GdiPlusVisualizer
 
             if ( m_drawGrid )
             {
-                float x0 = m_building.Extents.Left - m_a;
-                float y0 = m_building.Extents.Top - m_a;
+                float x0 = m_building.Extents.Left - m_a/2;
+                float y0 = m_building.Extents.Top - m_a/2;
                 float xMax = m_building.Extents.Right + m_a;
                 float yMax = m_building.Extents.Bottom + m_a;
                 System.Diagnostics.Debug.Assert( m_building.Extents.Bottom > m_building.Extents.Top );
@@ -370,7 +384,13 @@ namespace GdiPlusVisualizer
                 {
                     int i = ( int )( ( x - x0 ) / m_a );
                     int j = ( int )( ( y - y0 ) / m_a );
-                    lblCurrentCell.Text = "Current cell: ( " + i + ", " + j + " )";
+                    // FIXME: why i and j are transposed?
+                    lblCurrentCell.Text = "Current cell: ( " + j + ", " + i + " )";
+
+                    if(m_S != null)
+                    {
+                        lblCurrentCell.Text += ", S[ " + j + ", " + i + " ] = " + m_S[ i, j ].ToString( "f3" );
+                    }
                 }
             }
 
@@ -397,26 +417,29 @@ namespace GdiPlusVisualizer
             if ( m_currentBoxExtents.Contains( pt[ 0 ] ) || !m_fixedBoxExtents.IsEmpty )
                 return;
 
-            foreach ( var bm in m_boxMap )
+            if ( m_highlightBoxes )
             {
-                if ( bm.Key.Contains( pt[ 0 ] ) )
+                foreach ( var bm in m_boxMap )
                 {
-                    m_currentBoxExtents = bm.Key;
+                    if ( bm.Key.Contains( pt[ 0 ] ) )
+                    {
+                        m_currentBoxExtents = bm.Key;
 
-                    grdProps.SelectedObject = bm.Value;
-                    grdProps.Refresh();
+                        grdProps.SelectedObject = bm.Value;
+                        grdProps.Refresh();
 
-                    pbVisualizator.Refresh();
-                    return;
+                        pbVisualizator.Refresh();
+                        return;
+                    }
                 }
-            }
 
-            if ( ( grdProps.SelectedObject != null ) && m_fixedBoxExtents.IsEmpty )
-            {
-                grdProps.SelectedObject = null;
-                m_currentBoxExtents = RectangleF.Empty;
-                grdProps.Refresh();
-                pbVisualizator.Refresh();
+                if ( ( grdProps.SelectedObject != null ) && m_fixedBoxExtents.IsEmpty )
+                {
+                    grdProps.SelectedObject = null;
+                    m_currentBoxExtents = RectangleF.Empty;
+                    grdProps.Refresh();
+                    pbVisualizator.Refresh();
+                }
             }
         }
 
@@ -432,8 +455,9 @@ namespace GdiPlusVisualizer
             var absolutePath = Path.Combine( Directory.GetCurrentDirectory(), @"..\..\..\Data\KinderGarten" );
             dlgDataDir.SelectedPath = Path.GetFullPath( ( new Uri( absolutePath ) ).LocalPath );
 
+            // FIXME: uncomment
             // Let user select data directory
-            if ( dlgDataDir.ShowDialog() == DialogResult.OK )
+//            if ( dlgDataDir.ShowDialog() == DialogResult.OK )
             {
                 // Get the last directory of the path
                 m_currentDir = new DirectoryInfo( dlgDataDir.SelectedPath ).Name;
@@ -571,6 +595,11 @@ namespace GdiPlusVisualizer
                     if ( Math.Abs( m_scale ) <= 0.1 ) m_scale = 0.1f;
                     break;
                 }
+                case 'h':
+                {
+                    m_highlightBoxes = !m_highlightBoxes;
+                    break;
+                }
                 case 'b':
                 {
                     m_drawBuilding = !m_drawBuilding;
@@ -580,6 +609,16 @@ namespace GdiPlusVisualizer
                 {
                     m_drawGrid = !m_drawGrid;
                     lblCurrentCell.Visible = m_drawGrid;
+                    break;
+                }
+                case 'f':
+                {
+                    m_drawFurniture = !m_drawFurniture;
+                    break;
+                }
+                case 'p':
+                {
+                    m_drawPeople = !m_drawPeople;
                     break;
                 }
             }
@@ -596,11 +635,509 @@ namespace GdiPlusVisualizer
                 pbVisualizator.Refresh();
             }
 
-            if ( e.KeyChar == 'b' || e.KeyChar == 'g' )
+            if ( e.KeyChar == 'h' )
             {
                 pbVisualizator.Refresh();
             }
+
+            if ( e.KeyChar == 'b' || e.KeyChar == 'g' || e.KeyChar == 'f' || e.KeyChar == 'p' )
+            {
+                pbVisualizator.Refresh();
+            }
+        }
+
+        private void DrawForm_Load( object sender, EventArgs e )
+        {
+            // FIXME: remove
+            mnuLoadData_Click( sender, e );
         }     
+    }
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+
+namespace MathModel
+{
+    public class DistanceField
+    {
+        BuildingWrapper m_building = null;
+        float m_a = 0.1f;
+        bool m_drawG = false;
+        bool m_drawS = false;
+
+        public DistanceField( BuildingWrapper building, float a, bool drawG = false, bool drawS = false )
+        {
+            m_building = building;
+            m_a = a;
+
+            System.Diagnostics.Debug.Assert( !( drawG && drawS ) );
+            m_drawG = drawG;
+            m_drawS = drawS;
+        }
+
+        static RectangleF NormalizeRect( RectangleF src, float a )
+        {
+            var rect = src;
+            // TODO: what is the correct inflate constant?
+            if ( rect.Width < a ) rect.Inflate( a / 8, 0 );
+            if ( rect.Height < a ) rect.Inflate( 0, a / 8 );
+            return rect;
+        }
+
+        static bool CellIsCornerPoint( RectangleF boxRect, RectangleF cellRect )
+        {
+            PointF leftTop = new PointF( boxRect.Left, boxRect.Top );
+            PointF leftBottom = new PointF( boxRect.Left, boxRect.Bottom );
+            PointF rightTop = new PointF( boxRect.Right, boxRect.Top );
+            PointF rightBottom = new PointF( boxRect.Right, boxRect.Bottom );
+
+            var cellRectTemp = cellRect;
+            cellRectTemp.Inflate( cellRect.Width / 8, cellRect.Height / 8 );
+            if ( cellRectTemp.Contains( leftTop ) ) return true;
+            if ( cellRectTemp.Contains( leftBottom ) ) return true;
+            if ( cellRectTemp.Contains( rightTop ) ) return true;
+            if ( cellRectTemp.Contains( rightTop ) ) return true;
+            return false;
+        }
+
+        bool IntersectBox( RectangleF cellRect )
+        {
+            foreach ( var box in m_building.CurrentFloor.Geometry )
+            {
+                bool b = ( !box.Extents.IsEmpty && ( box.Extents.Top < box.Extents.Bottom ) );
+                if ( !b ) System.Diagnostics.Debugger.Break();
+
+                // We are interesting in those cases to check intersection presents:
+                // TODO: check whether we need to detect tangent to obstacles cells
+                // 1) Cell rectangle is tangent to the box one and entirely contained in it
+                // 2) Cell rectange is tangent to the box one, but from the outer face of it
+                /*const float EPS = 0.000001f;
+                if ( MathUtils.NearlyEqual( box.Extents.Left, cellRect.Left, EPS )
+                        || MathUtils.NearlyEqual( box.Extents.Right, cellRect.Right, EPS )
+                        || MathUtils.NearlyEqual( box.Extents.Top, cellRect.Top, EPS )
+                        || MathUtils.NearlyEqual( box.Extents.Bottom, cellRect.Bottom, EPS ) )
+                    return true;*/
+
+                // 3) Cell rectangle intersect one of the rectangle sides
+                var rect = RectangleF.Intersect( box.Extents, cellRect );
+                if ( ( rect.Width > 0 || rect.Height > 0 ) && !box.Extents.Contains( cellRect ) )
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        bool IntersectFurniture( RectangleF cellRect )
+        {
+            foreach ( var furn in m_building.CurrentFloor.Furniture )
+            {
+                bool b = ( !furn.Extents.IsEmpty && ( furn.Extents.Top < furn.Extents.Bottom ) );
+                if ( !b ) System.Diagnostics.Debugger.Break();
+
+                var rect = RectangleF.Intersect( furn.Extents, cellRect );
+                if ( ( rect.Width > 0 || rect.Height > 0 ) )
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        bool IntersectStairway( RectangleF cellRect )
+        {
+            foreach ( var st in m_building.CurrentFloor.Stairways )
+            {
+                bool b = ( !st.Extents.IsEmpty && ( st.Extents.Top < st.Extents.Bottom ) );
+                if ( !b ) System.Diagnostics.Debugger.Break();
+
+                var rect = RectangleF.Intersect( st.Extents, cellRect );
+                if ( ( rect.Width > 0 || rect.Height > 0 ) && !st.Extents.Contains( cellRect ) )
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        bool IntersectFakeAperture( RectangleF cellRect )
+        {
+            foreach ( var aper in m_building.CurrentFloor.FakeApertures )
+            {
+                bool b = ( ( aper.Extents.Width > 0 || aper.Extents.Height > 0 ) && ( aper.Extents.Top <= aper.Extents.Bottom ) );
+                if ( !b ) System.Diagnostics.Debugger.Break();
+
+                var rect = RectangleF.Intersect( aper.Extents, cellRect );
+                if ( ( rect.Width > 0 || rect.Height > 0 ) && !aper.Extents.Contains( cellRect ) )
+                {
+                    if ( MathUtils.NearlyZero( rect.Height ) )
+                    {
+                        if ( rect.Left == aper.Extents.Left ) continue;
+                        if ( rect.Right == aper.Extents.Right ) continue;
+                    }
+
+                    if ( MathUtils.NearlyZero( rect.Width ) )
+                    {
+                        if ( rect.Top == aper.Extents.Top ) continue;
+                        if ( rect.Bottom == aper.Extents.Bottom ) continue;
+                    }
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        bool IntersectExitDoor( RectangleF cellRect, out int exitId )
+        {
+            exitId = -2;
+
+            for ( int k = 1; k <= m_building.CurrentFloor.Exits.Count; ++k )
+            {
+                var ext = NormalizeRect( m_building.CurrentFloor.Exits[ k - 1 ].Extents, m_a );
+                var rect = RectangleF.Intersect( ext, cellRect );
+                if ( !rect.IsEmpty && !ext.Contains( cellRect ) )
+                {
+                    exitId = k;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        bool IntersectInnerDoor( RectangleF cellRect )
+        {
+            foreach ( var aper in m_building.CurrentFloor.Doors )
+            {
+                bool b = ( ( aper.Extents.Width > 0 || aper.Extents.Height > 0 ) && ( aper.Extents.Top <= aper.Extents.Bottom ) );
+                if ( !b ) System.Diagnostics.Debugger.Break();
+
+                var rect = RectangleF.Intersect( aper.Extents, cellRect );
+                if ( ( rect.Width > 0 || rect.Height > 0 ) && !aper.Extents.Contains( cellRect ) )
+                {
+                    if ( MathUtils.NearlyZero( rect.Height ) )
+                    {
+                        if ( rect.Left == aper.Extents.Left ) continue;
+                        if ( rect.Right == aper.Extents.Right ) continue;
+                    }
+
+                    if ( MathUtils.NearlyZero( rect.Width ) )
+                    {
+                        if ( rect.Top == aper.Extents.Top ) continue;
+                        if ( rect.Bottom == aper.Extents.Bottom ) continue;
+                    }
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        bool IntersectWindow( RectangleF cellRect )
+        {
+            foreach ( var aper in m_building.CurrentFloor.Windows )
+            {
+                bool b = ( ( aper.Extents.Width > 0 || aper.Extents.Height > 0 ) && ( aper.Extents.Top <= aper.Extents.Bottom ) );
+                if ( !b ) System.Diagnostics.Debugger.Break();
+
+                var rect = RectangleF.Intersect( aper.Extents, cellRect );
+                if ( ( rect.Width > 0 || rect.Height > 0 ) && !aper.Extents.Contains( cellRect ) )
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public double[,] CalcDistanceField( int M, int N, float x0, float y0, Graphics g )
+        {
+            var G = new int[ M, N ];
+            for ( int i = 0; i < M; ++i )
+            {
+                for ( int j = 0; j < N; ++j )
+                {
+                    G[ i, j ] = -1; // "empty" cell
+
+                    // Calculate cell rectangle
+                    float cellX = x0 + m_a * i;
+                    float cellY = y0 + m_a * j;
+                    RectangleF cellRect = new RectangleF( cellX, cellY, m_a, m_a );
+
+                    // Check whether G[i,j] intersects with an building exit aperture/exit aperture part
+                    int exitId;
+                    if ( IntersectExitDoor( cellRect, out exitId ) )
+                    {
+                        G[ i, j ] = exitId;
+                        continue;
+                    }
+
+                    // Check whether G[i,j] intersects with an door aperture/exit aperture part
+                    if( IntersectInnerDoor( cellRect ) )
+                    {
+                        continue;
+                    }
+
+                    // Check whether G[i,j] intersects with a wall/wall part
+                    if ( IntersectBox( cellRect ) )
+                    {
+                        if ( !IntersectFakeAperture( cellRect ) )
+                        {
+                            G[ i, j ] = 0;
+                            continue;
+                        }
+                    }
+
+                    // Check whether G[i,j] intersects with a stairway part
+                    if ( IntersectStairway( cellRect ) )
+                    {
+                        if ( !IntersectFakeAperture( cellRect ) )
+                        {
+                            G[ i, j ] = 0;
+                            continue;
+                        }
+                    }
+
+                    // Check whether G[i,j] intersects with furniture/furniture part
+                    if ( IntersectFurniture( cellRect ) )
+                    {
+                        G[ i, j ] = 0;
+                        continue;
+                    }
+
+                    // Check whether G[i,j] intersects with a window/window part
+                    if ( IntersectWindow( cellRect ) )
+                    {
+                        G[ i, j ] = 0;
+                        continue;
+                    }
+                }
+            }
+
+            int nullCellsCount = 0;
+            var S = new double[ M, N ];
+            // Init distance field
+            for ( int i = 0; i < M; ++i )
+            {
+                for ( int j = 0; j < N; ++j )
+                {
+                    float cellX = x0 + m_a * i;
+                    float cellY = y0 + m_a * j;
+
+                    if ( G[ i, j ] == 0 )   // obstacle
+                    {
+                        S[ i, j ] = M * N;
+
+                        if ( m_drawG )
+                        {
+                            using ( var p = new Pen( Color.Red, 1.0f / g.DpiX ) )
+                            {
+                                g.DrawRectangle( p, cellX, cellY, m_a, m_a );
+                            }
+                        }
+                    }
+                    else if ( G[ i, j ] > 0 ) // exit
+                    {
+                        S[ i, j ] = 1;
+
+                        if ( m_drawG )
+                        {
+                            using ( var p = new Pen( Color.Blue, 1.0f / g.DpiX ) )
+                            {
+                                g.DrawRectangle( p, cellX, cellY, m_a, m_a );
+                            }
+                        }
+                    }
+                    else
+                    {
+                        S[ i, j ] = 0;
+                        nullCellsCount++;
+                    }
+                }
+            }
+
+            double sqrt_2 = Math.Sqrt( 2 );
+            double sqrt_5 = Math.Sqrt( 5 );
+
+            // Field traversal
+            while ( nullCellsCount >= 1 )
+            {
+                for ( int i = 0; i < M; ++i )
+                {
+                    for ( int j = 0; j < N; ++j )
+                    {
+                        if ( S[ i, j ] != 0 ) continue;
+
+                        var stepValues = new List<double>();
+
+                        //                  ( i-2, j-1 )
+                        //                       ||
+                        // ( i-1, j-2 ) <== ( i-1, j-1 )
+                        if ( ( i >= 1 && j >= 1 ) && ( S[ i - 1, j - 1 ] != M * N ) )
+                        {
+                            if ( ( i >= 1 && j >= 1 ) && ( S[ i - 1, j - 1 ] != 0 ) )
+                            {
+                                stepValues.Add( sqrt_2 + S[ i - 1, j - 1 ] );
+                            }
+
+                            if ( ( i >= 1 && j >= 2 ) && S[ i - 1, j - 2 ] != 0 && S[ i - 1, j - 2 ] != M * N )
+                            {
+                                stepValues.Add( sqrt_5 + S[ i - 1, j - 2 ] );
+                            }
+
+                            if ( ( i >= 2 && j >= 1 ) && S[ i - 2, j - 1 ] != 0 && S[ i - 2, j - 1 ] != M * N )
+                            {
+                                stepValues.Add( sqrt_5 + S[ i - 2, j - 1 ] );
+                            }
+                        }
+
+                        // ( i-2, j+1 )
+                        //      ||
+                        // ( i-1, j+1 ) ==> ( i-1, j+2 )
+                        if ( ( i >= 1 && j <= N - 2 ) && ( S[ i - 1, j + 1 ] != M * N ) )
+                        {
+                            if ( ( i >= 1 && j <= N - 2 ) && ( S[ i - 1, j + 1 ] != 0 ) )
+                            {
+                                stepValues.Add( sqrt_2 + S[ i - 1, j + 1 ] );
+                            }
+
+                            if ( ( i >= 1 && j <= N - 3 ) && S[ i - 1, j + 2 ] != 0 && S[ i - 1, j + 2 ] != M * N )
+                            {
+                                stepValues.Add( sqrt_5 + S[ i - 1, j + 2 ] );
+                            }
+
+                            if ( ( i >= 2 && j <= N - 2 ) && S[ i - 2, j + 1 ] != 0 && S[ i - 2, j + 1 ] != M * N )
+                            {
+                                stepValues.Add( sqrt_5 + S[ i - 2, j + 1 ] );
+                            }
+                        }
+
+                        // ( i+1, j+1 ) ==> ( i+1, j+2 )
+                        //      ||
+                        // ( i+2, j+1 )
+                        if ( ( i <= M - 2 && j <= N - 2 ) && ( S[ i + 1, j + 1 ] != M * N ) )
+                        {
+                            if ( ( i <= M - 2 && j <= N - 2 ) && ( S[ i + 1, j + 1 ] != 0 ) )
+                            {
+                                stepValues.Add( sqrt_2 + S[ i + 1, j + 1 ] );
+                            }
+
+                            if ( ( i <= M - 2 && j <= N - 3 ) && S[ i + 1, j + 2 ] != 0 && S[ i + 1, j + 2 ] != M * N )
+                            {
+                                stepValues.Add( sqrt_5 + S[ i + 1, j + 2 ] );
+                            }
+
+                            if ( ( i <= M - 3 && j <= N - 2 ) && S[ i + 2, j + 1 ] != 0 && S[ i + 2, j + 1 ] != M * N )
+                            {
+                                stepValues.Add( sqrt_5 + S[ i + 2, j + 1 ] );
+                            }
+                        }
+
+                        // ( i+1, j-2 ) ==> ( i+1, j-1 )
+                        //                       ||
+                        //                  ( i+2, j-1 )
+                        if ( ( i <= M - 2 && j >= 1 ) && ( S[ i + 1, j - 1 ] != M * N ) )
+                        {
+                            if ( ( i <= M - 2 && j >= 1 ) && ( S[ i + 1, j - 1 ] != 0 ) )
+                            {
+                                stepValues.Add( sqrt_2 + S[ i + 1, j - 1 ] );
+                            }
+
+                            if ( ( i <= M - 2 && j >= 2 ) && S[ i + 1, j - 2 ] != 0 && S[ i + 1, j - 2 ] != M * N )
+                            {
+                                stepValues.Add( sqrt_5 + S[ i + 1, j - 2 ] );
+                            }
+
+                            if ( ( i <= M - 3 && j >= 1 ) && S[ i + 2, j - 1 ] != 0 && S[ i + 2, j - 1 ] != M * N )
+                            {
+                                stepValues.Add( sqrt_5 + S[ i + 2, j - 1 ] );
+                            }
+                        }
+
+                        // ( i-1, j )
+                        if ( ( i >= 1 ) && S[ i - 1, j ] != 0 && S[ i - 1, j ] != M * N )
+                        {
+                            stepValues.Add( 1 + S[ i - 1, j ] );
+                        }
+
+                        // ( i, j+1 )
+                        if ( ( j <= N - 2 ) && S[ i, j + 1 ] != 0 && S[ i, j + 1 ] != M * N )
+                        {
+                            stepValues.Add( 1 + S[ i, j + 1 ] );
+                        }
+
+                        // ( i+1, j )
+                        if ( ( i <= M - 2 ) && S[ i + 1, j ] != 0 && S[ i + 1, j ] != M * N )
+                        {
+                            stepValues.Add( 1 + S[ i + 1, j ] );
+                        }
+
+                        // ( i, j-1 )
+                        if ( ( j >= 1 ) && S[ i, j - 1 ] != 0 && S[ i, j - 1 ] != M * N )
+                        {
+                            stepValues.Add( 1 + S[ i, j - 1 ] );
+                        }
+
+                        // Assign to (i,j) cell the minimum distance value
+                        if ( stepValues.Count >= 1 )
+                        {
+                            double minStep = stepValues.Min<double>();
+                            S[ i, j ] = minStep;
+
+                            System.Diagnostics.Debug.Assert( minStep > 0 );
+//                            Console.WriteLine( "Cell ( {0},{1} ) was charged", i, j );
+
+                            nullCellsCount--;
+                        }
+                    }
+                }
+            }
+
+            if ( m_drawS )
+            {
+                double maxDistValue = double.NegativeInfinity;
+                double minDistValue = double.PositiveInfinity;
+                for ( int i = 0; i < M; ++i )
+                {
+                    for ( int j = 0; j < N; ++j )
+                    {
+                        if ( S[ i, j ] >= M * N ) continue;
+
+                        if ( maxDistValue < S[ i, j ] ) maxDistValue = S[ i, j ];
+                        if ( minDistValue > S[ i, j ] ) minDistValue = S[ i, j ];
+                    }
+                }
+
+                for ( int i = 0; i < M; ++i )
+                {
+                    for ( int j = 0; j < N; ++j )
+                    {
+                        if ( S[ i, j ] >= M * N ) continue;
+
+                        float cellX = x0 + m_a * i;
+                        float cellY = y0 + m_a * j;
+
+                        float coeff = 1 - ( float )( S[ i, j ] / maxDistValue );
+                        Color c1 = Color.Red;
+                        Color t = Color.FromArgb( c1.A, ( int )( c1.R * coeff ), ( int )( c1.G * coeff ), ( int )( c1.B * coeff ) );
+
+                        using ( var b = new SolidBrush( t ) )
+                        {
+                            g.FillRectangle( b, cellX, cellY, m_a, m_a );
+                        }
+                    }
+                }
+            }
+
+            return S;
+        }
+
     }
 }
 

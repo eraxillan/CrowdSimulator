@@ -63,6 +63,11 @@ namespace SigmaDC.Types
             get { return m_diameter; }
         }
 
+        public void SetDrawOptions( Dictionary<string, object> options )
+        {
+            throw new NotImplementedException();
+        }
+
         public void Draw( Graphics g )
         {
             switch ( Type )
@@ -204,6 +209,11 @@ namespace SigmaDC.Types
             if ( aperture.CloserSpecified ) m_aperture.Closer = aperture.Closer;
             if ( aperture.AntiFireSpecified ) m_aperture.AntiFire = aperture.AntiFire;
             if ( aperture.AngleSpecified ) m_aperture.Angle = aperture.Angle;
+        }
+
+        public void SetDrawOptions( Dictionary<string, object> options )
+        {
+            throw new NotImplementedException();
         }
 
         public void Draw( Graphics g )
@@ -349,6 +359,11 @@ namespace SigmaDC.Types
             return new RectangleF( x1, y1, w, h );
         }
 
+        public void SetDrawOptions( Dictionary<string, object> options )
+        {
+            throw new NotImplementedException();
+        }
+
         public void Draw( Graphics g )
         {
             var extent = Extents;
@@ -439,6 +454,11 @@ namespace SigmaDC.Types
             return new RectangleF( x1, y1, w, h );
         }
 
+        public void SetDrawOptions( Dictionary<string, object> options )
+        {
+            throw new NotImplementedException();
+        }
+
         public void Draw( Graphics g )
         {
             var extent = Extents;
@@ -490,6 +510,11 @@ namespace SigmaDC.Types
                 throw new InvalidOperationException( "Platform could not have null or negative extent width or height" );
 
             return new RectangleF( x1, y1, w, h );
+        }
+
+        public void SetDrawOptions( Dictionary<string, object> options )
+        {
+            throw new NotImplementedException();
         }
 
         public void Draw( Graphics g )
@@ -564,6 +589,11 @@ namespace SigmaDC.Types
             get { return m_items; }
         }
 
+        public void SetDrawOptions( Dictionary<string, object> options )
+        {
+            throw new NotImplementedException();
+        }
+
         public void Draw( Graphics g )
         {
             switch ( m_stairway.Type )
@@ -630,11 +660,14 @@ namespace SigmaDC.Types
             return new RectangleF( x1, y1, w, h );
         }
 
-        private bool m_pink = false;
-        public bool PinkPen
+        public bool LimePen
         {
-            get { return m_pink; }
-            set { m_pink = value; }
+            get; set;
+        }
+
+        public void SetDrawOptions( Dictionary<string, object> options )
+        {
+            throw new NotImplementedException();
         }
 
         public void Draw( Graphics g )
@@ -646,7 +679,7 @@ namespace SigmaDC.Types
                 {
                     // Draw box rectangle
                     var extent = Extents;
-                    using ( var brownPen = new Pen( PinkPen ? Color.Pink : Color.Brown, 1.0f / g.DpiX ) )
+                    using ( var brownPen = new Pen( LimePen ? Color.Lime : Color.Brown, 1.0f / g.DpiX ) )
                     {
                         g.DrawRectangle( brownPen, extent.X, extent.Y, extent.Width, extent.Height );
                     }
@@ -729,6 +762,11 @@ namespace SigmaDC.Types
             get { return m_boxes; }
         }
 
+        public void SetDrawOptions( Dictionary<string, object> options )
+        {
+            throw new NotImplementedException();
+        }
+
         public void Draw( Graphics g )
         {
             switch ( m_room.Type )
@@ -742,7 +780,7 @@ namespace SigmaDC.Types
                 {
                     foreach ( var box in m_boxes )
                     {
-                        box.PinkPen = true;
+                        box.LimePen = true;
                         box.Draw( g );
                     }
 
@@ -781,6 +819,8 @@ namespace SigmaDC.Types
         List<FurnitureWrapper> m_furniture = null;
         List<StairwayWrapper> m_stairways = null;
         List<HumanWrapper> m_people = null;
+        bool m_drawFurniture = true;
+        bool m_drawPeople = true;
 
         public FloorWrapper( GeometryTypes.TFloor floor )
             : base( floor )
@@ -879,19 +919,19 @@ namespace SigmaDC.Types
             return boxes;
         }
 
-        public List<ApertureWrapper> Exits
+        public List<ApertureWrapper> Doors
         {
             get
             {
-                var exits = new List<ApertureWrapper>();
+                var windows = new List<ApertureWrapper>();
                 foreach ( var aper in m_apertures )
                 {
-                    if ( aper.Type == 3 )
+                    if ( ( aper.Type == 0 ) )
                     {
-                        exits.Add( aper );
+                        windows.Add( aper );
                     }
                 }
-                return exits;
+                return windows;
             }
         }
 
@@ -927,17 +967,45 @@ namespace SigmaDC.Types
             }
         }
 
+        public List<ApertureWrapper> Exits
+        {
+            get
+            {
+                var exits = new List<ApertureWrapper>();
+                foreach ( var aper in m_apertures )
+                {
+                    if ( aper.Type == 3 )
+                    {
+                        exits.Add( aper );
+                    }
+                }
+                return exits;
+            }
+        }
+
+        public void SetDrawOptions( Dictionary<string, object> options )
+        {
+            if ( options.ContainsKey( "drawFurniture" ) ) m_drawFurniture = ( bool )options[ "drawFurniture" ];
+            if ( options.ContainsKey( "drawPeople" ) ) m_drawPeople = ( bool )options[ "drawPeople" ];
+        }
+
         public void Draw( Graphics g )
         {
             switch ( m_floor.Type )
             {
                 case 0:
                 {
-                    foreach ( var furnitureItem in m_furniture ) furnitureItem.Draw( g );
                     foreach ( var room in m_rooms ) room.Draw( g );
                     foreach ( var aperture in m_apertures ) aperture.Draw( g );
                     foreach ( var stairway in m_stairways ) stairway.Draw( g );
-                    foreach ( var human in m_people ) human.Draw( g );
+                    if ( m_drawFurniture )
+                    {
+                        foreach ( var furnitureItem in m_furniture ) furnitureItem.Draw( g );
+                    }
+                    if ( m_drawPeople )
+                    {
+                        foreach ( var human in m_people ) human.Draw( g );
+                    }
                     break;
                 }
                 default: throw new InvalidOperationException( "Invalid TFloor type" );
@@ -1271,6 +1339,11 @@ namespace SigmaDC.Types
                 }
                 return minHumanDiameter;
             }
+        }
+
+        public void SetDrawOptions( Dictionary<string, object> options )
+        {
+            CurrentFloor.SetDrawOptions( options );
         }
 
         public void Draw( Graphics g )

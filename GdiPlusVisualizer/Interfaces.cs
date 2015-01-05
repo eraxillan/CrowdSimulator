@@ -19,6 +19,7 @@
  */
 
 using System.Drawing;
+using System.Collections.Generic;
 
 public interface IBaseObject
 {
@@ -66,5 +67,6 @@ interface IExtentOwner
 
 interface IVisualisable
 {
+    void SetDrawOptions( Dictionary<string, object> options );
     void Draw( Graphics g );
 }

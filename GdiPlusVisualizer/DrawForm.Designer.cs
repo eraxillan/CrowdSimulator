@@ -29,10 +29,10 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.ListViewItem listViewItem5 = new System.Windows.Forms.ListViewItem("Geometry", 1);
-            System.Windows.Forms.ListViewItem listViewItem6 = new System.Windows.Forms.ListViewItem("Apertures", 1);
-            System.Windows.Forms.ListViewItem listViewItem7 = new System.Windows.Forms.ListViewItem("Furniture", 1);
-            System.Windows.Forms.ListViewItem listViewItem8 = new System.Windows.Forms.ListViewItem("People", 1);
+            System.Windows.Forms.ListViewItem listViewItem1 = new System.Windows.Forms.ListViewItem("Geometry", 1);
+            System.Windows.Forms.ListViewItem listViewItem2 = new System.Windows.Forms.ListViewItem("Apertures", 1);
+            System.Windows.Forms.ListViewItem listViewItem3 = new System.Windows.Forms.ListViewItem("Furniture", 1);
+            System.Windows.Forms.ListViewItem listViewItem4 = new System.Windows.Forms.ListViewItem("People", 1);
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(DrawForm));
             this.pbVisualizator = new System.Windows.Forms.PictureBox();
             this.stsMain = new System.Windows.Forms.StatusStrip();
@@ -41,6 +41,7 @@
             this.lblPan = new System.Windows.Forms.ToolStripStatusLabel();
             this.lblCursorPos = new System.Windows.Forms.ToolStripStatusLabel();
             this.lblBuildingExtent = new System.Windows.Forms.ToolStripStatusLabel();
+            this.lblCurrentCell = new System.Windows.Forms.ToolStripStatusLabel();
             this.grdProps = new System.Windows.Forms.PropertyGrid();
             this.mnsMain = new System.Windows.Forms.MenuStrip();
             this.mnuFile = new System.Windows.Forms.ToolStripMenuItem();
@@ -59,15 +60,14 @@
             this.mnuVisCurrentFloor = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuCmbCurrentFloor = new System.Windows.Forms.ToolStripComboBox();
             this.mnuVisualizationKeepAspectRatio = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuVisualizationDrawBulding = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuVisualizationDrawCellularGrid = new System.Windows.Forms.ToolStripMenuItem();
             this.dlgDataDir = new System.Windows.Forms.FolderBrowserDialog();
             this.lstDataFiles = new System.Windows.Forms.ListView();
             this.clnFileType = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.clnName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.imlDataStatus = new System.Windows.Forms.ImageList(this.components);
             this.splMain = new System.Windows.Forms.SplitContainer();
-            this.mnuVisualizationDrawBulding = new System.Windows.Forms.ToolStripMenuItem();
-            this.mnuVisualizationDrawCellularGrid = new System.Windows.Forms.ToolStripMenuItem();
-            this.lblCurrentCell = new System.Windows.Forms.ToolStripStatusLabel();
             ((System.ComponentModel.ISupportInitialize)(this.pbVisualizator)).BeginInit();
             this.stsMain.SuspendLayout();
             this.mnsMain.SuspendLayout();
@@ -137,6 +137,13 @@
             this.lblBuildingExtent.Name = "lblBuildingExtent";
             this.lblBuildingExtent.Size = new System.Drawing.Size(161, 17);
             this.lblBuildingExtent.Text = "Building extent:  <unknown>";
+            // 
+            // lblCurrentCell
+            // 
+            this.lblCurrentCell.Name = "lblCurrentCell";
+            this.lblCurrentCell.Size = new System.Drawing.Size(140, 17);
+            this.lblCurrentCell.Text = "Current cell: <unknown>";
+            this.lblCurrentCell.Visible = false;
             // 
             // grdProps
             // 
@@ -296,6 +303,24 @@
             this.mnuVisualizationKeepAspectRatio.Text = "Keep aspect ratio";
             this.mnuVisualizationKeepAspectRatio.Click += new System.EventHandler(this.mnuVisualizationKeepAspectRatio_Click);
             // 
+            // mnuVisualizationDrawBulding
+            // 
+            this.mnuVisualizationDrawBulding.Checked = true;
+            this.mnuVisualizationDrawBulding.CheckOnClick = true;
+            this.mnuVisualizationDrawBulding.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.mnuVisualizationDrawBulding.Name = "mnuVisualizationDrawBulding";
+            this.mnuVisualizationDrawBulding.Size = new System.Drawing.Size(166, 22);
+            this.mnuVisualizationDrawBulding.Text = "Draw building";
+            this.mnuVisualizationDrawBulding.Click += new System.EventHandler(this.mnuVisualizationDrawBulding_Click);
+            // 
+            // mnuVisualizationDrawCellularGrid
+            // 
+            this.mnuVisualizationDrawCellularGrid.CheckOnClick = true;
+            this.mnuVisualizationDrawCellularGrid.Name = "mnuVisualizationDrawCellularGrid";
+            this.mnuVisualizationDrawCellularGrid.Size = new System.Drawing.Size(166, 22);
+            this.mnuVisualizationDrawCellularGrid.Text = "Draw cellular grid";
+            this.mnuVisualizationDrawCellularGrid.Click += new System.EventHandler(this.mnuVisualizationDrawCellularGrid_Click);
+            // 
             // dlgDataDir
             // 
             this.dlgDataDir.RootFolder = System.Environment.SpecialFolder.MyComputer;
@@ -309,10 +334,10 @@
             this.lstDataFiles.FullRowSelect = true;
             this.lstDataFiles.GridLines = true;
             this.lstDataFiles.Items.AddRange(new System.Windows.Forms.ListViewItem[] {
-            listViewItem5,
-            listViewItem6,
-            listViewItem7,
-            listViewItem8});
+            listViewItem1,
+            listViewItem2,
+            listViewItem3,
+            listViewItem4});
             this.lstDataFiles.Location = new System.Drawing.Point(0, 0);
             this.lstDataFiles.MultiSelect = false;
             this.lstDataFiles.Name = "lstDataFiles";
@@ -358,31 +383,6 @@
             this.splMain.SplitterDistance = 722;
             this.splMain.TabIndex = 7;
             // 
-            // mnuVisualizationDrawBulding
-            // 
-            this.mnuVisualizationDrawBulding.Checked = true;
-            this.mnuVisualizationDrawBulding.CheckOnClick = true;
-            this.mnuVisualizationDrawBulding.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.mnuVisualizationDrawBulding.Name = "mnuVisualizationDrawBulding";
-            this.mnuVisualizationDrawBulding.Size = new System.Drawing.Size(166, 22);
-            this.mnuVisualizationDrawBulding.Text = "Draw building";
-            this.mnuVisualizationDrawBulding.Click += new System.EventHandler(this.mnuVisualizationDrawBulding_Click);
-            // 
-            // mnuVisualizationDrawCellularGrid
-            // 
-            this.mnuVisualizationDrawCellularGrid.CheckOnClick = true;
-            this.mnuVisualizationDrawCellularGrid.Name = "mnuVisualizationDrawCellularGrid";
-            this.mnuVisualizationDrawCellularGrid.Size = new System.Drawing.Size(166, 22);
-            this.mnuVisualizationDrawCellularGrid.Text = "Draw cellular grid";
-            this.mnuVisualizationDrawCellularGrid.Click += new System.EventHandler(this.mnuVisualizationDrawCellularGrid_Click);
-            // 
-            // lblCurrentCell
-            // 
-            this.lblCurrentCell.Name = "lblCurrentCell";
-            this.lblCurrentCell.Size = new System.Drawing.Size(140, 17);
-            this.lblCurrentCell.Text = "Current cell: <unknown>";
-            this.lblCurrentCell.Visible = false;
-            // 
             // DrawForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -397,6 +397,7 @@
             this.Name = "DrawForm";
             this.Text = "Building schema";
             this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
+            this.Load += new System.EventHandler(this.DrawForm_Load);
             this.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.DrawForm_KeyPress);
             this.Resize += new System.EventHandler(this.DrawForm_Resize);
             ((System.ComponentModel.ISupportInitialize)(this.pbVisualizator)).EndInit();
