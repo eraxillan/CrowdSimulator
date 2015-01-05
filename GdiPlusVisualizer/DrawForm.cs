@@ -53,6 +53,8 @@ namespace GdiPlusVisualizer
         bool m_imageIsPanning = false;
         float m_a = 0.1f;
         bool m_highlightBoxes = false;
+        MathModel.DistanceField m_distField = null;
+        MathModel.DistanceField.DrawMode m_fieldVisMode = MathModel.DistanceField.DrawMode.None;
         double[ , ] m_S = null;
 
         public DrawForm()
@@ -235,20 +237,11 @@ namespace GdiPlusVisualizer
                 y += m_a;
             }
 
-            /*for ( int i = 0; i < M; ++i )
+            if ( m_S == null )
             {
-                for ( int j = 0; j < N; ++j )
-                {
-                    RectangleF cellRect = new RectangleF( x0 + i * m_a, y0 + j * m_a, m_a, m_a );
-                    using ( var aquaPen = new Pen( Color.LightSteelBlue, 0.5f / g.DpiX ) )
-                    {
-                        g.DrawRectangle( aquaPen, cellRect.Left, cellRect.Top, m_a, m_a );
-                    }
-                }
-            }*/
-
-            var S = new MathModel.DistanceField( m_building, m_a, true, false );
-            m_S = S.CalcDistanceField( M, N, x0, y0, g );
+                m_distField = new MathModel.DistanceField( m_building, m_a, M, N, x0, y0 );
+                m_S = m_distField.CalcDistanceField();
+            }
         }
 
         private void DrawForm_Resize( object sender, EventArgs e )
@@ -264,7 +257,7 @@ namespace GdiPlusVisualizer
 
             // FIXME: this "blurs" line
             // Smooth graphics output and scale
-//           g.SmoothingMode = SmoothingMode.HighQuality;
+            //           g.SmoothingMode = SmoothingMode.HighQuality;
             g.SmoothingMode = SmoothingMode.None;
             ScaleGraphics( g );
 
@@ -315,6 +308,7 @@ namespace GdiPlusVisualizer
             }
 
             if ( m_drawGrid ) DrawCellularGrid( g );
+            if ( m_fieldVisMode != MathModel.DistanceField.DrawMode.None ) m_distField.Visualize( g );
         }
 
         private void pbVisualizator_MouseEnter( object sender, EventArgs e )
@@ -605,12 +599,6 @@ namespace GdiPlusVisualizer
                     m_drawBuilding = !m_drawBuilding;
                     break;
                 }
-                case 'g':
-                {
-                    m_drawGrid = !m_drawGrid;
-                    lblCurrentCell.Visible = m_drawGrid;
-                    break;
-                }
                 case 'f':
                 {
                     m_drawFurniture = !m_drawFurniture;
@@ -619,6 +607,25 @@ namespace GdiPlusVisualizer
                 case 'p':
                 {
                     m_drawPeople = !m_drawPeople;
+                    break;
+                }
+                case 'g':
+                {
+                    m_drawGrid = !m_drawGrid;
+                    lblCurrentCell.Visible = m_drawGrid;
+                    break;
+                }
+                case 'm':   // mode
+                {
+                    if( m_drawGrid )
+                    {
+                        m_fieldVisMode = ( MathModel.DistanceField.DrawMode )( ( int )m_fieldVisMode + 1 );
+                        if ( ( int )m_fieldVisMode > ( int )MathModel.DistanceField.DrawMode.Count )
+                        {
+                            m_fieldVisMode = MathModel.DistanceField.DrawMode.None;
+                        }
+                        m_distField.SetDrawMode( m_fieldVisMode );
+                    }
                     break;
                 }
             }
@@ -640,7 +647,12 @@ namespace GdiPlusVisualizer
                 pbVisualizator.Refresh();
             }
 
-            if ( e.KeyChar == 'b' || e.KeyChar == 'g' || e.KeyChar == 'f' || e.KeyChar == 'p' )
+            if ( e.KeyChar == 'b' || e.KeyChar == 'f' || e.KeyChar == 'p' )
+            {
+                pbVisualizator.Refresh();
+            }
+
+            if ( e.KeyChar == 'g' || e.KeyChar == 'm' )
             {
                 pbVisualizator.Refresh();
             }
@@ -662,17 +674,25 @@ namespace MathModel
     {
         BuildingWrapper m_building = null;
         float m_a = 0.1f;
-        bool m_drawG = false;
-        bool m_drawS = false;
+        int m_M = -1;
+        int m_N = -1;
+        float m_x0 = float.NaN;
+        float m_y0 = float.NaN;
+        DrawMode m_drawMode = DrawMode.None;
+        int[ , ] m_G = null;
+        double[ , ] m_S = null;
 
-        public DistanceField( BuildingWrapper building, float a, bool drawG = false, bool drawS = false )
+        public enum DrawMode { None = 0, Raw, G, S, Count };
+
+        public DistanceField( BuildingWrapper building, float a, int M, int N, float x0, float y0, DrawMode dm = DrawMode.None )
         {
             m_building = building;
             m_a = a;
-
-            System.Diagnostics.Debug.Assert( !( drawG && drawS ) );
-            m_drawG = drawG;
-            m_drawS = drawS;
+            m_M = M;
+            m_N = N;
+            m_x0 = x0;
+            m_y0 = y0;
+            m_drawMode = dm;
         }
 
         static RectangleF NormalizeRect( RectangleF src, float a )
@@ -682,22 +702,6 @@ namespace MathModel
             if ( rect.Width < a ) rect.Inflate( a / 8, 0 );
             if ( rect.Height < a ) rect.Inflate( 0, a / 8 );
             return rect;
-        }
-
-        static bool CellIsCornerPoint( RectangleF boxRect, RectangleF cellRect )
-        {
-            PointF leftTop = new PointF( boxRect.Left, boxRect.Top );
-            PointF leftBottom = new PointF( boxRect.Left, boxRect.Bottom );
-            PointF rightTop = new PointF( boxRect.Right, boxRect.Top );
-            PointF rightBottom = new PointF( boxRect.Right, boxRect.Bottom );
-
-            var cellRectTemp = cellRect;
-            cellRectTemp.Inflate( cellRect.Width / 8, cellRect.Height / 8 );
-            if ( cellRectTemp.Contains( leftTop ) ) return true;
-            if ( cellRectTemp.Contains( leftBottom ) ) return true;
-            if ( cellRectTemp.Contains( rightTop ) ) return true;
-            if ( cellRectTemp.Contains( rightTop ) ) return true;
-            return false;
         }
 
         bool IntersectBox( RectangleF cellRect )
@@ -856,18 +860,18 @@ namespace MathModel
             return false;
         }
 
-        public double[,] CalcDistanceField( int M, int N, float x0, float y0, Graphics g )
+        public double[,] CalcDistanceField()
         {
-            var G = new int[ M, N ];
-            for ( int i = 0; i < M; ++i )
+            var G = new int[ m_M, m_N ];
+            for ( int i = 0; i < m_M; ++i )
             {
-                for ( int j = 0; j < N; ++j )
+                for ( int j = 0; j < m_N; ++j )
                 {
                     G[ i, j ] = -1; // "empty" cell
 
                     // Calculate cell rectangle
-                    float cellX = x0 + m_a * i;
-                    float cellY = y0 + m_a * j;
+                    float cellX = m_x0 + m_a * i;
+                    float cellY = m_y0 + m_a * j;
                     RectangleF cellRect = new RectangleF( cellX, cellY, m_a, m_a );
 
                     // Check whether G[i,j] intersects with an building exit aperture/exit aperture part
@@ -920,39 +924,25 @@ namespace MathModel
                 }
             }
 
+            m_G = G;
+
             int nullCellsCount = 0;
-            var S = new double[ M, N ];
+            var S = new double[ m_M, m_N ];
             // Init distance field
-            for ( int i = 0; i < M; ++i )
+            for ( int i = 0; i < m_M; ++i )
             {
-                for ( int j = 0; j < N; ++j )
+                for ( int j = 0; j < m_N; ++j )
                 {
-                    float cellX = x0 + m_a * i;
-                    float cellY = y0 + m_a * j;
+                    float cellX = m_x0 + m_a * i;
+                    float cellY = m_y0 + m_a * j;
 
                     if ( G[ i, j ] == 0 )   // obstacle
                     {
-                        S[ i, j ] = M * N;
-
-                        if ( m_drawG )
-                        {
-                            using ( var p = new Pen( Color.Red, 1.0f / g.DpiX ) )
-                            {
-                                g.DrawRectangle( p, cellX, cellY, m_a, m_a );
-                            }
-                        }
+                        S[ i, j ] = m_M * m_N;
                     }
                     else if ( G[ i, j ] > 0 ) // exit
                     {
                         S[ i, j ] = 1;
-
-                        if ( m_drawG )
-                        {
-                            using ( var p = new Pen( Color.Blue, 1.0f / g.DpiX ) )
-                            {
-                                g.DrawRectangle( p, cellX, cellY, m_a, m_a );
-                            }
-                        }
                     }
                     else
                     {
@@ -968,9 +958,9 @@ namespace MathModel
             // Field traversal
             while ( nullCellsCount >= 1 )
             {
-                for ( int i = 0; i < M; ++i )
+                for ( int i = 0; i < m_M; ++i )
                 {
-                    for ( int j = 0; j < N; ++j )
+                    for ( int j = 0; j < m_N; ++j )
                     {
                         if ( S[ i, j ] != 0 ) continue;
 
@@ -979,19 +969,19 @@ namespace MathModel
                         //                  ( i-2, j-1 )
                         //                       ||
                         // ( i-1, j-2 ) <== ( i-1, j-1 )
-                        if ( ( i >= 1 && j >= 1 ) && ( S[ i - 1, j - 1 ] != M * N ) )
+                        if ( ( i >= 1 && j >= 1 ) && ( S[ i - 1, j - 1 ] != m_M * m_N ) )
                         {
                             if ( ( i >= 1 && j >= 1 ) && ( S[ i - 1, j - 1 ] != 0 ) )
                             {
                                 stepValues.Add( sqrt_2 + S[ i - 1, j - 1 ] );
                             }
 
-                            if ( ( i >= 1 && j >= 2 ) && S[ i - 1, j - 2 ] != 0 && S[ i - 1, j - 2 ] != M * N )
+                            if ( ( i >= 1 && j >= 2 ) && S[ i - 1, j - 2 ] != 0 && S[ i - 1, j - 2 ] != m_M * m_N )
                             {
                                 stepValues.Add( sqrt_5 + S[ i - 1, j - 2 ] );
                             }
 
-                            if ( ( i >= 2 && j >= 1 ) && S[ i - 2, j - 1 ] != 0 && S[ i - 2, j - 1 ] != M * N )
+                            if ( ( i >= 2 && j >= 1 ) && S[ i - 2, j - 1 ] != 0 && S[ i - 2, j - 1 ] != m_M * m_N )
                             {
                                 stepValues.Add( sqrt_5 + S[ i - 2, j - 1 ] );
                             }
@@ -1000,19 +990,19 @@ namespace MathModel
                         // ( i-2, j+1 )
                         //      ||
                         // ( i-1, j+1 ) ==> ( i-1, j+2 )
-                        if ( ( i >= 1 && j <= N - 2 ) && ( S[ i - 1, j + 1 ] != M * N ) )
+                        if ( ( i >= 1 && j <= m_N - 2 ) && ( S[ i - 1, j + 1 ] != m_M * m_N ) )
                         {
-                            if ( ( i >= 1 && j <= N - 2 ) && ( S[ i - 1, j + 1 ] != 0 ) )
+                            if ( ( i >= 1 && j <= m_N - 2 ) && ( S[ i - 1, j + 1 ] != 0 ) )
                             {
                                 stepValues.Add( sqrt_2 + S[ i - 1, j + 1 ] );
                             }
 
-                            if ( ( i >= 1 && j <= N - 3 ) && S[ i - 1, j + 2 ] != 0 && S[ i - 1, j + 2 ] != M * N )
+                            if ( ( i >= 1 && j <= m_N - 3 ) && S[ i - 1, j + 2 ] != 0 && S[ i - 1, j + 2 ] != m_M * m_N )
                             {
                                 stepValues.Add( sqrt_5 + S[ i - 1, j + 2 ] );
                             }
 
-                            if ( ( i >= 2 && j <= N - 2 ) && S[ i - 2, j + 1 ] != 0 && S[ i - 2, j + 1 ] != M * N )
+                            if ( ( i >= 2 && j <= m_N - 2 ) && S[ i - 2, j + 1 ] != 0 && S[ i - 2, j + 1 ] != m_M * m_N )
                             {
                                 stepValues.Add( sqrt_5 + S[ i - 2, j + 1 ] );
                             }
@@ -1021,19 +1011,19 @@ namespace MathModel
                         // ( i+1, j+1 ) ==> ( i+1, j+2 )
                         //      ||
                         // ( i+2, j+1 )
-                        if ( ( i <= M - 2 && j <= N - 2 ) && ( S[ i + 1, j + 1 ] != M * N ) )
+                        if ( ( i <= m_M - 2 && j <= m_N - 2 ) && ( S[ i + 1, j + 1 ] != m_M * m_N ) )
                         {
-                            if ( ( i <= M - 2 && j <= N - 2 ) && ( S[ i + 1, j + 1 ] != 0 ) )
+                            if ( ( i <= m_M - 2 && j <= m_N - 2 ) && ( S[ i + 1, j + 1 ] != 0 ) )
                             {
                                 stepValues.Add( sqrt_2 + S[ i + 1, j + 1 ] );
                             }
 
-                            if ( ( i <= M - 2 && j <= N - 3 ) && S[ i + 1, j + 2 ] != 0 && S[ i + 1, j + 2 ] != M * N )
+                            if ( ( i <= m_M - 2 && j <= m_N - 3 ) && S[ i + 1, j + 2 ] != 0 && S[ i + 1, j + 2 ] != m_M * m_N )
                             {
                                 stepValues.Add( sqrt_5 + S[ i + 1, j + 2 ] );
                             }
 
-                            if ( ( i <= M - 3 && j <= N - 2 ) && S[ i + 2, j + 1 ] != 0 && S[ i + 2, j + 1 ] != M * N )
+                            if ( ( i <= m_M - 3 && j <= m_N - 2 ) && S[ i + 2, j + 1 ] != 0 && S[ i + 2, j + 1 ] != m_M * m_N )
                             {
                                 stepValues.Add( sqrt_5 + S[ i + 2, j + 1 ] );
                             }
@@ -1042,44 +1032,44 @@ namespace MathModel
                         // ( i+1, j-2 ) ==> ( i+1, j-1 )
                         //                       ||
                         //                  ( i+2, j-1 )
-                        if ( ( i <= M - 2 && j >= 1 ) && ( S[ i + 1, j - 1 ] != M * N ) )
+                        if ( ( i <= m_M - 2 && j >= 1 ) && ( S[ i + 1, j - 1 ] != m_M * m_N ) )
                         {
-                            if ( ( i <= M - 2 && j >= 1 ) && ( S[ i + 1, j - 1 ] != 0 ) )
+                            if ( ( i <= m_M - 2 && j >= 1 ) && ( S[ i + 1, j - 1 ] != 0 ) )
                             {
                                 stepValues.Add( sqrt_2 + S[ i + 1, j - 1 ] );
                             }
 
-                            if ( ( i <= M - 2 && j >= 2 ) && S[ i + 1, j - 2 ] != 0 && S[ i + 1, j - 2 ] != M * N )
+                            if ( ( i <= m_M - 2 && j >= 2 ) && S[ i + 1, j - 2 ] != 0 && S[ i + 1, j - 2 ] != m_M * m_N )
                             {
                                 stepValues.Add( sqrt_5 + S[ i + 1, j - 2 ] );
                             }
 
-                            if ( ( i <= M - 3 && j >= 1 ) && S[ i + 2, j - 1 ] != 0 && S[ i + 2, j - 1 ] != M * N )
+                            if ( ( i <= m_M - 3 && j >= 1 ) && S[ i + 2, j - 1 ] != 0 && S[ i + 2, j - 1 ] != m_M * m_N )
                             {
                                 stepValues.Add( sqrt_5 + S[ i + 2, j - 1 ] );
                             }
                         }
 
                         // ( i-1, j )
-                        if ( ( i >= 1 ) && S[ i - 1, j ] != 0 && S[ i - 1, j ] != M * N )
+                        if ( ( i >= 1 ) && S[ i - 1, j ] != 0 && S[ i - 1, j ] != m_M * m_N )
                         {
                             stepValues.Add( 1 + S[ i - 1, j ] );
                         }
 
                         // ( i, j+1 )
-                        if ( ( j <= N - 2 ) && S[ i, j + 1 ] != 0 && S[ i, j + 1 ] != M * N )
+                        if ( ( j <= m_N - 2 ) && S[ i, j + 1 ] != 0 && S[ i, j + 1 ] != m_M * m_N )
                         {
                             stepValues.Add( 1 + S[ i, j + 1 ] );
                         }
 
                         // ( i+1, j )
-                        if ( ( i <= M - 2 ) && S[ i + 1, j ] != 0 && S[ i + 1, j ] != M * N )
+                        if ( ( i <= m_M - 2 ) && S[ i + 1, j ] != 0 && S[ i + 1, j ] != m_M * m_N )
                         {
                             stepValues.Add( 1 + S[ i + 1, j ] );
                         }
 
                         // ( i, j-1 )
-                        if ( ( j >= 1 ) && S[ i, j - 1 ] != 0 && S[ i, j - 1 ] != M * N )
+                        if ( ( j >= 1 ) && S[ i, j - 1 ] != 0 && S[ i, j - 1 ] != m_M * m_N )
                         {
                             stepValues.Add( 1 + S[ i, j - 1 ] );
                         }
@@ -1088,56 +1078,92 @@ namespace MathModel
                         if ( stepValues.Count >= 1 )
                         {
                             double minStep = stepValues.Min<double>();
-                            S[ i, j ] = minStep;
-
                             System.Diagnostics.Debug.Assert( minStep > 0 );
-//                            Console.WriteLine( "Cell ( {0},{1} ) was charged", i, j );
 
+                            S[ i, j ] = minStep;
                             nullCellsCount--;
                         }
                     }
                 }
             }
 
-            if ( m_drawS )
+            m_S = S;
+            return S;
+        }
+
+        public void SetDrawMode( DrawMode dm )
+        {
+            m_drawMode = dm;
+        }
+
+        public void Visualize( Graphics g )
+        {
+            // Field visualization
+            double maxDistValue = double.NegativeInfinity;
+            double minDistValue = double.PositiveInfinity;
+            for ( int i = 0; i < m_M; ++i )
             {
-                double maxDistValue = double.NegativeInfinity;
-                double minDistValue = double.PositiveInfinity;
-                for ( int i = 0; i < M; ++i )
+                for ( int j = 0; j < m_N; ++j )
                 {
-                    for ( int j = 0; j < N; ++j )
-                    {
-                        if ( S[ i, j ] >= M * N ) continue;
+                    if ( m_S[ i, j ] >= m_M * m_N ) continue;
 
-                        if ( maxDistValue < S[ i, j ] ) maxDistValue = S[ i, j ];
-                        if ( minDistValue > S[ i, j ] ) minDistValue = S[ i, j ];
-                    }
+                    if ( maxDistValue < m_S[ i, j ] ) maxDistValue = m_S[ i, j ];
+                    if ( minDistValue > m_S[ i, j ] ) minDistValue = m_S[ i, j ];
                 }
+            }
 
-                for ( int i = 0; i < M; ++i )
+            for ( int i = 0; i < m_M; ++i )
+            {
+                for ( int j = 0; j < m_N; ++j )
                 {
-                    for ( int j = 0; j < N; ++j )
+                    float cellX = m_x0 + m_a * i;
+                    float cellY = m_y0 + m_a * j;
+
+                    switch ( m_drawMode )
                     {
-                        if ( S[ i, j ] >= M * N ) continue;
-
-                        float cellX = x0 + m_a * i;
-                        float cellY = y0 + m_a * j;
-
-                        float coeff = 1 - ( float )( S[ i, j ] / maxDistValue );
-                        Color c1 = Color.Red;
-                        Color t = Color.FromArgb( c1.A, ( int )( c1.R * coeff ), ( int )( c1.G * coeff ), ( int )( c1.B * coeff ) );
-
-                        using ( var b = new SolidBrush( t ) )
+                        case DrawMode.Raw:
                         {
-                            g.FillRectangle( b, cellX, cellY, m_a, m_a );
+                            using ( var p = new Pen( Color.LightSteelBlue, 0.5f / g.DpiX ) )
+                            {
+                                g.DrawRectangle( p, cellX, cellY, m_a, m_a );
+                            }
+                            break;
+                        }
+                        case DrawMode.G:
+                        {
+                            if ( m_G[ i, j ] == 0 )
+                            {
+                                using ( var p = new Pen( Color.Red, 1.0f / g.DpiX ) )
+                                {
+                                    g.DrawRectangle( p, cellX, cellY, m_a, m_a );
+                                }
+                            }
+                            else if ( m_G[ i, j ] > 0 ) // exit
+                            {
+                                using ( var p = new Pen( Color.Blue, 1.0f / g.DpiX ) )
+                                {
+                                    g.DrawRectangle( p, cellX, cellY, m_a, m_a );
+                                }
+                            }
+                            break;
+                        }
+                        case DrawMode.S:
+                        {
+                            if ( m_S[ i, j ] >= m_M * m_N ) continue;
+
+                            float coeff = 1 - ( float )( m_S[ i, j ] / maxDistValue );
+                            Color c1 = Color.Red;
+                            Color t = Color.FromArgb( c1.A, ( int )( c1.R * coeff ), ( int )( c1.G * coeff ), ( int )( c1.B * coeff ) );
+
+                            using ( var b = new SolidBrush( t ) )
+                            {
+                                g.FillRectangle( b, cellX, cellY, m_a, m_a );
+                            }
+                            break;
                         }
                     }
                 }
             }
-
-            return S;
         }
-
     }
 }
-
