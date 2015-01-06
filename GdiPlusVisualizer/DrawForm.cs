@@ -212,7 +212,7 @@ namespace GdiPlusVisualizer
             ScaleGraphics( g, pbVisualizator, range, margin );
         }
 
-        void DrawCellularGrid( Graphics g )
+        void InitDistanceField()
         {
             float w = m_building.Extents.Width;
             float h = m_building.Extents.Height;
@@ -224,14 +224,14 @@ namespace GdiPlusVisualizer
             float y0 = m_building.Extents.Top - m_a/2;
 
             float x = x0;
-            while ( x <= m_building.Extents.Right + m_a )
+            while ( x < m_building.Extents.Right )
             {
                 M++;
                 x += m_a;
             }
 
             float y = y0;
-            while ( y <= m_building.Extents.Bottom + m_a )
+            while ( y < m_building.Extents.Bottom )
             {
                 N++;
                 y += m_a;
@@ -240,7 +240,12 @@ namespace GdiPlusVisualizer
             if ( m_S == null )
             {
                 m_distField = new MathModel.DistanceField( m_building, m_a, M, N, x0, y0 );
+
+                this.UseWaitCursor = true;
+                this.Enabled = false;
                 m_S = m_distField.CalcDistanceField();
+                this.Enabled = true;
+                this.UseWaitCursor = false;
             }
         }
 
@@ -307,7 +312,6 @@ namespace GdiPlusVisualizer
                 }
             }
 
-            if ( m_drawGrid ) DrawCellularGrid( g );
             if ( m_fieldVisMode != MathModel.DistanceField.DrawMode.None ) m_distField.Visualize( g );
         }
 
@@ -352,8 +356,8 @@ namespace GdiPlusVisualizer
             {
                 float x0 = m_building.Extents.Left - m_a/2;
                 float y0 = m_building.Extents.Top - m_a/2;
-                float xMax = m_building.Extents.Right + m_a;
-                float yMax = m_building.Extents.Bottom + m_a;
+                float xMax = m_building.Extents.Right;
+                float yMax = m_building.Extents.Bottom;
                 System.Diagnostics.Debug.Assert( m_building.Extents.Bottom > m_building.Extents.Top );
                 float x;
                 float y;
@@ -491,6 +495,8 @@ namespace GdiPlusVisualizer
                 // NOTE: cellular grid step should be smaller than the smallest human diameter, i.e. a <= min( d )
                 float minHumanDiameter = m_building.MinHumanDiameter;
                 m_a = minHumanDiameter * 0.30f; // Default: 0.1 meter, i.e. 10 cm
+
+                InitDistanceField();
             }
         }
 
@@ -684,6 +690,7 @@ namespace MathModel
         DrawMode m_drawMode = DrawMode.None;
         int[ , ] m_G = null;
         double[ , ] m_S = null;
+        double m_obstacleConst = double.NaN;
 
         public enum DrawMode { None = 0, Raw, G, S, Count };
 
@@ -696,6 +703,7 @@ namespace MathModel
             m_x0 = x0;
             m_y0 = y0;
             m_drawMode = dm;
+            m_obstacleConst = M * N;
         }
 
         static RectangleF NormalizeRect( RectangleF src, float a )
@@ -863,8 +871,11 @@ namespace MathModel
             return false;
         }
 
-        public int[,] CalcGField()
+        public int[ , ] CalcGField( int selectedExitId )
         {
+            if( selectedExitId < 0 || selectedExitId > m_building.CurrentFloor.Exits.Count )
+                System.Diagnostics.Debugger.Break();
+
             var G = new int[ m_M, m_N ];
 
             for ( int i = 0; i < m_M; ++i )
@@ -882,7 +893,11 @@ namespace MathModel
                     int exitId;
                     if ( IntersectExitDoor( cellRect, out exitId ) )
                     {
-                        G[ i, j ] = exitId;
+                        if ( exitId == selectedExitId )
+                            G[ i, j ] = exitId;
+                        else
+                            G[ i, j ] = 0;
+
                         continue;
                     }
 
@@ -946,7 +961,7 @@ namespace MathModel
 
                     if ( m_G[ i, j ] == 0 )   // obstacle
                     {
-                        S[ i, j ] = m_M * m_N;
+                        S[ i, j ] = m_obstacleConst;
                     }
                     else if ( m_G[ i, j ] > 0 ) // exit
                     {
@@ -969,145 +984,187 @@ namespace MathModel
             double sqrt_5 = Math.Sqrt( 5 );
 
             // Field traversal
-            while ( emptyCellCount >= 1 )
+            for ( int i = 0; i < m_M; ++i )
             {
-                for ( int i = 0; i < m_M; ++i )
+                for ( int j = 0; j < m_N; ++j )
                 {
-                    for ( int j = 0; j < m_N; ++j )
+                    if ( !MathUtils.NearlyZero( S[ i, j ] ) ) continue;
+
+                    var stepValues = new List<double>();
+
+                    //                  ( i-2, j-1 )
+                    //                       ||
+                    // ( i-1, j-2 ) <== ( i-1, j-1 )
+                    if ( ( i >= 1 && j >= 1 ) && ( !MathUtils.NearlyEqual( S[ i - 1, j - 1 ], m_obstacleConst ) ) )
                     {
-                        if ( S[ i, j ] != 0 ) continue;
-
-                        var stepValues = new List<double>();
-
-                        //                  ( i-2, j-1 )
-                        //                       ||
-                        // ( i-1, j-2 ) <== ( i-1, j-1 )
-                        if ( ( i >= 1 && j >= 1 ) && ( S[ i - 1, j - 1 ] != m_M * m_N ) )
+                        if ( ( i >= 1 && j >= 1 ) && ( !MathUtils.NearlyZero( S[ i - 1, j - 1 ] ) ) )
                         {
-                            if ( ( i >= 1 && j >= 1 ) && ( S[ i - 1, j - 1 ] != 0 ) )
-                            {
-                                stepValues.Add( sqrt_2 + S[ i - 1, j - 1 ] );
-                            }
-
-                            if ( ( i >= 1 && j >= 2 ) && S[ i - 1, j - 2 ] != 0 && S[ i - 1, j - 2 ] != m_M * m_N )
-                            {
-                                stepValues.Add( sqrt_5 + S[ i - 1, j - 2 ] );
-                            }
-
-                            if ( ( i >= 2 && j >= 1 ) && S[ i - 2, j - 1 ] != 0 && S[ i - 2, j - 1 ] != m_M * m_N )
-                            {
-                                stepValues.Add( sqrt_5 + S[ i - 2, j - 1 ] );
-                            }
+                            stepValues.Add( sqrt_2 + S[ i - 1, j - 1 ] );
                         }
 
-                        // ( i-2, j+1 )
-                        //      ||
-                        // ( i-1, j+1 ) ==> ( i-1, j+2 )
-                        if ( ( i >= 1 && j <= m_N - 2 ) && ( S[ i - 1, j + 1 ] != m_M * m_N ) )
+                        if ( ( i >= 1 && j >= 2 ) && !MathUtils.NearlyZero( S[ i - 1, j - 2 ] ) && !MathUtils.NearlyEqual( S[ i - 1, j - 2 ], m_obstacleConst ) )
                         {
-                            if ( ( i >= 1 && j <= m_N - 2 ) && ( S[ i - 1, j + 1 ] != 0 ) )
-                            {
-                                stepValues.Add( sqrt_2 + S[ i - 1, j + 1 ] );
-                            }
-
-                            if ( ( i >= 1 && j <= m_N - 3 ) && S[ i - 1, j + 2 ] != 0 && S[ i - 1, j + 2 ] != m_M * m_N )
-                            {
-                                stepValues.Add( sqrt_5 + S[ i - 1, j + 2 ] );
-                            }
-
-                            if ( ( i >= 2 && j <= m_N - 2 ) && S[ i - 2, j + 1 ] != 0 && S[ i - 2, j + 1 ] != m_M * m_N )
-                            {
-                                stepValues.Add( sqrt_5 + S[ i - 2, j + 1 ] );
-                            }
+                            stepValues.Add( sqrt_5 + S[ i - 1, j - 2 ] );
                         }
 
-                        // ( i+1, j+1 ) ==> ( i+1, j+2 )
-                        //      ||
-                        // ( i+2, j+1 )
-                        if ( ( i <= m_M - 2 && j <= m_N - 2 ) && ( S[ i + 1, j + 1 ] != m_M * m_N ) )
+                        if ( ( i >= 2 && j >= 1 ) && !MathUtils.NearlyZero( S[ i - 2, j - 1 ] ) && !MathUtils.NearlyEqual( S[ i - 2, j - 1 ], m_obstacleConst ) )
                         {
-                            if ( ( i <= m_M - 2 && j <= m_N - 2 ) && ( S[ i + 1, j + 1 ] != 0 ) )
-                            {
-                                stepValues.Add( sqrt_2 + S[ i + 1, j + 1 ] );
-                            }
+                            stepValues.Add( sqrt_5 + S[ i - 2, j - 1 ] );
+                        }
+                    }
 
-                            if ( ( i <= m_M - 2 && j <= m_N - 3 ) && S[ i + 1, j + 2 ] != 0 && S[ i + 1, j + 2 ] != m_M * m_N )
-                            {
-                                stepValues.Add( sqrt_5 + S[ i + 1, j + 2 ] );
-                            }
-
-                            if ( ( i <= m_M - 3 && j <= m_N - 2 ) && S[ i + 2, j + 1 ] != 0 && S[ i + 2, j + 1 ] != m_M * m_N )
-                            {
-                                stepValues.Add( sqrt_5 + S[ i + 2, j + 1 ] );
-                            }
+                    // ( i-2, j+1 )
+                    //      ||
+                    // ( i-1, j+1 ) ==> ( i-1, j+2 )
+                    if ( ( i >= 1 && j <= m_N - 2 ) && !MathUtils.NearlyEqual( S[ i - 1, j + 1 ], m_obstacleConst ) )
+                    {
+                        if ( ( i >= 1 && j <= m_N - 2 ) && ( !MathUtils.NearlyZero( S[ i - 1, j + 1 ] ) ) )
+                        {
+                            stepValues.Add( sqrt_2 + S[ i - 1, j + 1 ] );
                         }
 
-                        // ( i+1, j-2 ) ==> ( i+1, j-1 )
-                        //                       ||
-                        //                  ( i+2, j-1 )
-                        if ( ( i <= m_M - 2 && j >= 1 ) && ( S[ i + 1, j - 1 ] != m_M * m_N ) )
+                        if ( ( i >= 1 && j <= m_N - 3 ) && !MathUtils.NearlyZero( S[ i - 1, j + 2 ] ) && !MathUtils.NearlyEqual( S[ i - 1, j + 2 ], m_obstacleConst ) )
                         {
-                            if ( ( i <= m_M - 2 && j >= 1 ) && ( S[ i + 1, j - 1 ] != 0 ) )
-                            {
-                                stepValues.Add( sqrt_2 + S[ i + 1, j - 1 ] );
-                            }
-
-                            if ( ( i <= m_M - 2 && j >= 2 ) && S[ i + 1, j - 2 ] != 0 && S[ i + 1, j - 2 ] != m_M * m_N )
-                            {
-                                stepValues.Add( sqrt_5 + S[ i + 1, j - 2 ] );
-                            }
-
-                            if ( ( i <= m_M - 3 && j >= 1 ) && S[ i + 2, j - 1 ] != 0 && S[ i + 2, j - 1 ] != m_M * m_N )
-                            {
-                                stepValues.Add( sqrt_5 + S[ i + 2, j - 1 ] );
-                            }
+                            stepValues.Add( sqrt_5 + S[ i - 1, j + 2 ] );
                         }
 
-                        // ( i-1, j )
-                        if ( ( i >= 1 ) && S[ i - 1, j ] != 0 && S[ i - 1, j ] != m_M * m_N )
+                        if ( ( i >= 2 && j <= m_N - 2 ) && !MathUtils.NearlyZero( S[ i - 2, j + 1 ] ) && !MathUtils.NearlyEqual( S[ i - 2, j + 1 ], m_obstacleConst ) )
                         {
-                            stepValues.Add( 1 + S[ i - 1, j ] );
+                            stepValues.Add( sqrt_5 + S[ i - 2, j + 1 ] );
+                        }
+                    }
+
+                    // ( i+1, j+1 ) ==> ( i+1, j+2 )
+                    //      ||
+                    // ( i+2, j+1 )
+                    if ( ( i <= m_M - 2 && j <= m_N - 2 ) && !MathUtils.NearlyEqual( S[ i + 1, j + 1 ], m_obstacleConst ) )
+                    {
+                        if ( ( i <= m_M - 2 && j <= m_N - 2 ) && ( !MathUtils.NearlyZero( S[ i + 1, j + 1 ] ) ) )
+                        {
+                            stepValues.Add( sqrt_2 + S[ i + 1, j + 1 ] );
                         }
 
-                        // ( i, j+1 )
-                        if ( ( j <= m_N - 2 ) && S[ i, j + 1 ] != 0 && S[ i, j + 1 ] != m_M * m_N )
+                        if ( ( i <= m_M - 2 && j <= m_N - 3 ) && !MathUtils.NearlyZero( S[ i + 1, j + 2 ] ) && !MathUtils.NearlyEqual( S[ i + 1, j + 2 ], m_obstacleConst ) )
                         {
-                            stepValues.Add( 1 + S[ i, j + 1 ] );
+                            stepValues.Add( sqrt_5 + S[ i + 1, j + 2 ] );
                         }
 
-                        // ( i+1, j )
-                        if ( ( i <= m_M - 2 ) && S[ i + 1, j ] != 0 && S[ i + 1, j ] != m_M * m_N )
+                        if ( ( i <= m_M - 3 && j <= m_N - 2 ) && !MathUtils.NearlyZero( S[ i + 2, j + 1 ] ) && !MathUtils.NearlyEqual( S[ i + 2, j + 1 ], m_obstacleConst ) )
                         {
-                            stepValues.Add( 1 + S[ i + 1, j ] );
+                            stepValues.Add( sqrt_5 + S[ i + 2, j + 1 ] );
+                        }
+                    }
+
+                    // ( i+1, j-2 ) ==> ( i+1, j-1 )
+                    //                       ||
+                    //                  ( i+2, j-1 )
+                    if ( ( i <= m_M - 2 && j >= 1 ) && !MathUtils.NearlyEqual( S[ i + 1, j - 1 ], m_obstacleConst ) )
+                    {
+                        if ( ( i <= m_M - 2 && j >= 1 ) && ( !MathUtils.NearlyZero( S[ i + 1, j - 1 ] ) ) )
+                        {
+                            stepValues.Add( sqrt_2 + S[ i + 1, j - 1 ] );
                         }
 
-                        // ( i, j-1 )
-                        if ( ( j >= 1 ) && S[ i, j - 1 ] != 0 && S[ i, j - 1 ] != m_M * m_N )
+                        if ( ( i <= m_M - 2 && j >= 2 ) && !MathUtils.NearlyZero( S[ i + 1, j - 2 ] ) && !MathUtils.NearlyEqual( S[ i + 1, j - 2 ], m_obstacleConst ) )
                         {
-                            stepValues.Add( 1 + S[ i, j - 1 ] );
+                            stepValues.Add( sqrt_5 + S[ i + 1, j - 2 ] );
                         }
 
-                        // Assign to (i,j) cell the minimum distance value
-                        if ( stepValues.Count >= 1 )
+                        if ( ( i <= m_M - 3 && j >= 1 ) && !MathUtils.NearlyZero( S[ i + 2, j - 1 ] ) && !MathUtils.NearlyEqual( S[ i + 2, j - 1 ], m_obstacleConst ) )
                         {
-                            double minStep = stepValues.Min<double>();
-                            System.Diagnostics.Debug.Assert( minStep > 0 );
-
-                            S[ i, j ] = minStep;
-                            emptyCellCount--;
+                            stepValues.Add( sqrt_5 + S[ i + 2, j - 1 ] );
                         }
+                    }
+
+                    // ( i-1, j )
+                    if ( ( i >= 1 ) && !MathUtils.NearlyZero( S[ i - 1, j ] ) && !MathUtils.NearlyEqual( S[ i - 1, j ], m_obstacleConst ) )
+                    {
+                        stepValues.Add( 1 + S[ i - 1, j ] );
+                    }
+
+                    // ( i, j+1 )
+                    if ( ( j <= m_N - 2 ) && !MathUtils.NearlyZero( S[ i, j + 1 ] ) && !MathUtils.NearlyEqual( S[ i, j + 1 ], m_obstacleConst ) )
+                    {
+                        stepValues.Add( 1 + S[ i, j + 1 ] );
+                    }
+
+                    // ( i+1, j )
+                    if ( ( i <= m_M - 2 ) && !MathUtils.NearlyZero( S[ i + 1, j ] ) && !MathUtils.NearlyEqual( S[ i + 1, j ], m_obstacleConst ) )
+                    {
+                        stepValues.Add( 1 + S[ i + 1, j ] );
+                    }
+
+                    // ( i, j-1 )
+                    if ( ( j >= 1 ) && !MathUtils.NearlyZero( S[ i, j - 1 ] ) && !MathUtils.NearlyEqual( S[ i, j - 1 ], m_obstacleConst ) )
+                    {
+                        stepValues.Add( 1 + S[ i, j - 1 ] );
+                    }
+
+                    // Assign to (i,j) cell the minimum distance value
+                    if ( stepValues.Count >= 1 )
+                    {
+                        double minStep = stepValues.Min<double>();
+                        System.Diagnostics.Debug.Assert( minStep > 0 );
+                        System.Diagnostics.Debug.Assert( stepValues.Count <= 16 );
+
+                        S[ i, j ] = minStep;
+                        emptyCellCount--;
                     }
                 }
             }
         }
 
-        public double[,] CalcDistanceField()
+        public double[ , ] CalcDistanceField()
         {
-            m_G = CalcGField();
+            List<int[ , ]> G_exits = new List<int[ , ]>();
+            List<double[ , ]> S_exits = new List<double[ , ]>();
 
-            int emptyCellCount;
-            m_S = InitSField( out emptyCellCount );
-            CalcSField( m_S, ref emptyCellCount );
+            // Eval distance field for every exit (others are considered as closed)
+            for ( int k = 1; k <= m_building.CurrentFloor.Exits.Count; ++k )
+            {
+                m_G = CalcGField( k );
+
+                int emptyCellCount;
+                m_S = InitSField( out emptyCellCount );
+
+                // FIXME: in case of no exit this loop will hang!
+                //        We should handle this situation properly
+                while ( emptyCellCount >= 1 )
+                {
+                    CalcSField( m_S, ref emptyCellCount );
+                }
+
+                G_exits.Add( ( int[ , ] )m_G.Clone() );
+                S_exits.Add( ( double[ , ] )( m_S ) );
+            }
+
+            // Eval final distance field as minimum of previously evaluated ones
+            for ( int i = 0; i < m_M; ++i )
+            {
+                for ( int j = 0; j < m_N; ++j )
+                {
+                    double minValue = double.PositiveInfinity;
+                    for ( int k = 0; k < m_building.CurrentFloor.Exits.Count; ++k )
+                    {
+                        if ( S_exits[ k ][ i, j ] < minValue ) minValue = S_exits[ k ][ i, j ];
+                    }
+
+                    m_S[ i, j ] = minValue;
+                }
+            }
+
+#if DEBUG
+            for ( int i = 0; i < m_M; ++i )
+            {
+                for ( int j = 0; j < m_N; ++j )
+                {
+                    if ( MathUtils.NearlyZero( m_S[ i, j ] ) )
+                    {
+                        System.Diagnostics.Debugger.Break();
+                    }
+                }
+            }
+#endif
 
             return m_S;
         }
@@ -1173,7 +1230,7 @@ namespace MathModel
                             if ( m_S[ i, j ] >= m_M * m_N ) continue;
 
                             float coeff = 1 - ( float )( m_S[ i, j ] / maxDistValue );
-                            Color c1 = Color.Red;
+                            Color c1 = Color.Lime;
                             Color t = Color.FromArgb( c1.A, ( int )( c1.R * coeff ), ( int )( c1.G * coeff ), ( int )( c1.B * coeff ) );
 
                             using ( var b = new SolidBrush( t ) )
