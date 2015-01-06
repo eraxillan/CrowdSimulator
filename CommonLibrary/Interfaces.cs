@@ -20,6 +20,7 @@
 
 using System.Drawing;
 using System.Collections.Generic;
+using SigmaDC.Common.Math;
 
 namespace SigmaDC.Interfaces
 {

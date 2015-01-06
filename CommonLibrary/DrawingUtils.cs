@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CommonLibrary
+namespace SigmaDC.Common.Drawing2D
 {
     public class DrawingUtils
     {

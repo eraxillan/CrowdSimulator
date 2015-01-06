@@ -28,6 +28,8 @@ using System.Drawing.Drawing2D;
 using System.Linq;
 
 using SigmaDC.Interfaces;
+using SigmaDC.Common.Math;
+using SigmaDC.Common.Drawing2D;
 
 namespace SigmaDC.Types
 {
@@ -952,7 +954,7 @@ namespace SigmaDC.Types
                         // Draw box properties as text over it
                         var extent = box.Extents;
                         var extentCenter = new PointF( ( extent.Left + extent.Right ) / 2, ( extent.Bottom + extent.Top ) / 2 );
-                        CommonLibrary.DrawingUtils.DrawText( g, "ID: " + box.Id + "\n" + "Height: " + ( box.Z2 - box.Z1 ), extentCenter, extent );
+                        DrawingUtils.DrawText( g, "ID: " + box.Id + "\n" + "Height: " + ( box.Z2 - box.Z1 ), extentCenter, extent );
                     }
 
                     break;

@@ -22,132 +22,136 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 
-public static class MathUtils
+namespace SigmaDC.Common.Math
 {
-    public static bool NearlyEqual( float a, float b, float epsilon = 0.001f )
-    {
-        float diff = Math.Abs( a - b );
-        return ( diff < epsilon );
-    }
 
-    public static bool NearlyEqual( double a, double b, double epsilon = 0.001 )
+    public static class MathUtils
     {
-        double diff = Math.Abs( a - b );
-        return ( diff < epsilon );
-    }
-
-    public static bool NearlyZero( float x, float epsilon = 0.001f )
-    {
-        return NearlyEqual( x, 0.0f, epsilon );
-    }
-
-    public static bool NearlyZero( double x, double epsilon = 0.001 )
-    {
-        return NearlyEqual( x, 0.0f, epsilon );
-    }
-}
-
-public static class DotNetExtensions
-{
-    /*public static double Min( this List<double> collection  )
-    {
-        double minValue = double.PositiveInfinity;
-        foreach( var aValue in collection)
+        public static bool NearlyEqual( float a, float b, float epsilon = 0.001f )
         {
-            if ( aValue < minValue ) minValue = aValue;
+            float diff = System.Math.Abs( a - b );
+            return ( diff < epsilon );
         }
-        return minValue;
-    }*/
-}
 
-public class PointD
-{
-    double x = double.NaN;
-    double y = double.NaN;
+        public static bool NearlyEqual( double a, double b, double epsilon = 0.001 )
+        {
+            double diff = System.Math.Abs( a - b );
+            return ( diff < epsilon );
+        }
 
-    public PointD()
-    {
+        public static bool NearlyZero( float x, float epsilon = 0.001f )
+        {
+            return NearlyEqual( x, 0.0f, epsilon );
+        }
+
+        public static bool NearlyZero( double x, double epsilon = 0.001 )
+        {
+            return NearlyEqual( x, 0.0f, epsilon );
+        }
     }
 
-    public PointD( double x, double y )
+    public static class DotNetExtensions
     {
-        this.x = x;
-        this.y = y;
+        /*public static double Min( this List<double> collection  )
+        {
+            double minValue = double.PositiveInfinity;
+            foreach( var aValue in collection)
+            {
+                if ( aValue < minValue ) minValue = aValue;
+            }
+            return minValue;
+        }*/
     }
 
-    public override string ToString()
+    public class PointD
     {
-        return "( X=" + this.x + ", Y=" + this.y + " )";
+        double x = double.NaN;
+        double y = double.NaN;
+
+        public PointD()
+        {
+        }
+
+        public PointD( double x, double y )
+        {
+            this.x = x;
+            this.y = y;
+        }
+
+        public override string ToString()
+        {
+            return "( X=" + this.x + ", Y=" + this.y + " )";
+        }
+
+        public override int GetHashCode()
+        {
+            return ( this.x.GetHashCode() + 2 ) ^ ( this.y.GetHashCode() + 2 );
+        }
+
+        public override bool Equals( object obj )
+        {
+            if ( !( obj is PointD ) ) return false;
+            PointD other = obj as PointD;
+            return ( this == other );
+        }
+
+        public static bool operator ==( PointD p1, PointD p2 )
+        {
+            return ( p1.x == p2.x ) && ( p1.y == p2.y );
+        }
+
+        public static bool operator !=( PointD p1, PointD p2 )
+        {
+            return !( p1 == p2 );
+        }
     }
 
-    public override int GetHashCode()
+    public class Point3F
     {
-        return ( this.x.GetHashCode() + 2 ) ^ ( this.y.GetHashCode() + 2 );
-    }
+        float m_X = float.NaN;
+        float m_Y = float.NaN;
+        float m_Z = float.NaN;
 
-    public override bool Equals( object obj )
-    {
-        if ( !( obj is PointD ) ) return false;
-        PointD other = obj as PointD;
-        return ( this == other );
-    }
+        public Point3F( float X, float Y, float Z = 0 )
+        {
+            m_X = X;
+            m_Y = Y;
+            m_Z = Z;
+        }
 
-    public static bool operator ==( PointD p1, PointD p2 )
-    {
-        return ( p1.x == p2.x ) && ( p1.y == p2.y );
-    }
+        public bool IsNull
+        {
+            get { return ( float.IsNaN( m_X ) || float.IsNaN( m_Y ) || float.IsNaN( m_Z ) ); }
+        }
 
-    public static bool operator !=( PointD p1, PointD p2 )
-    {
-        return !( p1 == p2 );
-    }
-}
+        public float X
+        {
+            get { return m_X; }
+        }
 
-public class Point3F
-{
-    float m_X = float.NaN;
-    float m_Y = float.NaN;
-    float m_Z = float.NaN;
+        public float Y
+        {
+            get { return m_Y; }
+        }
 
-    public Point3F( float X, float Y, float Z = 0 )
-    {
-        m_X = X;
-        m_Y = Y;
-        m_Z = Z;
-    }
+        public float Z
+        {
+            get { return m_Z; }
+        }
 
-    public bool IsNull
-    {
-        get { return ( float.IsNaN( m_X ) || float.IsNaN( m_Y ) || float.IsNaN( m_Z ) ); }
-    }
+        public override string ToString()
+        {
+            if ( IsNull )
+                return "<Invalid>";
 
-    public float X
-    {
-        get { return m_X; }
-    }
-
-    public float Y
-    {
-        get { return m_Y; }
-    }
-
-    public float Z
-    {
-        get { return m_Z; }
-    }
-
-    public override string ToString()
-    {
-        if ( IsNull )
-            return "<Invalid>";
-
-        string pntString = "{ ";
-        pntString += X.ToString( "F3" );
-        pntString += "; ";
-        pntString += Y.ToString( "F3" );
-        pntString += "; ";
-        pntString += Z.ToString( "F3" );
-        pntString += " }";
-        return pntString;
+            string pntString = "{ ";
+            pntString += X.ToString( "F3" );
+            pntString += "; ";
+            pntString += Y.ToString( "F3" );
+            pntString += "; ";
+            pntString += Z.ToString( "F3" );
+            pntString += " }";
+            return pntString;
+        }
     }
 }
