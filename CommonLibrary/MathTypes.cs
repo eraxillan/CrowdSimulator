@@ -19,18 +19,87 @@
  */
 
 using System;
+using System.Collections.Generic;
+using System.Drawing;
 
 public static class MathUtils
 {
     public static bool NearlyEqual( float a, float b, float epsilon = 0.001f )
     {
         float diff = Math.Abs( a - b );
-        return( diff < epsilon );
+        return ( diff < epsilon );
     }
 
-    public static bool NearlyZero(float x, float epsilon=0.001f)
+    public static bool NearlyEqual( double a, double b, double epsilon = 0.001 )
+    {
+        double diff = Math.Abs( a - b );
+        return ( diff < epsilon );
+    }
+
+    public static bool NearlyZero( float x, float epsilon = 0.001f )
     {
         return NearlyEqual( x, 0.0f, epsilon );
+    }
+
+    public static bool NearlyZero( double x, double epsilon = 0.001 )
+    {
+        return NearlyEqual( x, 0.0f, epsilon );
+    }
+}
+
+public static class DotNetExtensions
+{
+    /*public static double Min( this List<double> collection  )
+    {
+        double minValue = double.PositiveInfinity;
+        foreach( var aValue in collection)
+        {
+            if ( aValue < minValue ) minValue = aValue;
+        }
+        return minValue;
+    }*/
+}
+
+public class PointD
+{
+    double x = double.NaN;
+    double y = double.NaN;
+
+    public PointD()
+    {
+    }
+
+    public PointD( double x, double y )
+    {
+        this.x = x;
+        this.y = y;
+    }
+
+    public override string ToString()
+    {
+        return "( X=" + this.x + ", Y=" + this.y + " )";
+    }
+
+    public override int GetHashCode()
+    {
+        return ( this.x.GetHashCode() + 2 ) ^ ( this.y.GetHashCode() + 2 );
+    }
+
+    public override bool Equals( object obj )
+    {
+        if ( !( obj is PointD ) ) return false;
+        PointD other = obj as PointD;
+        return ( this == other );
+    }
+
+    public static bool operator ==( PointD p1, PointD p2 )
+    {
+        return ( p1.x == p2.x ) && ( p1.y == p2.y );
+    }
+
+    public static bool operator !=( PointD p1, PointD p2 )
+    {
+        return !( p1 == p2 );
     }
 }
 

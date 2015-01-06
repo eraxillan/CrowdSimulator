@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.30723.0
+VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InputDataParser", "InputDataParser\InputDataParser.csproj", "{9A9A5452-8306-4A5C-A626-11DF6F85B96A}"
 EndProject
@@ -10,6 +10,16 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Visualizer", "Visualizer\Visualizer.csproj", "{07CE349B-09DE-4FF4-B806-F97AC1939F28}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GdiPlusVisualizer", "GdiPlusVisualizer\GdiPlusVisualizer.csproj", "{3791DD64-426E-4DD6-A011-AD6F59F358EB}"
+	ProjectSection(ProjectDependencies) = postProject
+		{3BD49E14-A881-4869-BB79-B863047EB7C9} = {3BD49E14-A881-4869-BB79-B863047EB7C9}
+		{83517A1E-3FC4-4E0D-8288-16D274ADBE13} = {83517A1E-3FC4-4E0D-8288-16D274ADBE13}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MathModel", "MathModel\MathModel.csproj", "{3BD49E14-A881-4869-BB79-B863047EB7C9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests", "UnitTests\UnitTests.csproj", "{2B4C4C01-6E63-41B9-AABF-552AD9A40611}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommonLibrary", "CommonLibrary\CommonLibrary.csproj", "{83517A1E-3FC4-4E0D-8288-16D274ADBE13}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +43,18 @@ Global
 		{3791DD64-426E-4DD6-A011-AD6F59F358EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3791DD64-426E-4DD6-A011-AD6F59F358EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3791DD64-426E-4DD6-A011-AD6F59F358EB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3BD49E14-A881-4869-BB79-B863047EB7C9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3BD49E14-A881-4869-BB79-B863047EB7C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3BD49E14-A881-4869-BB79-B863047EB7C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3BD49E14-A881-4869-BB79-B863047EB7C9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2B4C4C01-6E63-41B9-AABF-552AD9A40611}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B4C4C01-6E63-41B9-AABF-552AD9A40611}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B4C4C01-6E63-41B9-AABF-552AD9A40611}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B4C4C01-6E63-41B9-AABF-552AD9A40611}.Release|Any CPU.Build.0 = Release|Any CPU
+		{83517A1E-3FC4-4E0D-8288-16D274ADBE13}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83517A1E-3FC4-4E0D-8288-16D274ADBE13}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83517A1E-3FC4-4E0D-8288-16D274ADBE13}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83517A1E-3FC4-4E0D-8288-16D274ADBE13}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

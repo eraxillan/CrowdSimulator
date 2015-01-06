@@ -51,11 +51,8 @@
     <Compile Include="DrawForm.Designer.cs">
       <DependentUpon>DrawForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Interfaces.cs" />
-    <Compile Include="MathTypes.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="WrapperTypes.cs" />
     <EmbeddedResource Include="DrawForm.resx">
       <DependentUpon>DrawForm.cs</DependentUpon>
     </EmbeddedResource>
@@ -82,9 +79,17 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CommonLibrary\CommonLibrary.csproj">
+      <Project>{83517a1e-3fc4-4e0d-8288-16d274adbe13}</Project>
+      <Name>CommonLibrary</Name>
+    </ProjectReference>
     <ProjectReference Include="..\InputDataParser\InputDataParser.csproj">
       <Project>{9a9a5452-8306-4a5c-a626-11df6f85b96a}</Project>
       <Name>InputDataParser</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MathModel\MathModel.csproj">
+      <Project>{3bd49e14-a881-4869-bb79-b863047eb7c9}</Project>
+      <Name>MathModel</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
