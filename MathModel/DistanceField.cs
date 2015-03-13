@@ -47,7 +47,9 @@ namespace MathModel
         {
             foreach ( var box in m_building.CurrentFloor.Geometry )
             {
-                bool b = ( !box.Extents.IsEmpty && ( box.Extents.Top < box.Extents.Bottom ) );
+                RectangleF boxExtents = box.Extents;
+
+                bool b = ( !boxExtents.IsEmpty && ( boxExtents.Top < boxExtents.Bottom ) );
                 if ( !b ) System.Diagnostics.Debugger.Break();
 
                 // We are interesting in those cases to check intersection presents:
@@ -62,8 +64,8 @@ namespace MathModel
                     return true;*/
 
                 // 3) Cell rectangle intersect one of the rectangle sides
-                var rect = RectangleF.Intersect( box.Extents, cellRect );
-                if ( ( rect.Width > 0 || rect.Height > 0 ) && !box.Extents.Contains( cellRect ) )
+                var rect = RectangleF.Intersect( boxExtents, cellRect );
+                if ( ( rect.Width > 0 || rect.Height > 0 ) && !boxExtents.Contains( cellRect ) )
                 {
                     return true;
                 }
@@ -76,10 +78,12 @@ namespace MathModel
         {
             foreach ( var furn in m_building.CurrentFloor.Furniture )
             {
-                bool b = ( !furn.Extents.IsEmpty && ( furn.Extents.Top < furn.Extents.Bottom ) );
+                RectangleF furnExtents = furn.Extents;
+
+                bool b = ( !furnExtents.IsEmpty && ( furnExtents.Top < furnExtents.Bottom ) );
                 if ( !b ) System.Diagnostics.Debugger.Break();
 
-                var rect = RectangleF.Intersect( furn.Extents, cellRect );
+                var rect = RectangleF.Intersect( furnExtents, cellRect );
                 if ( ( rect.Width > 0 || rect.Height > 0 ) )
                 {
                     return true;
@@ -93,11 +97,13 @@ namespace MathModel
         {
             foreach ( var st in m_building.CurrentFloor.Stairways )
             {
-                bool b = ( !st.Extents.IsEmpty && ( st.Extents.Top < st.Extents.Bottom ) );
+                RectangleF stExtents = st.Extents;
+
+                bool b = ( !stExtents.IsEmpty && ( stExtents.Top < stExtents.Bottom ) );
                 if ( !b ) System.Diagnostics.Debugger.Break();
 
-                var rect = RectangleF.Intersect( st.Extents, cellRect );
-                if ( ( rect.Width > 0 || rect.Height > 0 ) && !st.Extents.Contains( cellRect ) )
+                var rect = RectangleF.Intersect( stExtents, cellRect );
+                if ( ( rect.Width > 0 || rect.Height > 0 ) && !stExtents.Contains( cellRect ) )
                 {
                     return true;
                 }
@@ -110,22 +116,24 @@ namespace MathModel
         {
             foreach ( var aper in m_building.CurrentFloor.FakeApertures )
             {
-                bool b = ( ( aper.Extents.Width > 0 || aper.Extents.Height > 0 ) && ( aper.Extents.Top <= aper.Extents.Bottom ) );
+                RectangleF aperExtents = aper.Extents;
+
+                bool b = ( ( aperExtents.Width > 0 || aperExtents.Height > 0 ) && ( aperExtents.Top <= aperExtents.Bottom ) );
                 if ( !b ) System.Diagnostics.Debugger.Break();
 
-                var rect = RectangleF.Intersect( aper.Extents, cellRect );
-                if ( ( rect.Width > 0 || rect.Height > 0 ) && !aper.Extents.Contains( cellRect ) )
+                var rect = RectangleF.Intersect( aperExtents, cellRect );
+                if ( ( rect.Width > 0 || rect.Height > 0 ) && !aperExtents.Contains( cellRect ) )
                 {
                     if ( MathUtils.NearlyZero( rect.Height ) )
                     {
-                        if ( rect.Left == aper.Extents.Left ) continue;
-                        if ( rect.Right == aper.Extents.Right ) continue;
+                        if ( rect.Left == aperExtents.Left ) continue;
+                        if ( rect.Right == aperExtents.Right ) continue;
                     }
 
                     if ( MathUtils.NearlyZero( rect.Width ) )
                     {
-                        if ( rect.Top == aper.Extents.Top ) continue;
-                        if ( rect.Bottom == aper.Extents.Bottom ) continue;
+                        if ( rect.Top == aperExtents.Top ) continue;
+                        if ( rect.Bottom == aperExtents.Bottom ) continue;
                     }
 
                     return true;
@@ -139,7 +147,25 @@ namespace MathModel
         {
             exitId = -2;
 
-            for ( int k = 1; k <= m_building.CurrentFloor.Exits.Count; ++k )
+            // NOTE: this call is expensive
+            int i = 1;
+            foreach ( var exit in m_building.CurrentFloor.Exits )
+            {
+                var rect = NormalizeRect( exit.Extents, m_a );
+                var intersectRect = RectangleF.Intersect( rect, cellRect );
+                if ( !intersectRect.IsEmpty && !rect.Contains( cellRect ) )
+                {
+                    exitId = i;
+                    return true;
+                }
+
+                ++i;
+            }
+
+            return false;
+
+            /*int exitCount = m_building.CurrentFloor.Exits.Count();
+            for ( int k = 1; k <= exitCount; ++k )
             {
                 var ext = NormalizeRect( m_building.CurrentFloor.Exits[ k - 1 ].Extents, m_a );
                 var rect = RectangleF.Intersect( ext, cellRect );
@@ -150,29 +176,31 @@ namespace MathModel
                 }
             }
 
-            return false;
+            return false;*/
         }
 
         bool IntersectInnerDoor( RectangleF cellRect )
         {
             foreach ( var aper in m_building.CurrentFloor.Doors )
             {
-                bool b = ( ( aper.Extents.Width > 0 || aper.Extents.Height > 0 ) && ( aper.Extents.Top <= aper.Extents.Bottom ) );
+                RectangleF aperExtents = aper.Extents;
+
+                bool b = ( ( aperExtents.Width > 0 || aperExtents.Height > 0 ) && ( aperExtents.Top <= aperExtents.Bottom ) );
                 if ( !b ) System.Diagnostics.Debugger.Break();
 
-                var rect = RectangleF.Intersect( aper.Extents, cellRect );
-                if ( ( rect.Width > 0 || rect.Height > 0 ) && !aper.Extents.Contains( cellRect ) )
+                var rect = RectangleF.Intersect( aperExtents, cellRect );
+                if ( ( rect.Width > 0 || rect.Height > 0 ) && !aperExtents.Contains( cellRect ) )
                 {
                     if ( MathUtils.NearlyZero( rect.Height ) )
                     {
-                        if ( rect.Left == aper.Extents.Left ) continue;
-                        if ( rect.Right == aper.Extents.Right ) continue;
+                        if ( rect.Left == aperExtents.Left ) continue;
+                        if ( rect.Right == aperExtents.Right ) continue;
                     }
 
                     if ( MathUtils.NearlyZero( rect.Width ) )
                     {
-                        if ( rect.Top == aper.Extents.Top ) continue;
-                        if ( rect.Bottom == aper.Extents.Bottom ) continue;
+                        if ( rect.Top == aperExtents.Top ) continue;
+                        if ( rect.Bottom == aperExtents.Bottom ) continue;
                     }
 
                     return true;
@@ -186,11 +214,13 @@ namespace MathModel
         {
             foreach ( var aper in m_building.CurrentFloor.Windows )
             {
-                bool b = ( ( aper.Extents.Width > 0 || aper.Extents.Height > 0 ) && ( aper.Extents.Top <= aper.Extents.Bottom ) );
+                RectangleF aperExtents = aper.Extents;
+
+                bool b = ( ( aperExtents.Width > 0 || aperExtents.Height > 0 ) && ( aperExtents.Top <= aperExtents.Bottom ) );
                 if ( !b ) System.Diagnostics.Debugger.Break();
 
-                var rect = RectangleF.Intersect( aper.Extents, cellRect );
-                if ( ( rect.Width > 0 || rect.Height > 0 ) && !aper.Extents.Contains( cellRect ) )
+                var rect = RectangleF.Intersect( aperExtents, cellRect );
+                if ( ( rect.Width > 0 || rect.Height > 0 ) && !aperExtents.Contains( cellRect ) )
                 {
                     return true;
                 }
@@ -201,7 +231,7 @@ namespace MathModel
 
         public int[ , ] CalcGField( int selectedExitId )
         {
-            if ( selectedExitId < 0 || selectedExitId > m_building.CurrentFloor.Exits.Count )
+            if ( selectedExitId < 0 || selectedExitId > m_building.CurrentFloor.Exits.Count() )
                 System.Diagnostics.Debugger.Break();
 
             var G = new int[ m_M, m_N ];
@@ -448,7 +478,7 @@ namespace MathModel
             List<double[ , ]> S_exits = new List<double[ , ]>();
 
             // Eval distance field for every exit (others are considered as closed)
-            for ( int k = 1; k <= m_building.CurrentFloor.Exits.Count; ++k )
+            for ( int k = 1; k <= m_building.CurrentFloor.Exits.Count(); ++k )
             {
                 m_G = CalcGField( k );
 
@@ -472,7 +502,7 @@ namespace MathModel
                 for ( int j = 0; j < m_N; ++j )
                 {
                     double minValue = double.PositiveInfinity;
-                    for ( int k = 0; k < m_building.CurrentFloor.Exits.Count; ++k )
+                    for ( int k = 0; k < m_building.CurrentFloor.Exits.Count(); ++k )
                     {
                         if ( S_exits[ k ][ i, j ] < minValue ) minValue = S_exits[ k ][ i, j ];
                     }
@@ -495,6 +525,20 @@ namespace MathModel
 #endif
 
             return m_S;
+        }
+
+        public double Get( float x, float y )
+        {
+            int i = ( int )( ( x - m_x0 ) / m_a );
+            int j = ( int )( ( y - m_y0 ) / m_a );
+            return m_S[ i, j ];
+        }
+
+        public double Get( double x, double y )
+        {
+            int i = ( int )( ( x - m_x0 ) / m_a );
+            int j = ( int )( ( y - m_y0 ) / m_a );
+            return m_S[ i, j ];
         }
 
         public void SetDrawMode( DrawMode dm )

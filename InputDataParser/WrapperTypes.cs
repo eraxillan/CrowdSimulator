@@ -813,12 +813,17 @@ namespace SigmaDC.Types
             foreach ( var human in peopleFloor.People ) m_people.Add( new HumanWrapper( human ) );
         }
 
+        public void AddStairway( StairwayWrapper sw )
+        {
+            m_stairways.Add( sw );
+        }
+
         public int Number
         {
             get { return m_floor.Number; }
         }
 
-        public List<BoxWrapper> Geometry
+        public IEnumerable<BoxWrapper> Geometry
         {
             get
             {
@@ -834,23 +839,23 @@ namespace SigmaDC.Types
             }
         }
 
-        public List<ApertureWrapper> Apertures
+        public IEnumerable<ApertureWrapper> Apertures
         {
             get { return m_apertures; }
         }
 
-        public List<StairwayWrapper> Stairways
+        public IEnumerable<StairwayWrapper> Stairways
         {
             get { return m_stairways; }
-            set { m_stairways = value; }
+            set { m_stairways = value.ToList(); }
         }
 
-        public List<FurnitureWrapper> Furniture
+        public IEnumerable<FurnitureWrapper> Furniture
         {
             get { return m_furniture; }
         }
 
-        public List<HumanWrapper> People
+        public IEnumerable<HumanWrapper> People
         {
             get { return m_people; }
         }
@@ -879,48 +884,35 @@ namespace SigmaDC.Types
             return boxes;
         }
 
-        List<ApertureWrapper> GetAperturesOfType( int type )
-        {
-            var apertures = new List<ApertureWrapper>();
-            foreach ( var aper in m_apertures )
-            {
-                if ( ( aper.Type == type ) )
-                {
-                    apertures.Add( aper );
-                }
-            }
-            return apertures;
-        }
-
-        public List<ApertureWrapper> Doors
+        public IEnumerable<ApertureWrapper> Doors
         {
             get
             {
-                return GetAperturesOfType( 0 );
+                return m_apertures.Where( x => x.Type == 0 );
             }
         }
 
-        public List<ApertureWrapper> Windows
+        public IEnumerable<ApertureWrapper> Windows
         {
             get
             {
-                return GetAperturesOfType( 1 );
+                return m_apertures.Where( x => x.Type == 1 );
             }
         }
 
-        public List<ApertureWrapper> FakeApertures
+        public IEnumerable<ApertureWrapper> FakeApertures
         {
             get
             {
-                return GetAperturesOfType( 2 );
+                return m_apertures.Where( x => x.Type == 2 );
             }
         }
 
-        public List<ApertureWrapper> Exits
+        public IEnumerable<ApertureWrapper> Exits
         {
             get
             {
-                return GetAperturesOfType( 3 );
+                return m_apertures.Where( x => x.Type == 3 );
             }
         }
 
@@ -1125,13 +1117,13 @@ namespace SigmaDC.Types
                             if ( ( aper.BoxId1 == gi.Id ) && ( aper.BoxId2 == -1 ) )
                             {
                                 var sw = new StairwayWrapper( m_stairways[ i ], 0, halfOfItemCount );
-                                floor.Stairways.Add( sw );
+                                floor.AddStairway( sw );
                             }
 
                             if ( aper.BoxId2 == gi.Id )
                             {
                                 var sw = new StairwayWrapper( m_stairways[ i ], halfOfItemCount, halfOfItemCount );
-                                floor.Stairways.Add( sw );
+                                floor.AddStairway( sw );
                             }
                         }
                     }
