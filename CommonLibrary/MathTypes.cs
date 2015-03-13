@@ -21,38 +21,45 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Runtime.CompilerServices;
 
 namespace SigmaDC.Common.Math
 {
 
     public static class MathUtils
     {
+        [MethodImpl( MethodImplOptions.AggressiveInlining )]
         public static bool NearlyEqual( float a, float b, float epsilon = 0.001f )
         {
-            float diff = System.Math.Abs( a - b );
+            float diff = ( a - b >= 0 ) ? a - b : b - a;
             return ( diff < epsilon );
         }
 
+        [MethodImpl( MethodImplOptions.AggressiveInlining )]
         public static bool NearlyEqual( double a, double b, double epsilon = 0.001 )
         {
-            double diff = System.Math.Abs( a - b );
+            double diff = ( a - b >= 0 ) ? a - b : b - a;
             return ( diff < epsilon );
         }
 
+        [MethodImpl( MethodImplOptions.AggressiveInlining )]
         public static bool NearlyZero( float x, float epsilon = 0.001f )
         {
-            return NearlyEqual( x, 0.0f, epsilon );
+            float diff = ( x >= 0 ) ? x : -x;
+            return ( diff < epsilon );
         }
 
+        [MethodImpl( MethodImplOptions.AggressiveInlining )]
         public static bool NearlyZero( double x, double epsilon = 0.001 )
         {
-            return NearlyEqual( x, 0.0f, epsilon );
+            double diff = ( x >= 0 ) ? x : -x;
+            return ( diff < epsilon );
         }
     }
 
-    public static class DotNetExtensions
+    /*public static class DotNetExtensions
     {
-        /*public static double Min( this List<double> collection  )
+        public static double Min( this List<double> collection  )
         {
             double minValue = double.PositiveInfinity;
             foreach( var aValue in collection)
@@ -60,8 +67,8 @@ namespace SigmaDC.Common.Math
                 if ( aValue < minValue ) minValue = aValue;
             }
             return minValue;
-        }*/
-    }
+        }
+    }*/
 
     public class PointD
     {
@@ -76,6 +83,16 @@ namespace SigmaDC.Common.Math
         {
             this.x = x;
             this.y = y;
+        }
+
+        public double X
+        {
+            get { return this.x; }
+        }
+
+        public double Y
+        {
+            get { return this.y; }
         }
 
         public override string ToString()
