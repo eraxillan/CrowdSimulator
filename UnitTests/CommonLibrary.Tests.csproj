@@ -36,6 +36,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.Numerics" />
   </ItemGroup>
   <Choose>
     <When Condition="('$(VisualStudioVersion)' == '10.0' or '$(VisualStudioVersion)' == '') and '$(TargetFrameworkVersion)' == 'v3.5'">
@@ -50,10 +51,14 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="MathStuffTests.cs" />
+    <Compile Include="MathTypes.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CommonLibrary\CommonLibrary.csproj">
+      <Project>{83517a1e-3fc4-4e0d-8288-16d274adbe13}</Project>
+      <Name>CommonLibrary</Name>
+    </ProjectReference>
     <ProjectReference Include="..\MathModel\MathModel.csproj">
       <Project>{3bd49e14-a881-4869-bb79-b863047eb7c9}</Project>
       <Name>MathModel</Name>
