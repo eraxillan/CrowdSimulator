@@ -1,13 +1,14 @@
 ﻿using System;
+using System.Drawing;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using SigmaDC.Interfaces;
-using SigmaDC.Common.Math;
+using SigmaDC.Common.MathEx;
 
-namespace MathModel
+namespace SigmaDC.MathModel
 {
     public class SigmaDCModel : IEvacuationModel
     {
@@ -16,38 +17,56 @@ namespace MathModel
             /// <summary>
             /// Visual range
             /// </summary>
-            public double r;
-            public double w = 0;
-            public double deltaD = 0.01;
-            public double a = 0.1;  // Grid step size, 10 cm by default
-            public int q = 4;   // The number of directions where human can move
+            public float r;
+            public float w = 0;
+            public float deltaD = 0.01f;
+            
+            /// <summary>
+            /// Grid step size, 10 cm by default
+            /// </summary>
+            public float a = 0.1f;
 
-            public double kw;
-            public double kp;
-            public double ks;
+            /// <summary>
+            /// The number of directions where human can move
+            /// </summary>
+            public int q = 4;
+
+            public float kw;
+            public float kp;
+            public float ks;
         }
-
-        public enum MobilityGroup { First = 1, Second = 2, Third = 3, Fourth = 4 };
-        public enum AgeGroup { First = 1, Second = 2, Third = 3, Fourth = 4, Fifth = 5 };
-        public enum EmotionState { Custom = 0, Comfort = 1, Calm = 2, Active = 3, VeryActive = 4 };
 
         enum AdultClothes { LightClothing, InBetweenSeason, Winter };
         enum ChildClothes { LeisureWear, LeisureWearPlusBag, OutdoorClothes };
         enum ChildrenAgeGroups { Junior, Middle, Senior };
-
         enum PathType { Horizontal, Aperture, StairwayDown, StairwayUp, HorizontalOutsideBuilding };
 
         Parameters m_modelParams = new Parameters();
+        List<Human> m_people = new List<Human>();
+        List<SdcRectangle> m_obstacleExtents = new List<SdcRectangle>();
 
         public void SetupParameters( Dictionary<string, object> modelParams )
         {
-            m_modelParams.r = ( double )modelParams[ "r" ];
-            m_modelParams.w = ( double )modelParams[ "w" ];
-            m_modelParams.deltaD = ( double )modelParams[ "deltaD" ];
+            m_modelParams.r = ( float )modelParams[ "r" ];
+            m_modelParams.w = ( float )modelParams[ "w" ];
+            m_modelParams.deltaD = ( float )modelParams[ "deltaD" ];
 
-            m_modelParams.kw = ( double )modelParams[ "kw" ];
-            m_modelParams.kp = ( double )modelParams[ "kp" ];
-            m_modelParams.ks = ( double )modelParams[ "ks" ];
+            m_modelParams.kw = ( float )modelParams[ "kw" ];
+            m_modelParams.kp = ( float )modelParams[ "kp" ];
+            m_modelParams.ks = ( float )modelParams[ "ks" ];
+        }
+
+        public void SetupObstacles( List<RectangleF> obstacleExtents )
+        {
+            foreach ( var extent in obstacleExtents )
+            {
+                m_obstacleExtents.Add( new SdcRectangle( extent ) );
+            }
+        }
+
+        public void SetupPeople( List<Human> people )
+        {
+            m_people = people;
         }
 
         public void ValidateParameters()
@@ -90,9 +109,9 @@ namespace MathModel
 
             public double F0;
             public double a_l;
-            public Dictionary<EmotionState, SpeedInitialValues> initValues;
+            public Dictionary<Human.EmotionState, SpeedInitialValues> initValues;
 
-            public SpeedConst( double F0, double a_l, Dictionary<EmotionState, SpeedInitialValues> initValues )
+            public SpeedConst( double F0, double a_l, Dictionary<Human.EmotionState, SpeedInitialValues> initValues )
             {
                 this.F0 = F0;
                 this.a_l = a_l;
@@ -104,46 +123,36 @@ namespace MathModel
         {
             var speedConst = new Dictionary<PathType, SpeedConst>();
 
-            var horizontalConst = new Dictionary<EmotionState, SpeedConst.SpeedInitialValues>();
-            horizontalConst.Add( EmotionState.Comfort, new SpeedConst.SpeedInitialValues( 0.57, 0.08 ) );
-            horizontalConst.Add( EmotionState.Calm, new SpeedConst.SpeedInitialValues( 0.96, 0.047 ) );
-            horizontalConst.Add( EmotionState.Active, new SpeedConst.SpeedInitialValues( 1.3, 0.66 ) );
-            horizontalConst.Add( EmotionState.VeryActive, new SpeedConst.SpeedInitialValues( 1.75, 0.083 ) );
+            var horizontalConst = new Dictionary<Human.EmotionState, SpeedConst.SpeedInitialValues>();
+            horizontalConst.Add( Human.EmotionState.Comfort, new SpeedConst.SpeedInitialValues( 0.57, 0.08 ) );
+            horizontalConst.Add( Human.EmotionState.Calm, new SpeedConst.SpeedInitialValues( 0.96, 0.047 ) );
+            horizontalConst.Add( Human.EmotionState.Active, new SpeedConst.SpeedInitialValues( 1.3, 0.66 ) );
+            horizontalConst.Add( Human.EmotionState.VeryActive, new SpeedConst.SpeedInitialValues( 1.75, 0.083 ) );
             speedConst.Add( PathType.Horizontal, new SpeedConst( 0.06, 0.295, horizontalConst ) );
 
-            var apertureConst = new Dictionary<EmotionState, SpeedConst.SpeedInitialValues>();
-            apertureConst.Add( EmotionState.Comfort, new SpeedConst.SpeedInitialValues( 0.57, 0.08 ) );
-            apertureConst.Add( EmotionState.Calm, new SpeedConst.SpeedInitialValues( 0.96, 0.047 ) );
-            apertureConst.Add( EmotionState.Active, new SpeedConst.SpeedInitialValues( 1.3, 0.66 ) );
-            apertureConst.Add( EmotionState.VeryActive, new SpeedConst.SpeedInitialValues( 1.75, 0.083 ) );
+            var apertureConst = new Dictionary<Human.EmotionState, SpeedConst.SpeedInitialValues>();
+            apertureConst.Add( Human.EmotionState.Comfort, new SpeedConst.SpeedInitialValues( 0.57, 0.08 ) );
+            apertureConst.Add( Human.EmotionState.Calm, new SpeedConst.SpeedInitialValues( 0.96, 0.047 ) );
+            apertureConst.Add( Human.EmotionState.Active, new SpeedConst.SpeedInitialValues( 1.3, 0.66 ) );
+            apertureConst.Add( Human.EmotionState.VeryActive, new SpeedConst.SpeedInitialValues( 1.75, 0.083 ) );
             speedConst.Add( PathType.Horizontal, new SpeedConst( 0.08, 0.295, apertureConst ) );
 
-            var stairwayDownConst = new Dictionary<EmotionState, SpeedConst.SpeedInitialValues>();
-            stairwayDownConst.Add( EmotionState.Comfort, new SpeedConst.SpeedInitialValues( 0.57, 0.08 ) );
-            stairwayDownConst.Add( EmotionState.Calm, new SpeedConst.SpeedInitialValues( 0.96, 0.047 ) );
-            stairwayDownConst.Add( EmotionState.Active, new SpeedConst.SpeedInitialValues( 1.3, 0.66 ) );
-            stairwayDownConst.Add( EmotionState.VeryActive, new SpeedConst.SpeedInitialValues( 1.75, 0.083 ) );
+            var stairwayDownConst = new Dictionary<Human.EmotionState, SpeedConst.SpeedInitialValues>();
+            stairwayDownConst.Add( Human.EmotionState.Comfort, new SpeedConst.SpeedInitialValues( 0.57, 0.08 ) );
+            stairwayDownConst.Add( Human.EmotionState.Calm, new SpeedConst.SpeedInitialValues( 0.96, 0.047 ) );
+            stairwayDownConst.Add( Human.EmotionState.Active, new SpeedConst.SpeedInitialValues( 1.3, 0.66 ) );
+            stairwayDownConst.Add( Human.EmotionState.VeryActive, new SpeedConst.SpeedInitialValues( 1.75, 0.083 ) );
             speedConst.Add( PathType.Horizontal, new SpeedConst( 0.10, 0.400, stairwayDownConst ) );
 
-            var stairwayUpConst = new Dictionary<EmotionState, SpeedConst.SpeedInitialValues>();
-            stairwayUpConst.Add( EmotionState.Comfort, new SpeedConst.SpeedInitialValues( 0.31, 0.47 ) );
-            stairwayUpConst.Add( EmotionState.Calm, new SpeedConst.SpeedInitialValues( 0.54, 0.03 ) );
-            stairwayUpConst.Add( EmotionState.Active, new SpeedConst.SpeedInitialValues( 0.775, 0.47 ) );
-            stairwayUpConst.Add( EmotionState.VeryActive, new SpeedConst.SpeedInitialValues( 1.08, 0.05 ) );
+            var stairwayUpConst = new Dictionary<Human.EmotionState, SpeedConst.SpeedInitialValues>();
+            stairwayUpConst.Add( Human.EmotionState.Comfort, new SpeedConst.SpeedInitialValues( 0.31, 0.47 ) );
+            stairwayUpConst.Add( Human.EmotionState.Calm, new SpeedConst.SpeedInitialValues( 0.54, 0.03 ) );
+            stairwayUpConst.Add( Human.EmotionState.Active, new SpeedConst.SpeedInitialValues( 0.775, 0.47 ) );
+            stairwayUpConst.Add( Human.EmotionState.VeryActive, new SpeedConst.SpeedInitialValues( 1.08, 0.05 ) );
             speedConst.Add( PathType.Horizontal, new SpeedConst( 0.08, 0.305, stairwayUpConst ) );
 
-            var horizontalOutsideBuildingConst = new Dictionary<EmotionState, SpeedConst.SpeedInitialValues>();
+            var horizontalOutsideBuildingConst = new Dictionary<Human.EmotionState, SpeedConst.SpeedInitialValues>();
             speedConst.Add( PathType.HorizontalOutsideBuilding, new SpeedConst( 0.08, 0.407, horizontalOutsideBuildingConst ) );
-        }
-
-        public class Human
-        {
-            public float projectionSize;
-            public int exitId;
-            public MobilityGroup mobilityGroup;
-            public AgeGroup ageGroup;
-            public EmotionState emotionState;
-            public double diameter;
         }
 
         public void InitShortestPathField()
@@ -151,26 +160,63 @@ namespace MathModel
             throw new NotImplementedException();
         }
 
-        double HeavisideFunction( double x )
+        float HeavisideFunction( float x )
         {
             if ( x < 0 ) return 0;
-            if ( x == 0 ) return 0.5;   // FIXME: incorrect compare without eps
+            if ( MathUtils.NearlyZero( x ) ) return 0.5f;
             return 1;
         }
 
-        double Density( double x )
+        float Density( float r_j, Human currHuman )
         {
+            // FIXME: precision loss during double ---> float conversion
+            /*RectangleF V = new RectangleF( (float)currHuman.projectionCenter.X, (float)currHuman.projectionCenter.Y, 
+                (float)currHuman.projectionDiameter, (float)r_j );
+            
+            List<Human> m_people = new List<Human>();
+            foreach(var human in m_people)
+            {
+                if(human.Ex)
+            }*/
             throw new NotImplementedException();
         }
 
-        double WallApproching( double x )
+        float WallApproching( float x )
         {
-            throw new NotImplementedException();
+            return ( x > m_modelParams.w ) ? 1 : 0;
         }
 
-        public PointD HumanNextStep( Human human, PointD xPrev )
+        public void NextStepAll( IDistanceField S, ref List<HumanRuntimeInfo> hi )
         {
-            PointD result = new PointD();
+            foreach ( var h in m_people )
+            {
+                var hiTemp = new HumanRuntimeInfo();
+                NextStep( h, S, ref hiTemp );
+                hi.Add( hiTemp );
+            }
+        }
+
+        public Vector2 NextStep( Human human, IDistanceField S, ref HumanRuntimeInfo humanInfo )
+        {
+            Vector2 xPrev = human.projectionCenter;
+
+            humanInfo.Center = human.projectionCenter;
+            humanInfo.Diameter = human.projectionDiameter;
+
+            // TODO: j == q case is reduntant
+            for ( int j = 1; j <= m_modelParams.q; ++j )
+            {
+                float phi = MathUtils.TwoPi * j / m_modelParams.q;
+
+                var e_j = new Vector2( ( float )Math.Cos( phi ), ( float )Math.Sin( phi ) );
+
+                SdcRectangle rect = new SdcRectangle( xPrev, human.projectionDiameter, m_modelParams.r, phi );
+  
+                humanInfo.RotateAngles.Add( phi );
+                humanInfo.MoveDirections.Add( e_j );
+                humanInfo.VisibilityAreas.Add( rect );
+            }
+
             //
             // x, xPrev - 2D-coordinates (current and previous), non-dimensional quantity
             // v - speed, meters/second
@@ -196,26 +242,56 @@ namespace MathModel
             //    r >= min( d[i]/2 ), i = 1,N, where N - people count
             //    min( d[i]/2 ) <= r*[j] <= r
             //
-            double norm = 0;
-            for ( int j = 0; j < m_modelParams.q; ++j )
+            List<KeyValuePair<float, Vector2>> directions = new List<KeyValuePair<float, Vector2>>();
+            List<float> probabilities = new List<float>( m_modelParams.q );
+            float norm = 0;
+            for ( int j = 1; j <= m_modelParams.q; ++j )
             {
-                // 0.1) Calculate r*[j] - the distance from human projection centre to first obstacle on his way
-                double r_j = 0;
-                // 0.2) dS[j] - the difference between old and new shortest path field values
-                double d_S = 0;
-                //
-                double p_j = Math.Exp( -m_modelParams.kw * ( 1 - r_j / m_modelParams.r ) * HeavisideFunction( d_S ) )
-                    * Math.Exp( -m_modelParams.kp * Density( r_j ) )
-                    * Math.Exp( m_modelParams.ks / d_S )
-                    * WallApproching( r_j - human.diameter / 2 );
+                //float angle = 2 * (float)Math.PI * j / m_modelParams.q;
+                //var e_j = new Vector2( (float)Math.Cos( angle ), (float)Math.Sin( angle ) );
+                //directions.Add( new KeyValuePair<float,Vector2>( angle, e_j ) );
 
-                norm += p_j;
+                // 0.1) Calculate r*[j] - the distance from human projection centre to first obstacle on his way
+                float r_j;
+                if ( !FindNearestObstacle( j, humanInfo, out r_j ) )
+                {
+                    r_j = m_modelParams.r;
+                }
+                humanInfo.MinDistToObstacle.Add( r_j );
+
+                // 0.2) dS[j] - the difference between old and new shortest path field values
+ /*               var x_r = new Vector2( xPrev.X + 0.1f * humanInfo.MoveDirections[ j ].X, xPrev.Y + 0.1f * humanInfo.MoveDirections[ j ].Y );
+                float d_S = S.Get( xPrev.X, xPrev.Y ) - S.Get( x_r.X, x_r.Y );
+
+                float p_j = (float)Math.Exp( -m_modelParams.kw * ( 1 - r_j / m_modelParams.r ) * HeavisideFunction( d_S ) )
+                    * ( float )Math.Exp( -m_modelParams.kp * Density( r_j, human ) )
+                    * ( float )Math.Exp( m_modelParams.ks * d_S )
+                    * WallApproching( r_j - human.projectionDiameter / 2.0f );
+                probabilities.Add( (float)p_j );
+
+                norm += p_j;*/
             }
+
+            // FIXME: remove
+            return new Vector2();
+            
+            //
+            // p[j] = p^[j] / norm,
+            // FIXME: check this is working code!
+            //
+            probabilities.ForEach( x => x /= norm );
+
             //
             // 1.2) norm == 0 ==> man will not move
             //
+            if ( MathUtils.NearlyZero( norm ) ) return new Vector2();
+
+            //
             // 1.3) norm != 0 ==> select ("raffle") the move direction e^[j] = ( cos( 2*Pi*j^/q ), sin( 2*Pi*j^/q ) )
             //      using previosly calculated probability distribution
+            //
+            int j_selected = RaffleProbability( probabilities );
+
             //
             // 1.4) Calculate new human coordinates
             //
@@ -225,14 +301,26 @@ namespace MathModel
             //        human age group (TODO: currently only EmSt variable used),
             //        and determine using corresponding table or calculated using formula below
             //
+            var selectedDir = directions[ j_selected ];
+            
+            //
             // 1.4.2) Select the e^[j] direction if human[i] track will not be crossed
             //        by other humans or will be, but inside of compression coefficient range:
-            //        Trace( P[i] )*I( U( l!=i, P_prev[l] belong_to V[j] )*P_prev[l] ) = empty_set
+            //        Trace( P[i] )*I( U( l!=i, P_prev[l] belong_to V[j] )*P_prev[l] ) == empty_set
             //     || Trace( P[i] )*I( U( l!=i, P_prev[l] belong_to V[j] )*P_prev[l] ) != empty_set,
             //        l: | x[i] - xPrev[l] | <= d[i]/2 + d[l]/2 - deltaD,
             //        where Trace( P[i] ) - the track of i-th human producing by move from xPrev to x,
             //        deltaD - people compression coefficient (model parameter), can be a constant
             //                 or density-dependant function
+            //
+//            SdcRectangle rect()
+            PointD[] moveProjection = { new PointD(), new PointD(), new PointD(), new PointD() };
+            //RectangleF moveProjection = 
+            foreach ( var h in m_people )
+            {
+                //
+            }
+
             //
             // 1.4.3) If conditions from 1.4.2 are ruled out, then supposed new human coordinates x[i]
             //        must be corrected to be met:
@@ -240,6 +328,8 @@ namespace MathModel
             //        xi: Trace( P[i] )*I( U( l!=i, P_prev[l] belong_to V[j] )*P_prev[l] ) != empty_set,
             //        l: | x[i] - xPrev[l] | <= d[i]/2 + d[l]/2 - deltaD
             //        If such condition can not be met, then the human will stay on his previous position
+            //
+
             //
             // 1.4.4) After than all people supposed coordinates was calculated,
             //        the collision resolution procedure must be applied in case
@@ -249,11 +339,52 @@ namespace MathModel
             //        With a probability ( 1 - tau ) one randomly selected human will be moved to the
             //        controversial coordinates, the others will stay of their previous positions
             //
+
+            //
             // 1.4.5) People that are able to move will be moved to new coodinates in the same time;
             //        if the human arrived to the exit from building, it will not be taken into account
             //        in calculations above
             //
-            return result;
+
+            // FIXME: remove
+            return new Vector2();
+        }
+
+        int RaffleProbability( List<float> probabilities )
+        {
+            Trace.Assert( probabilities.Count == m_modelParams.q );
+
+            System.Random rndGen = new Random();
+            double randomNum = rndGen.NextDouble();
+            for ( int i = 0; i < probabilities.Count;++i )
+            {
+                if ( randomNum >= probabilities[ i ] ) return i;
+            }
+
+            Trace.Assert( false, "Invalid probability value was generated || empty probability list was specified" );
+            return 0;
+        }
+
+        bool FindNearestObstacle( int j, HumanRuntimeInfo hi, out float dist )
+        {
+            var distances = new List<float>();
+            foreach ( var rect in m_obstacleExtents )
+            {
+                if ( rect.Intersects( hi.VisibilityAreas[ j - 1 ] ) )
+                {
+                    // FIXME: ensure the left side containts the human projection center
+                    distances.Add( rect.DistanceTo( hi.VisibilityAreas[ j - 1].Left ) );
+                }
+            }
+
+            if ( distances.Count == 0 )
+            {
+                dist = float.NaN;
+                return false;
+            }
+
+            dist = distances.Min();
+            return true;
         }
     }
 }

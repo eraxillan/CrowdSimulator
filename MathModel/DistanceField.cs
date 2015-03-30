@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using SigmaDC.Common.Math;
+using SigmaDC.Interfaces;
+using SigmaDC.Common.MathEx;
 using SigmaDC.Types;
 
 namespace MathModel
 {
-    public class DistanceField
+    public class DistanceField : IDistanceField
     {
         BuildingWrapper m_building = null;
         float m_a = 0.1f;
@@ -527,19 +528,19 @@ namespace MathModel
             return m_S;
         }
 
-        public double Get( float x, float y )
+        public float Get( float x, float y )
         {
             int i = ( int )( ( x - m_x0 ) / m_a );
             int j = ( int )( ( y - m_y0 ) / m_a );
-            return m_S[ i, j ];
+            return ( float )m_S[ i, j ];
         }
 
-        public double Get( double x, double y )
+       /* public double Get( double x, double y )
         {
             int i = ( int )( ( x - m_x0 ) / m_a );
             int j = ( int )( ( y - m_y0 ) / m_a );
             return m_S[ i, j ];
-        }
+        }*/
 
         public void SetDrawMode( DrawMode dm )
         {
