@@ -20,7 +20,7 @@
 
 using System.Drawing;
 using System.Collections.Generic;
-using SigmaDC.Common.Math;
+using SigmaDC.Common.MathEx;
 
 namespace SigmaDC.Interfaces
 {
@@ -75,8 +75,55 @@ namespace SigmaDC.Interfaces
         void Draw( Graphics g );
     }
 
+    public interface IDistanceField
+    {
+        float Get( float x, float y );
+    }
+
+    public class Human
+    {
+        public enum MobilityGroup { First = 1, Second = 2, Third = 3, Fourth = 4 };
+        public enum AgeGroup { First = 1, Second = 2, Third = 3, Fourth = 4, Fifth = 5 };
+        public enum EmotionState { Custom = 0, Comfort = 1, Calm = 2, Active = 3, VeryActive = 4 };
+
+        public Vector2 projectionCenter;
+        public float projectionDiameter;
+
+        public int exitId;
+
+        public MobilityGroup mobilityGroup;
+        public AgeGroup ageGroup;
+        public EmotionState emotionState;
+    }
+
+    public class HumanRuntimeInfo
+    {
+        public Vector2 Center { get; set; }
+        public float Diameter { get; set; }
+
+        public List<float> RotateAngles { get; set; }
+        public List<SdcRectangle> VisibilityAreas { get; set; }
+        public List<Vector2> MoveDirections { get; set; }
+
+        public List<float> MinDistToObstacle { get; set; }
+
+        //public List<float> MoveProbabilites{get;set;}
+
+        public HumanRuntimeInfo()
+        {
+            RotateAngles = new List<float>();
+            VisibilityAreas = new List<SdcRectangle>();
+            MoveDirections = new List<Vector2>();
+            MinDistToObstacle = new List<float>();
+        }
+    }
+
     public interface IEvacuationModel
     {
         void SetupParameters( Dictionary<string, object> modelParams );
+
+        void NextStepAll( IDistanceField S, ref List<HumanRuntimeInfo> hi );
+
+        Vector2 NextStep( Human human, IDistanceField S, ref HumanRuntimeInfo humanInfo );
     }
 }
