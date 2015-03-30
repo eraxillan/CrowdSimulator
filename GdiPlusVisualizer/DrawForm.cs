@@ -23,15 +23,15 @@
 //#define DEBUG_DRAW
 
 using System;
-using System.IO;
-using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Printing;
-using System.Linq;
+using System.IO;
 using System.Windows.Forms;
-
+using SigmaDC.Common.MathEx;
+using SigmaDC.Interfaces;
+using SigmaDC.MathModel;
 using SigmaDC.Types;
 
 namespace GdiPlusVisualizer
@@ -56,6 +56,7 @@ namespace GdiPlusVisualizer
         MathModel.DistanceField m_distField = null;
         MathModel.DistanceField.DrawMode m_fieldVisMode = MathModel.DistanceField.DrawMode.None;
         double[ , ] m_S = null;
+        List<HumanRuntimeInfo> m_humanRuntimeData = new List<HumanRuntimeInfo>();
 
         public DrawForm()
         {
@@ -212,6 +213,24 @@ namespace GdiPlusVisualizer
             ScaleGraphics( g, pbVisualizator, range, margin );
         }
 
+        Human ConvertHumanData( HumanWrapper hw )
+        {
+            var h = new Human();
+
+            // TODO: z coordinate of human currently ignored
+            h.projectionCenter = new SigmaDC.Common.MathEx.Vector2( hw.Center.X, hw.Center.Y );
+            h.projectionDiameter = hw.Diameter;
+
+            h.exitId = hw.ExitId;
+
+            // FIXME: dangerous C-style cast from integer to enum type
+            h.mobilityGroup = ( Human.MobilityGroup )hw.MobilityGroup;
+            h.ageGroup = ( Human.AgeGroup )hw.AgeGroup;
+            h.emotionState = ( Human.EmotionState )hw.EmotionState;
+
+            return h;
+        }
+
         void InitDistanceField()
         {
             float w = m_building.Extents.Width;
@@ -246,6 +265,41 @@ namespace GdiPlusVisualizer
                 m_S = m_distField.CalcDistanceField();
                 this.Enabled = true;
                 this.UseWaitCursor = false;
+
+                var model = new SigmaDCModel();
+                var hi = new HumanRuntimeInfo();
+                model.SetupParameters( new Dictionary<string, object>() { { "r", 1.0f }, { "w", 0.0f }, { "deltaD", 0.0f }, { "kw", 4.0f }, { "kp", 1.0f }, { "ks", 1.0f } } );
+
+                var obstacleExtents = new List<RectangleF>();
+                foreach ( var box in m_building.CurrentFloor.Geometry )
+                {
+                    obstacleExtents.Add( box.Extents );
+                }
+                foreach ( var furn in m_building.CurrentFloor.Furniture )
+                {
+                    obstacleExtents.Add( furn.Extents );
+                }
+                foreach ( var window in m_building.CurrentFloor.Windows )
+                {
+                    obstacleExtents.Add( window.Extents );
+                }
+                // TODO: smth else can be considered as obstacle?
+                model.SetupObstacles( obstacleExtents );
+
+                var people = new List<Human>();
+                foreach ( var humanData in m_building.CurrentFloor.People )
+                {
+                    people.Add( ConvertHumanData( humanData ) );
+                }
+                model.SetupPeople( people );
+
+                model.NextStepAll( null, ref m_humanRuntimeData );
+
+                /*var human = new Human();
+                human.projectionCenter = new SigmaDC.Common.MathEx.Vector2( 1.0f, 3.0f );
+                human.projectionDiameter = 2.0f;
+                model.NextStep( human, m_distField, hi );*/
+                return;
             }
         }
 
@@ -313,6 +367,38 @@ namespace GdiPlusVisualizer
             }
 
             if ( m_fieldVisMode != MathModel.DistanceField.DrawMode.None ) m_distField.Visualize( g );
+
+            foreach ( var hrt in m_humanRuntimeData )
+            {
+                for ( int i = 0; i < hrt.RotateAngles.Count; ++i )
+                {
+                    var rect = hrt.VisibilityAreas[ i ];
+                    var rectRot = rect.Rotate( hrt.Center, hrt.RotateAngles[ i ] );
+
+                    var rectVis = new SdcRectangle( rect );
+                    rectVis.RightTop = new Vector2( rectVis.LeftTop.X + hrt.MinDistToObstacle[ i ], rectVis.LeftTop.Y );
+                    rectVis.RightBottom = new Vector2( rectVis.LeftBottom.X + hrt.MinDistToObstacle[ i ], rectVis.LeftBottom.Y );
+                    var rectVisRot = rectVis.Rotate( hrt.Center, hrt.RotateAngles[ i ] );
+
+                    // FIXME: add IVisualisable support to SdcRectangle
+                    using ( var bluePen = new Pen( Color.BlueViolet, 1.0f / g.DpiX ) )
+                    {
+                        g.DrawLine( bluePen, rectRot.LeftTop.X, rectRot.LeftTop.Y, rectRot.RightTop.X, rectRot.RightTop.Y );    // Top line segment
+                        g.DrawLine( bluePen, rectRot.LeftBottom.X, rectRot.LeftBottom.Y, rectRot.RightBottom.X, rectRot.RightBottom.Y );    // Bottom line segment
+                        g.DrawLine( bluePen, rectRot.LeftTop.X, rectRot.LeftTop.Y, rectRot.LeftBottom.X, rectRot.LeftBottom.Y );    // Left line segment
+                        g.DrawLine( bluePen, rectRot.RightTop.X, rectRot.RightTop.Y, rectRot.RightBottom.X, rectRot.RightBottom.Y );    // Right line segment
+                    }
+
+                    // Draw distance to the nearest obstacle
+                    using ( var pinkPen = new Pen( Color.HotPink, 2.0f / g.DpiX ) )
+                    {
+//                        g.DrawLine( pinkPen, rectVisRot.LeftTop.X, rectVisRot.LeftTop.Y, rectVisRot.RightTop.X, rectVisRot.RightTop.Y );    // Top line segment
+//                        g.DrawLine( pinkPen, rectVisRot.LeftBottom.X, rectVisRot.LeftBottom.Y, rectVisRot.RightBottom.X, rectVisRot.RightBottom.Y );    // Bottom line segment
+//                        g.DrawLine( pinkPen, rectVisRot.LeftTop.X, rectVisRot.LeftTop.Y, rectVisRot.LeftBottom.X, rectVisRot.LeftBottom.Y );    // Left line segment
+                        g.DrawLine( pinkPen, rectVisRot.RightTop.X, rectVisRot.RightTop.Y, rectVisRot.RightBottom.X, rectVisRot.RightBottom.Y );    // Right line segment
+                    }
+                }
+            }
         }
 
         private void pbVisualizator_MouseEnter( object sender, EventArgs e )
