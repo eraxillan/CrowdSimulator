@@ -28,7 +28,7 @@ using System.Drawing.Drawing2D;
 using System.Linq;
 
 using SigmaDC.Interfaces;
-using SigmaDC.Common.Math;
+using SigmaDC.Common.MathEx;
 using SigmaDC.Common.Drawing2D;
 
 namespace SigmaDC.Types
@@ -60,9 +60,34 @@ namespace SigmaDC.Types
             get { return m_human.Type; }
         }
 
+        public Point3F Center
+        {
+            get { return new Point3F( m_human.px, m_human.py, m_human.pz ); }
+        }
+
         public float Diameter
         {
             get { return m_diameter; }
+        }
+
+        public int ExitId
+        {
+            get { return m_human.ExitId; }
+        }
+
+        public int MobilityGroup
+        {
+            get { return m_human.Mobility; }
+        }
+
+        public int AgeGroup
+        {
+            get { return m_human.Age; }
+        }
+
+        public int EmotionState
+        {
+            get { return m_human.EmoState; }
         }
 
         public void SetDrawOptions( Dictionary<string, object> options )
@@ -862,13 +887,7 @@ namespace SigmaDC.Types
 
         public ApertureWrapper FindAperture( int id )
         {
-            foreach ( var aperture in Apertures )
-            {
-                if ( aperture.Id == id )
-                    return aperture;
-            }
-
-            return null;
+            return Apertures.Where( x => x.Id == id ).FirstOrDefault();
         }
 
         public Dictionary<RectangleF, BoxWrapper> GetBoxMap()
