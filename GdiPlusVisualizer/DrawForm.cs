@@ -45,6 +45,7 @@ namespace GdiPlusVisualizer
         Dictionary<RectangleF, BoxWrapper> m_boxMap = null;
         RectangleF m_currentBoxExtents;
         RectangleF m_fixedBoxExtents;
+        RectangleF m_currentHumanExtents;
         bool m_keepAspectRatio = false;
         bool m_drawBuilding = true;
         bool m_drawFurniture = true;
@@ -364,6 +365,15 @@ namespace GdiPlusVisualizer
                         g.DrawRectangle( limePen, m_fixedBoxExtents.X, m_fixedBoxExtents.Y, m_fixedBoxExtents.Width, m_fixedBoxExtents.Height );
                     }
                 }
+
+                // Highlight current human extent
+                if ( !m_currentHumanExtents.IsEmpty )
+                {
+                    using ( var blueBrush = new SolidBrush( Color.Blue ) )
+                    {
+                        g.FillEllipse( blueBrush, m_currentHumanExtents.X, m_currentHumanExtents.Y, m_currentHumanExtents.Width, m_currentHumanExtents.Height );
+                    }
+                }
             }
 
             if ( m_fieldVisMode != MathModel.DistanceField.DrawMode.None ) m_distField.Visualize( g );
@@ -498,11 +508,30 @@ namespace GdiPlusVisualizer
                 lblCursorPos.Text = "Cursor position (world): " + PointFToString( pt[ 0 ] );
             }
 
-            if ( m_currentBoxExtents.Contains( pt[ 0 ] ) || !m_fixedBoxExtents.IsEmpty )
-                return;
-
             if ( m_highlightBoxes )
             {
+                if ( m_currentHumanExtents.Contains( pt[ 0 ] ) ) return;
+
+                // First search for human projection
+                foreach ( var h in m_building.CurrentFloor.People )
+                {
+                    if ( MathUtils.Sqr( h.Center.X - pt[ 0 ].X ) + MathUtils.Sqr( h.Center.Y - pt[ 0 ].Y ) <= MathUtils.Sqr( h.Diameter / 2 ) )
+                    {
+                        m_currentBoxExtents = RectangleF.Empty;
+                        
+                        float r = h.Diameter/2;
+                        m_currentHumanExtents = new RectangleF( h.Center.X - r, h.Center.Y - r, h.Diameter, h.Diameter );
+
+                        grdProps.SelectedObject = h;
+                        grdProps.Refresh();
+
+                        pbVisualizator.Refresh();
+                        return;
+                    }
+                }
+
+                if ( m_currentBoxExtents.Contains( pt[ 0 ] ) || !m_fixedBoxExtents.IsEmpty ) return;
+
                 foreach ( var bm in m_boxMap )
                 {
                     if ( bm.Key.Contains( pt[ 0 ] ) )
@@ -613,6 +642,7 @@ namespace GdiPlusVisualizer
             m_boxMap = m_building.CurrentFloor.GetBoxMap();
             m_currentBoxExtents = RectangleF.Empty;
             m_fixedBoxExtents = RectangleF.Empty;
+            m_currentHumanExtents = RectangleF.Empty;
 
             lblFloor.Text = "Floor number: " + newFloorNumber.ToString();
             pbVisualizator.Refresh();
