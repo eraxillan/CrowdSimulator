@@ -24,6 +24,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Printing;
@@ -56,7 +57,7 @@ namespace GdiPlusVisualizer
         bool m_highlightBoxes = false;
         MathModel.DistanceField m_distField = null;
         MathModel.DistanceField.DrawMode m_fieldVisMode = MathModel.DistanceField.DrawMode.None;
-        double[ , ] m_S = null;
+        double[][] m_S = null;
         List<HumanRuntimeInfo> m_humanRuntimeData = new List<HumanRuntimeInfo>();
 
         public DrawForm()
@@ -263,7 +264,17 @@ namespace GdiPlusVisualizer
 
                 this.UseWaitCursor = true;
                 this.Enabled = false;
+
+                Stopwatch stopwatch = Stopwatch.StartNew();
+
                 m_S = m_distField.CalcDistanceField();
+
+                TimeSpan ts = stopwatch.Elapsed;
+
+                // Format and display the TimeSpan value. 
+                string elapsedTime = String.Format( "{0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds / 10 );
+                MessageBox.Show( "Distance field calculation took: " + elapsedTime );
+
                 this.Enabled = true;
                 this.UseWaitCursor = false;
 
@@ -483,7 +494,7 @@ namespace GdiPlusVisualizer
 
                     if(m_S != null)
                     {
-                        lblCurrentCell.Text += ", S[ " + j + ", " + i + " ] = " + m_S[ i, j ].ToString( "f3" );
+                        lblCurrentCell.Text += ", S[ " + j + ", " + i + " ] = " + m_S[ i ][ j ].ToString( "f3" );
                     }
                 }
             }
