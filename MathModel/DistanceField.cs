@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using SigmaDC.Common.MathEx;
 using SigmaDC.Interfaces;
 using SigmaDC.Types;
+using System.Threading.Tasks;
 
 namespace MathModel
 {
@@ -234,8 +237,7 @@ namespace MathModel
 
         public int[][] CalcGField( int selectedExitId )
         {
-            if ( selectedExitId < 0 || selectedExitId > m_building.CurrentFloor.Exits.Count() )
-                System.Diagnostics.Debugger.Break();
+            Trace.Assert( selectedExitId >= 0 && selectedExitId <= m_building.CurrentFloor.Exits.Count() );
 
             var G = new int[ m_M ][ /*m_N*/ ];
 
@@ -309,7 +311,7 @@ namespace MathModel
             return G;
         }
 
-        public double[][] InitSField( out int emptyCellCount )
+        public double[][] InitSField( int[][] G, out int emptyCellCount )
         {
             emptyCellCount = 0;
 
@@ -324,11 +326,11 @@ namespace MathModel
                     float cellX = m_x0 + m_a * i;
                     float cellY = m_y0 + m_a * j;
 
-                    if ( m_G[ i ][ j ] == 0 )   // obstacle
+                    if ( G[ i ][ j ] == 0 )   // obstacle
                     {
                         S[ i ][ j ] = m_obstacleConst;
                     }
-                    else if ( m_G[ i ][ j ] > 0 ) // exit
+                    else if ( G[ i ][ j ] > 0 ) // exit
                     {
                         S[ i ][ j ] = 1;
                     }
@@ -479,39 +481,87 @@ namespace MathModel
             }
         }
 
-        public double[][] CalcDistanceField()
+        string FormatTime( TimeSpan ts )
         {
-            var G_exits = new List<int[][]>();
-            var S_exits = new List<double[][]>();
+            string elapsedTime = String.Format( "{0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds / 10 );
+            return elapsedTime;
+        }
 
-            // Eval distance field for every exit (others are considered as closed)
-            for ( int k = 1; k <= m_building.CurrentFloor.Exits.Count(); ++k )
+        private void CalcDistanceFieldMeat( int k, ref ConcurrentBag<int[][]> G_exits, ref ConcurrentBag<double[][]> S_exits )
+        {
+            var stopwatch = Stopwatch.StartNew();
+
+            var G = CalcGField( k );
+
+            TimeSpan ts = stopwatch.Elapsed;
+            Console.WriteLine( "Helper distance field G calculation time (CalcGField): " + FormatTime( ts ) );
+            stopwatch.Reset();
+
+            //---------------------------------
+            stopwatch.Start();
+
+            int emptyCellCount;
+            var S = InitSField( G, out emptyCellCount );
+
+            ts = stopwatch.Elapsed;
+//            Console.WriteLine( "Distance field S init time (InitSField): " + FormatTime( ts ) );
+            stopwatch.Reset();
+            //-----------------------------------
+
+            stopwatch.Start();
+
+            // FIXME: in case of no exit this loop will hang!
+            //        We should handle this situation properly
+            while ( emptyCellCount >= 1 )
             {
-                m_G = CalcGField( k );
-
-                int emptyCellCount;
-                m_S = InitSField( out emptyCellCount );
-
-                // FIXME: in case of no exit this loop will hang!
-                //        We should handle this situation properly
-                while ( emptyCellCount >= 1 )
-                {
-                    CalcSField( m_S, ref emptyCellCount );
-                }
-
-                G_exits.Add( ( int[][] )m_G.Clone() );
-                S_exits.Add( ( double[][] )( m_S ) );
+                CalcSField( S, ref emptyCellCount );
             }
 
+            ts = stopwatch.Elapsed;
+            Console.WriteLine( "Distance field S calculation time (CalcSField): " + FormatTime( ts ) );
+            stopwatch.Reset();
+            //-------------------------------------
+
+            stopwatch.Start();
+
+            G_exits.Add( ( int[][] )G.Clone() );
+            S_exits.Add( ( double[][] )S.Clone() );
+
+            ts = stopwatch.Elapsed;
+//            Console.WriteLine( "Cloning G and S matrices time: " + FormatTime( ts ) );
+            Console.WriteLine();
+            stopwatch.Reset();
+            //--------------------------------------
+        }
+
+        public double[][] CalcDistanceField()
+        {
+            var G_exits_par = new ConcurrentBag<int[][]>();
+            var S_exits_par = new ConcurrentBag<double[][]>();
+
+            // Eval distance field for every exit (others are considered as closed)
+            var result = Parallel.For( 1, m_building.CurrentFloor.Exits.Count() + 1, k => CalcDistanceFieldMeat( k, ref G_exits_par, ref S_exits_par ) );
+            Trace.Assert( result.IsCompleted );
+
+            // Save G field for future usage
+            // FIXME: which item of G collection we should use?
+            // FIXME: looks like G's are ditinguish only in few items - exit cells;
+            //        so it is possible to store *ONE* G matrix and some diffs' for each exit
+            G_exits_par.TryTake( out m_G );
+
             // Eval final distance field as minimum of previously evaluated ones
+            m_S = new double[ m_M ][ /*m_N*/ ];
             for ( int i = 0; i < m_M; ++i )
             {
+                m_S[ i ] = new double[ m_N ];
+
                 for ( int j = 0; j < m_N; ++j )
                 {
                     double minValue = double.PositiveInfinity;
-                    for ( int k = 0; k < m_building.CurrentFloor.Exits.Count(); ++k )
+
+                    foreach ( var item in S_exits_par )
                     {
-                        if ( S_exits[ k ][ i ][ j ] < minValue ) minValue = S_exits[ k ][ i ][ j ];
+                        if ( item[ i ][ j ] < minValue ) minValue = item[ i ][ j ];
                     }
 
                     m_S[ i ][ j ] = minValue;
