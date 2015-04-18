@@ -47,195 +47,358 @@ namespace MathModel
             return rect;
         }
 
-        #region Intersection check functions
-        bool IntersectBox( RectangleF cellRect )
+        public class HelperMatrix
         {
-            foreach ( var box in m_building.CurrentFloor.Geometry )
+            struct MatrixIndex
             {
-                RectangleF boxExtents = box.Extents;
+                int i;
+                int j;
 
-                bool b = ( !boxExtents.IsEmpty && ( boxExtents.Top < boxExtents.Bottom ) );
-                if ( !b ) System.Diagnostics.Debugger.Break();
-
-                // We are interesting in those cases to check intersection presents:
-                // TODO: check whether we need to detect tangent to obstacles cells
-                // 1) Cell rectangle is tangent to the box one and entirely contained in it
-                // 2) Cell rectange is tangent to the box one, but from the outer face of it
-                /*const float EPS = 0.000001f;
-                if ( MathUtils.NearlyEqual( box.Extents.Left, cellRect.Left, EPS )
-                        || MathUtils.NearlyEqual( box.Extents.Right, cellRect.Right, EPS )
-                        || MathUtils.NearlyEqual( box.Extents.Top, cellRect.Top, EPS )
-                        || MathUtils.NearlyEqual( box.Extents.Bottom, cellRect.Bottom, EPS ) )
-                    return true;*/
-
-                // 3) Cell rectangle intersect one of the rectangle sides
-                var rect = RectangleF.Intersect( boxExtents, cellRect );
-                if ( ( rect.Width > 0 || rect.Height > 0 ) && !boxExtents.Contains( cellRect ) )
+                public MatrixIndex( int i, int j )
                 {
-                    return true;
+                    this.i = i;
+                    this.j = j;
                 }
             }
 
-            return false;
-        }
+            Dictionary<MatrixIndex, int> m_exitIndeces = new Dictionary<MatrixIndex, int>();
+            Dictionary<MatrixIndex, int> m_innerDoorIndeces = new Dictionary<MatrixIndex, int>();
+            Dictionary<MatrixIndex, int> m_fakeApertureIndeces = new Dictionary<MatrixIndex, int>();
+            Dictionary<MatrixIndex, int> m_windowIndeces = new Dictionary<MatrixIndex, int>();
 
-        bool IntersectFurniture( RectangleF cellRect )
-        {
-            foreach ( var furn in m_building.CurrentFloor.Furniture )
+            Dictionary<MatrixIndex, int> m_wallIndeces = new Dictionary<MatrixIndex, int>();
+            Dictionary<MatrixIndex, int> m_stairwayIndeces = new Dictionary<MatrixIndex, int>();
+            Dictionary<MatrixIndex, int> m_furnitureIndeces = new Dictionary<MatrixIndex, int>();
+
+            BuildingWrapper m_building = null;
+            float m_a = 0.1f;
+            int m_M = -1;
+            int m_N = -1;
+            float m_x0 = float.NaN;
+            float m_y0 = float.NaN;
+
+            public HelperMatrix( BuildingWrapper building, float a, int M, int N, float x0, float y0 )
             {
-                RectangleF furnExtents = furn.Extents;
+                m_M = M;
+                m_N = N;
+                m_x0 = x0;
+                m_y0 = y0;
+                m_a = a;
+                m_building = building;
 
-                bool b = ( !furnExtents.IsEmpty && ( furnExtents.Top < furnExtents.Bottom ) );
-                if ( !b ) System.Diagnostics.Debugger.Break();
-
-                var rect = RectangleF.Intersect( furnExtents, cellRect );
-                if ( ( rect.Width > 0 || rect.Height > 0 ) )
+                for ( int i = 0; i < m_M; ++i )
                 {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        bool IntersectStairway( RectangleF cellRect )
-        {
-            foreach ( var st in m_building.CurrentFloor.Stairways )
-            {
-                RectangleF stExtents = st.Extents;
-
-                bool b = ( !stExtents.IsEmpty && ( stExtents.Top < stExtents.Bottom ) );
-                if ( !b ) System.Diagnostics.Debugger.Break();
-
-                var rect = RectangleF.Intersect( stExtents, cellRect );
-                if ( ( rect.Width > 0 || rect.Height > 0 ) && !stExtents.Contains( cellRect ) )
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        bool IntersectFakeAperture( RectangleF cellRect )
-        {
-            foreach ( var aper in m_building.CurrentFloor.FakeApertures )
-            {
-                RectangleF aperExtents = aper.Extents;
-
-                bool b = ( ( aperExtents.Width > 0 || aperExtents.Height > 0 ) && ( aperExtents.Top <= aperExtents.Bottom ) );
-                if ( !b ) System.Diagnostics.Debugger.Break();
-
-                var rect = RectangleF.Intersect( aperExtents, cellRect );
-                if ( ( rect.Width > 0 || rect.Height > 0 ) && !aperExtents.Contains( cellRect ) )
-                {
-                    if ( MathUtils.NearlyZero( rect.Height ) )
+                    for ( int j = 0; j < m_N; ++j )
                     {
-                        if ( rect.Left == aperExtents.Left ) continue;
-                        if ( rect.Right == aperExtents.Right ) continue;
+                        // Calculate cell rectangle
+                        float cellX = m_x0 + m_a * i;
+                        float cellY = m_y0 + m_a * j;
+                        var cellRect = new RectangleF( cellX, cellY, m_a, m_a );
+
+                        var midx = new MatrixIndex( i, j );
+
+                        bool intersectFakeAperture = false;
+                        if ( IntersectFakeAperture( cellRect ) )
+                        {
+                            m_fakeApertureIndeces.Add( midx, 0 );
+                            intersectFakeAperture = true;
+                        }
+
+                        // Check whether G[i,j] intersects with an building exit aperture/exit aperture part
+                        int exitId;
+                        if ( IntersectExitDoor( cellRect, out exitId ) )
+                        {
+                            m_exitIndeces.Add( midx, exitId );
+                        }
+
+                        // Check whether G[i,j] intersects with an door aperture/exit aperture part
+                        if ( IntersectInnerDoor( cellRect ) )
+                        {
+                            m_innerDoorIndeces.Add( midx, 0 );
+                        }
+
+                        // Check whether G[i,j] intersects with a wall/wall part
+                        if ( IntersectBox( cellRect ) )
+                        {
+                            if ( !intersectFakeAperture )
+                            {
+                                m_wallIndeces.Add( midx, 0 );
+                            }
+                        }
+
+                        // Check whether G[i,j] intersects with a stairway part
+                        if ( IntersectStairway( cellRect ) )
+                        {
+                            if ( !intersectFakeAperture )
+                            {
+                                m_stairwayIndeces.Add( midx, 0 );
+                            }
+                        }
+
+                        // Check whether G[i,j] intersects with furniture/furniture part
+                        if ( IntersectFurniture( cellRect ) )
+                        {
+                            m_furnitureIndeces.Add( midx, 0 );
+                        }
+
+                        // Check whether G[i,j] intersects with a window/window part
+                        if ( IntersectWindow( cellRect ) )
+                        {
+                            m_windowIndeces.Add( midx, 0 );
+                        }
+                    }
+                }
+            }
+
+            public int ActualItemCount()
+            {
+                int count = m_exitIndeces.Count() + m_innerDoorIndeces.Count() + m_fakeApertureIndeces.Count() + m_windowIndeces.Count()
+                    + m_wallIndeces.Count() + m_stairwayIndeces.Count() + m_furnitureIndeces.Count();
+                Trace.Assert( count <= MaxItemCount() );
+
+                return count;
+            }
+
+            public int MaxItemCount()
+            {
+                return m_M * m_N;
+            }
+
+            #region Intersection check functions
+            bool IntersectBox( RectangleF cellRect )
+            {
+                foreach ( var box in m_building.CurrentFloor.Geometry )
+                {
+                    RectangleF boxExtents = box.Extents;
+
+                    bool b = ( !boxExtents.IsEmpty && ( boxExtents.Top < boxExtents.Bottom ) );
+                    if ( !b ) System.Diagnostics.Debugger.Break();
+
+                    // We are interesting in those cases to check intersection presents:
+                    // TODO: check whether we need to detect tangent to obstacles cells
+                    // 1) Cell rectangle is tangent to the box one and entirely contained in it
+                    // 2) Cell rectange is tangent to the box one, but from the outer face of it
+                    /*const float EPS = 0.000001f;
+                    if ( MathUtils.NearlyEqual( box.Extents.Left, cellRect.Left, EPS )
+                            || MathUtils.NearlyEqual( box.Extents.Right, cellRect.Right, EPS )
+                            || MathUtils.NearlyEqual( box.Extents.Top, cellRect.Top, EPS )
+                            || MathUtils.NearlyEqual( box.Extents.Bottom, cellRect.Bottom, EPS ) )
+                        return true;*/
+
+                    // 3) Cell rectangle intersect one of the rectangle sides
+                    var rect = RectangleF.Intersect( boxExtents, cellRect );
+                    if ( ( rect.Width > 0 || rect.Height > 0 ) && !boxExtents.Contains( cellRect ) )
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            bool IntersectFurniture( RectangleF cellRect )
+            {
+                foreach ( var furn in m_building.CurrentFloor.Furniture )
+                {
+                    RectangleF furnExtents = furn.Extents;
+
+                    bool b = ( !furnExtents.IsEmpty && ( furnExtents.Top < furnExtents.Bottom ) );
+                    if ( !b ) System.Diagnostics.Debugger.Break();
+
+                    var rect = RectangleF.Intersect( furnExtents, cellRect );
+                    if ( ( rect.Width > 0 || rect.Height > 0 ) )
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            bool IntersectStairway( RectangleF cellRect )
+            {
+                foreach ( var st in m_building.CurrentFloor.Stairways )
+                {
+                    RectangleF stExtents = st.Extents;
+
+                    bool b = ( !stExtents.IsEmpty && ( stExtents.Top < stExtents.Bottom ) );
+                    if ( !b ) System.Diagnostics.Debugger.Break();
+
+                    var rect = RectangleF.Intersect( stExtents, cellRect );
+                    if ( ( rect.Width > 0 || rect.Height > 0 ) && !stExtents.Contains( cellRect ) )
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            bool IntersectFakeAperture( RectangleF cellRect )
+            {
+                foreach ( var aper in m_building.CurrentFloor.FakeApertures )
+                {
+                    RectangleF aperExtents = aper.Extents;
+
+                    bool b = ( ( aperExtents.Width > 0 || aperExtents.Height > 0 ) && ( aperExtents.Top <= aperExtents.Bottom ) );
+                    if ( !b ) System.Diagnostics.Debugger.Break();
+
+                    var rect = RectangleF.Intersect( aperExtents, cellRect );
+                    if ( ( rect.Width > 0 || rect.Height > 0 ) && !aperExtents.Contains( cellRect ) )
+                    {
+                        if ( MathUtils.NearlyZero( rect.Height ) )
+                        {
+                            if ( rect.Left == aperExtents.Left ) continue;
+                            if ( rect.Right == aperExtents.Right ) continue;
+                        }
+
+                        if ( MathUtils.NearlyZero( rect.Width ) )
+                        {
+                            if ( rect.Top == aperExtents.Top ) continue;
+                            if ( rect.Bottom == aperExtents.Bottom ) continue;
+                        }
+
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            bool IntersectExitDoor( RectangleF cellRect, out int exitId )
+            {
+                exitId = -2;
+
+                // NOTE: this call is expensive
+                int i = 1;
+                foreach ( var exit in m_building.CurrentFloor.Exits )
+                {
+                    var rect = NormalizeRect( exit.Extents, m_a );
+                    var intersectRect = RectangleF.Intersect( rect, cellRect );
+                    if ( !intersectRect.IsEmpty && !rect.Contains( cellRect ) )
+                    {
+                        exitId = i;
+                        return true;
                     }
 
-                    if ( MathUtils.NearlyZero( rect.Width ) )
+                    ++i;
+                }
+
+                return false;
+
+                /*int exitCount = m_building.CurrentFloor.Exits.Count();
+                for ( int k = 1; k <= exitCount; ++k )
+                {
+                    var ext = NormalizeRect( m_building.CurrentFloor.Exits[ k - 1 ].Extents, m_a );
+                    var rect = RectangleF.Intersect( ext, cellRect );
+                    if ( !rect.IsEmpty && !ext.Contains( cellRect ) )
                     {
-                        if ( rect.Top == aperExtents.Top ) continue;
-                        if ( rect.Bottom == aperExtents.Bottom ) continue;
+                        exitId = k;
+                        return true;
                     }
-
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        bool IntersectExitDoor( RectangleF cellRect, out int exitId )
-        {
-            exitId = -2;
-
-            // NOTE: this call is expensive
-            int i = 1;
-            foreach ( var exit in m_building.CurrentFloor.Exits )
-            {
-                var rect = NormalizeRect( exit.Extents, m_a );
-                var intersectRect = RectangleF.Intersect( rect, cellRect );
-                if ( !intersectRect.IsEmpty && !rect.Contains( cellRect ) )
-                {
-                    exitId = i;
-                    return true;
                 }
 
-                ++i;
+                return false;*/
             }
 
-            return false;
-
-            /*int exitCount = m_building.CurrentFloor.Exits.Count();
-            for ( int k = 1; k <= exitCount; ++k )
+            bool IntersectInnerDoor( RectangleF cellRect )
             {
-                var ext = NormalizeRect( m_building.CurrentFloor.Exits[ k - 1 ].Extents, m_a );
-                var rect = RectangleF.Intersect( ext, cellRect );
-                if ( !rect.IsEmpty && !ext.Contains( cellRect ) )
+                foreach ( var aper in m_building.CurrentFloor.Doors )
                 {
-                    exitId = k;
-                    return true;
-                }
-            }
+                    RectangleF aperExtents = aper.Extents;
 
-            return false;*/
-        }
+                    bool b = ( ( aperExtents.Width > 0 || aperExtents.Height > 0 ) && ( aperExtents.Top <= aperExtents.Bottom ) );
+                    if ( !b ) System.Diagnostics.Debugger.Break();
 
-        bool IntersectInnerDoor( RectangleF cellRect )
-        {
-            foreach ( var aper in m_building.CurrentFloor.Doors )
-            {
-                RectangleF aperExtents = aper.Extents;
-
-                bool b = ( ( aperExtents.Width > 0 || aperExtents.Height > 0 ) && ( aperExtents.Top <= aperExtents.Bottom ) );
-                if ( !b ) System.Diagnostics.Debugger.Break();
-
-                var rect = RectangleF.Intersect( aperExtents, cellRect );
-                if ( ( rect.Width > 0 || rect.Height > 0 ) && !aperExtents.Contains( cellRect ) )
-                {
-                    if ( MathUtils.NearlyZero( rect.Height ) )
+                    var rect = RectangleF.Intersect( aperExtents, cellRect );
+                    if ( ( rect.Width > 0 || rect.Height > 0 ) && !aperExtents.Contains( cellRect ) )
                     {
-                        if ( rect.Left == aperExtents.Left ) continue;
-                        if ( rect.Right == aperExtents.Right ) continue;
-                    }
+                        if ( MathUtils.NearlyZero( rect.Height ) )
+                        {
+                            if ( rect.Left == aperExtents.Left ) continue;
+                            if ( rect.Right == aperExtents.Right ) continue;
+                        }
 
-                    if ( MathUtils.NearlyZero( rect.Width ) )
-                    {
-                        if ( rect.Top == aperExtents.Top ) continue;
-                        if ( rect.Bottom == aperExtents.Bottom ) continue;
-                    }
+                        if ( MathUtils.NearlyZero( rect.Width ) )
+                        {
+                            if ( rect.Top == aperExtents.Top ) continue;
+                            if ( rect.Bottom == aperExtents.Bottom ) continue;
+                        }
 
-                    return true;
+                        return true;
+                    }
                 }
+
+                return false;
             }
 
-            return false;
-        }
-
-        bool IntersectWindow( RectangleF cellRect )
-        {
-            foreach ( var aper in m_building.CurrentFloor.Windows )
+            bool IntersectWindow( RectangleF cellRect )
             {
-                RectangleF aperExtents = aper.Extents;
-
-                bool b = ( ( aperExtents.Width > 0 || aperExtents.Height > 0 ) && ( aperExtents.Top <= aperExtents.Bottom ) );
-                if ( !b ) System.Diagnostics.Debugger.Break();
-
-                var rect = RectangleF.Intersect( aperExtents, cellRect );
-                if ( ( rect.Width > 0 || rect.Height > 0 ) && !aperExtents.Contains( cellRect ) )
+                foreach ( var aper in m_building.CurrentFloor.Windows )
                 {
-                    return true;
+                    RectangleF aperExtents = aper.Extents;
+
+                    bool b = ( ( aperExtents.Width > 0 || aperExtents.Height > 0 ) && ( aperExtents.Top <= aperExtents.Bottom ) );
+                    if ( !b ) System.Diagnostics.Debugger.Break();
+
+                    var rect = RectangleF.Intersect( aperExtents, cellRect );
+                    if ( ( rect.Width > 0 || rect.Height > 0 ) && !aperExtents.Contains( cellRect ) )
+                    {
+                        return true;
+                    }
                 }
+
+                return false;
+            }
+            #endregion
+
+            [Flags]
+            public enum GeometryObjectType
+            {
+                Exit = 0x00, InnerDoor = 0x01, FakeAperture = 0x02, Window = 0x04,
+                Wall = 0x08, Stairway = 0x10, Furniture = 0x20
             }
 
-            return false;
-        }
-        #endregion
+            public int this[ int i, int j, GeometryObjectType type ]
+            {
+                get
+                {
+                    var idx = new MatrixIndex( i, j );
 
-        public int[][] CalcGField( int selectedExitId )
+                    if ( ( type & GeometryObjectType.Exit ) == GeometryObjectType.Exit )
+                    {
+                        if ( m_exitIndeces.ContainsKey( idx ) ) return m_exitIndeces[ idx ];
+                    }
+                    if ( ( type & GeometryObjectType.InnerDoor ) == GeometryObjectType.InnerDoor )
+                    {
+                        if ( m_innerDoorIndeces.ContainsKey( idx ) ) return m_innerDoorIndeces[ idx ];
+                    }
+                    if ( ( type & GeometryObjectType.FakeAperture ) == GeometryObjectType.FakeAperture )
+                    {
+                        if ( m_fakeApertureIndeces.ContainsKey( idx ) ) return m_fakeApertureIndeces[ idx ];
+                    }
+                    if ( ( type & GeometryObjectType.Window ) == GeometryObjectType.Window )
+                    {
+                        if ( m_windowIndeces.ContainsKey( idx ) ) return m_windowIndeces[ idx ];
+                    }
+                    if ( ( type & GeometryObjectType.Wall ) == GeometryObjectType.Wall )
+                    {
+                        if ( m_wallIndeces.ContainsKey( idx ) ) return m_wallIndeces[ idx ];
+                    }
+                    if ( ( type & GeometryObjectType.Stairway ) == GeometryObjectType.Stairway )
+                    {
+                        if ( m_stairwayIndeces.ContainsKey( idx ) ) return m_stairwayIndeces[ idx ];
+                    }
+                    if ( ( type & GeometryObjectType.Furniture ) == GeometryObjectType.Furniture )
+                    {
+                        if ( m_furnitureIndeces.ContainsKey( idx ) ) return m_furnitureIndeces[ idx ];
+                    }
+                    return ( -1 );
+                }
+            }
+        }
+
+        public int[][] CalcGField( int selectedExitId, HelperMatrix H )
         {
             Trace.Assert( selectedExitId >= 0 && selectedExitId <= m_building.CurrentFloor.Exits.Count() );
 
@@ -255,37 +418,29 @@ namespace MathModel
                     RectangleF cellRect = new RectangleF( cellX, cellY, m_a, m_a );
 
                     // Check whether G[i,j] intersects with an building exit aperture/exit aperture part
-                    int exitId;
-                    if ( IntersectExitDoor( cellRect, out exitId ) )
+                    int exitId = H[ i, j, HelperMatrix.GeometryObjectType.Exit ];
+                    if ( exitId >= 0 )
                     {
-                        if ( exitId == selectedExitId )
-                            G[ i ][ j ] = exitId;
-                        else
-                            G[ i ][ j ] = 0;
-
-                        continue;
+                        G[ i ][ j ] = ( exitId == selectedExitId ) ? exitId : 0;
                     }
 
                     // Check whether G[i,j] intersects with an door aperture/exit aperture part
-                    if ( IntersectInnerDoor( cellRect ) )
-                    {
-                        continue;
-                    }
+                    if ( H[ i, j, HelperMatrix.GeometryObjectType.InnerDoor ] >= 0 ) continue;
 
                     // Check whether G[i,j] intersects with a wall/wall part
-                    if ( IntersectBox( cellRect ) )
+                    if ( H[ i, j, HelperMatrix.GeometryObjectType.Wall ] >= 0 )
                     {
-                        if ( !IntersectFakeAperture( cellRect ) )
+                        if ( H[ i, j, HelperMatrix.GeometryObjectType.FakeAperture ] == -1 )
                         {
                             G[ i ][ j ] = 0;
                             continue;
                         }
                     }
-
+ 
                     // Check whether G[i,j] intersects with a stairway part
-                    if ( IntersectStairway( cellRect ) )
+                    if ( H[ i, j, HelperMatrix.GeometryObjectType.Stairway ] >= 0 )
                     {
-                        if ( !IntersectFakeAperture( cellRect ) )
+                        if ( H[ i, j, HelperMatrix.GeometryObjectType.FakeAperture ] == -1 )
                         {
                             G[ i ][ j ] = 0;
                             continue;
@@ -293,14 +448,14 @@ namespace MathModel
                     }
 
                     // Check whether G[i,j] intersects with furniture/furniture part
-                    if ( IntersectFurniture( cellRect ) )
+                    if ( H[ i, j, HelperMatrix.GeometryObjectType.Furniture ] >= 0 )
                     {
                         G[ i ][ j ] = 0;
                         continue;
                     }
 
                     // Check whether G[i,j] intersects with a window/window part
-                    if ( IntersectWindow( cellRect ) )
+                    if ( H[ i, j, HelperMatrix.GeometryObjectType.Window ] >= 0 )
                     {
                         G[ i ][ j ] = 0;
                         continue;
@@ -487,11 +642,11 @@ namespace MathModel
             return elapsedTime;
         }
 
-        private void CalcDistanceFieldMeat( int k, ref ConcurrentBag<int[][]> G_exits, ref ConcurrentBag<double[][]> S_exits )
+        private void CalcDistanceFieldMeat( int k, HelperMatrix H, ref ConcurrentBag<int[][]> G_exits, ref ConcurrentBag<double[][]> S_exits )
         {
             var stopwatch = Stopwatch.StartNew();
 
-            var G = CalcGField( k );
+            var G = CalcGField( k, H );
 
             TimeSpan ts = stopwatch.Elapsed;
             Console.WriteLine( "Helper distance field G calculation time (CalcGField): " + FormatTime( ts ) );
@@ -536,11 +691,13 @@ namespace MathModel
 
         public double[][] CalcDistanceField()
         {
+            var H = new HelperMatrix( m_building, m_a, m_M, m_N, m_x0, m_y0 );
+
             var G_exits_par = new ConcurrentBag<int[][]>();
             var S_exits_par = new ConcurrentBag<double[][]>();
 
             // Eval distance field for every exit (others are considered as closed)
-            var result = Parallel.For( 1, m_building.CurrentFloor.Exits.Count() + 1, k => CalcDistanceFieldMeat( k, ref G_exits_par, ref S_exits_par ) );
+            var result = Parallel.For( 1, m_building.CurrentFloor.Exits.Count() + 1, k => CalcDistanceFieldMeat( k, H, ref G_exits_par, ref S_exits_par ) );
             Trace.Assert( result.IsCompleted );
 
             // Save G field for future usage
