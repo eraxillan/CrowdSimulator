@@ -33,61 +33,120 @@ using SigmaDC.Common.Drawing2D;
 
 namespace SigmaDC.Types
 {
-    public class HumanWrapper : IBaseObject, IVisualisable
+    [System.ComponentModel.DefaultProperty( "Id" )]
+    public class HumanWrapper : IBaseObject, IVisualisable, IHuman
     {
         PeopleTypes.TMan m_human;
+        Vector2 m_center;
         float m_diameter;
 
         public HumanWrapper( PeopleTypes.TMan human )
         {
             m_human = human;
+            // TODO: z coordinate of human is currently ignored
+            m_center = new Vector2( m_human.px, m_human.py );
             m_diameter = 2 * ( float )Math.Sqrt( m_human.Size / ( float )Math.PI );
         }
 
+        [System.ComponentModel.Category( "General" ),
+        System.ComponentModel.Description( "The unique identifier of human" )]
         public int Id
         {
             get { return m_human.Id; }
         }
 
+        [System.ComponentModel.Category( "General" ),
+        System.ComponentModel.Description( "The human name\nNOTE: currently is absent in XML data file" )]
         // NOTE: "Name" property is absent yet on XML TMan type
         public string Name
         {
             get { return string.Empty; }
         }
 
+        [System.ComponentModel.Category( "General" ),
+        System.ComponentModel.Description( "The human type\nNOTE: currently is not used" )]
         public int Type
         {
             get { return m_human.Type; }
         }
 
-        public Point3F Center
+        [System.ComponentModel.Category( "Placement" ),
+        System.ComponentModel.Description( "The center point of human circle projection to the floor" )]
+        public Vector2 ProjectionCenter
         {
-            get { return new Point3F( m_human.px, m_human.py, m_human.pz ); }
+            get
+            {
+                // TODO: z coordinate of human currently ignored
+                return m_center;
+            }
         }
 
-        public float Diameter
+        [System.ComponentModel.Category( "Placement" ),
+        System.ComponentModel.Description( "The diameter of human circle projection to the floor" )]
+        public float ProjectionDiameter
         {
             get { return m_diameter; }
         }
 
+        [System.ComponentModel.Category( "Evacuation" ),
+        System.ComponentModel.Description( "The exit index where human should evacuates to" )]
         public int ExitId
         {
             get { return m_human.ExitId; }
         }
 
-        public int MobilityGroup
+        [System.ComponentModel.Category( "Evacuation" ),
+        System.ComponentModel.Description( "The human mobility group" )]
+        public HunanMobilityGroup MobilityGroup
         {
-            get { return m_human.Mobility; }
+            get
+            {
+                switch ( m_human.Mobility )
+                {
+                    case 1: return HunanMobilityGroup.First;
+                    case 2: return HunanMobilityGroup.Second;
+                    case 3: return HunanMobilityGroup.Third;
+                    case 4: return HunanMobilityGroup.Fourth;
+                    default: throw new NotImplementedException();
+                }
+            }
         }
 
-        public int AgeGroup
+        [System.ComponentModel.Category( "Evacuation" ),
+        System.ComponentModel.Description( "The human age group" )]
+        public  HumanAgeGroup AgeGroup
         {
-            get { return m_human.Age; }
+            get
+            {
+                switch ( m_human.Age )
+                {
+                    case 1: return HumanAgeGroup.First;
+                    case 2: return HumanAgeGroup.Second;
+                    case 3: return HumanAgeGroup.Third;
+                    case 4: return HumanAgeGroup.Fourth;
+                    case 5: return HumanAgeGroup.Fifth;
+                    default: throw new NotImplementedException();
+                }
+            }
         }
 
-        public int EmotionState
+        [System.ComponentModel.Category( "Evacuation" ),
+        System.ComponentModel.Description( "The human emotion state" )]
+        public HumanEmotionState EmotionState
         {
-            get { return m_human.EmoState; }
+            get
+            {
+                switch ( m_human.EmoState )
+                {
+                    case 0: return HumanEmotionState.Custom;
+                    case 1: return HumanEmotionState.Comfort;
+                    case 2: return HumanEmotionState.Calm;
+                    case 3: return HumanEmotionState.Active;
+                    case 4: return HumanEmotionState.VeryActive;
+                    default: throw new NotImplementedException();
+                }
+
+            }
         }
 
         public void SetDrawOptions( Dictionary<string, object> options )
@@ -1296,8 +1355,8 @@ namespace SigmaDC.Types
                 float minHumanDiameter = float.PositiveInfinity;
                 foreach ( var human in CurrentFloor.People )
                 {
-                    if ( human.Diameter < minHumanDiameter )
-                        minHumanDiameter = human.Diameter;
+                    if ( human.ProjectionDiameter < minHumanDiameter )
+                        minHumanDiameter = human.ProjectionDiameter;
                 }
                 return minHumanDiameter;
             }

@@ -42,7 +42,7 @@ namespace SigmaDC.MathModel
         enum PathType { Horizontal, Aperture, StairwayDown, StairwayUp, HorizontalOutsideBuilding };
 
         Parameters m_modelParams = new Parameters();
-        List<Human> m_people = new List<Human>();
+        IEnumerable<IHuman> m_people = new List<IHuman>();
         List<SdcRectangle> m_obstacleExtents = new List<SdcRectangle>();
 
         public void SetupParameters( Dictionary<string, object> modelParams )
@@ -64,7 +64,7 @@ namespace SigmaDC.MathModel
             }
         }
 
-        public void SetupPeople( List<Human> people )
+        public void SetupPeople( IEnumerable<IHuman> people )
         {
             m_people = people;
         }
@@ -109,9 +109,9 @@ namespace SigmaDC.MathModel
 
             public double F0;
             public double a_l;
-            public Dictionary<Human.EmotionState, SpeedInitialValues> initValues;
+            public Dictionary<HumanEmotionState, SpeedInitialValues> initValues;
 
-            public SpeedConst( double F0, double a_l, Dictionary<Human.EmotionState, SpeedInitialValues> initValues )
+            public SpeedConst( double F0, double a_l, Dictionary<HumanEmotionState, SpeedInitialValues> initValues )
             {
                 this.F0 = F0;
                 this.a_l = a_l;
@@ -123,35 +123,35 @@ namespace SigmaDC.MathModel
         {
             var speedConst = new Dictionary<PathType, SpeedConst>();
 
-            var horizontalConst = new Dictionary<Human.EmotionState, SpeedConst.SpeedInitialValues>();
-            horizontalConst.Add( Human.EmotionState.Comfort, new SpeedConst.SpeedInitialValues( 0.57, 0.08 ) );
-            horizontalConst.Add( Human.EmotionState.Calm, new SpeedConst.SpeedInitialValues( 0.96, 0.047 ) );
-            horizontalConst.Add( Human.EmotionState.Active, new SpeedConst.SpeedInitialValues( 1.3, 0.66 ) );
-            horizontalConst.Add( Human.EmotionState.VeryActive, new SpeedConst.SpeedInitialValues( 1.75, 0.083 ) );
+            var horizontalConst = new Dictionary<HumanEmotionState, SpeedConst.SpeedInitialValues>();
+            horizontalConst.Add( HumanEmotionState.Comfort, new SpeedConst.SpeedInitialValues( 0.57, 0.08 ) );
+            horizontalConst.Add( HumanEmotionState.Calm, new SpeedConst.SpeedInitialValues( 0.96, 0.047 ) );
+            horizontalConst.Add( HumanEmotionState.Active, new SpeedConst.SpeedInitialValues( 1.3, 0.66 ) );
+            horizontalConst.Add( HumanEmotionState.VeryActive, new SpeedConst.SpeedInitialValues( 1.75, 0.083 ) );
             speedConst.Add( PathType.Horizontal, new SpeedConst( 0.06, 0.295, horizontalConst ) );
 
-            var apertureConst = new Dictionary<Human.EmotionState, SpeedConst.SpeedInitialValues>();
-            apertureConst.Add( Human.EmotionState.Comfort, new SpeedConst.SpeedInitialValues( 0.57, 0.08 ) );
-            apertureConst.Add( Human.EmotionState.Calm, new SpeedConst.SpeedInitialValues( 0.96, 0.047 ) );
-            apertureConst.Add( Human.EmotionState.Active, new SpeedConst.SpeedInitialValues( 1.3, 0.66 ) );
-            apertureConst.Add( Human.EmotionState.VeryActive, new SpeedConst.SpeedInitialValues( 1.75, 0.083 ) );
+            var apertureConst = new Dictionary<HumanEmotionState, SpeedConst.SpeedInitialValues>();
+            apertureConst.Add( HumanEmotionState.Comfort, new SpeedConst.SpeedInitialValues( 0.57, 0.08 ) );
+            apertureConst.Add( HumanEmotionState.Calm, new SpeedConst.SpeedInitialValues( 0.96, 0.047 ) );
+            apertureConst.Add( HumanEmotionState.Active, new SpeedConst.SpeedInitialValues( 1.3, 0.66 ) );
+            apertureConst.Add( HumanEmotionState.VeryActive, new SpeedConst.SpeedInitialValues( 1.75, 0.083 ) );
             speedConst.Add( PathType.Horizontal, new SpeedConst( 0.08, 0.295, apertureConst ) );
 
-            var stairwayDownConst = new Dictionary<Human.EmotionState, SpeedConst.SpeedInitialValues>();
-            stairwayDownConst.Add( Human.EmotionState.Comfort, new SpeedConst.SpeedInitialValues( 0.57, 0.08 ) );
-            stairwayDownConst.Add( Human.EmotionState.Calm, new SpeedConst.SpeedInitialValues( 0.96, 0.047 ) );
-            stairwayDownConst.Add( Human.EmotionState.Active, new SpeedConst.SpeedInitialValues( 1.3, 0.66 ) );
-            stairwayDownConst.Add( Human.EmotionState.VeryActive, new SpeedConst.SpeedInitialValues( 1.75, 0.083 ) );
+            var stairwayDownConst = new Dictionary<HumanEmotionState, SpeedConst.SpeedInitialValues>();
+            stairwayDownConst.Add( HumanEmotionState.Comfort, new SpeedConst.SpeedInitialValues( 0.57, 0.08 ) );
+            stairwayDownConst.Add( HumanEmotionState.Calm, new SpeedConst.SpeedInitialValues( 0.96, 0.047 ) );
+            stairwayDownConst.Add( HumanEmotionState.Active, new SpeedConst.SpeedInitialValues( 1.3, 0.66 ) );
+            stairwayDownConst.Add( HumanEmotionState.VeryActive, new SpeedConst.SpeedInitialValues( 1.75, 0.083 ) );
             speedConst.Add( PathType.Horizontal, new SpeedConst( 0.10, 0.400, stairwayDownConst ) );
 
-            var stairwayUpConst = new Dictionary<Human.EmotionState, SpeedConst.SpeedInitialValues>();
-            stairwayUpConst.Add( Human.EmotionState.Comfort, new SpeedConst.SpeedInitialValues( 0.31, 0.47 ) );
-            stairwayUpConst.Add( Human.EmotionState.Calm, new SpeedConst.SpeedInitialValues( 0.54, 0.03 ) );
-            stairwayUpConst.Add( Human.EmotionState.Active, new SpeedConst.SpeedInitialValues( 0.775, 0.47 ) );
-            stairwayUpConst.Add( Human.EmotionState.VeryActive, new SpeedConst.SpeedInitialValues( 1.08, 0.05 ) );
+            var stairwayUpConst = new Dictionary<HumanEmotionState, SpeedConst.SpeedInitialValues>();
+            stairwayUpConst.Add( HumanEmotionState.Comfort, new SpeedConst.SpeedInitialValues( 0.31, 0.47 ) );
+            stairwayUpConst.Add( HumanEmotionState.Calm, new SpeedConst.SpeedInitialValues( 0.54, 0.03 ) );
+            stairwayUpConst.Add( HumanEmotionState.Active, new SpeedConst.SpeedInitialValues( 0.775, 0.47 ) );
+            stairwayUpConst.Add( HumanEmotionState.VeryActive, new SpeedConst.SpeedInitialValues( 1.08, 0.05 ) );
             speedConst.Add( PathType.Horizontal, new SpeedConst( 0.08, 0.305, stairwayUpConst ) );
 
-            var horizontalOutsideBuildingConst = new Dictionary<Human.EmotionState, SpeedConst.SpeedInitialValues>();
+            var horizontalOutsideBuildingConst = new Dictionary<HumanEmotionState, SpeedConst.SpeedInitialValues>();
             speedConst.Add( PathType.HorizontalOutsideBuilding, new SpeedConst( 0.08, 0.407, horizontalOutsideBuildingConst ) );
         }
 
@@ -167,7 +167,7 @@ namespace SigmaDC.MathModel
             return 1;
         }
 
-        float Density( float r_j, Human currHuman )
+        float Density( float r_j, IHuman currHuman )
         {
             // FIXME: precision loss during double ---> float conversion
             /*RectangleF V = new RectangleF( (float)currHuman.projectionCenter.X, (float)currHuman.projectionCenter.Y, 
@@ -196,12 +196,12 @@ namespace SigmaDC.MathModel
             }
         }
 
-        public Vector2 NextStep( Human human, IDistanceField S, ref HumanRuntimeInfo humanInfo )
+        public Vector2 NextStep( IHuman human, IDistanceField S, ref HumanRuntimeInfo humanInfo )
         {
-            Vector2 xPrev = human.projectionCenter;
+            Vector2 xPrev = human.ProjectionCenter;
 
-            humanInfo.Center = human.projectionCenter;
-            humanInfo.Diameter = human.projectionDiameter;
+            humanInfo.Center = human.ProjectionCenter;
+            humanInfo.Diameter = human.ProjectionDiameter;
 
             // TODO: j == q case is reduntant
             for ( int j = 1; j <= m_modelParams.q; ++j )
@@ -210,7 +210,7 @@ namespace SigmaDC.MathModel
 
                 var e_j = new Vector2( ( float )Math.Cos( phi ), ( float )Math.Sin( phi ) );
 
-                SdcRectangle rect = new SdcRectangle( xPrev, human.projectionDiameter, m_modelParams.r, phi );
+                SdcRectangle rect = new SdcRectangle( xPrev, human.ProjectionDiameter, m_modelParams.r, phi );
   
                 humanInfo.RotateAngles.Add( phi );
                 humanInfo.MoveDirections.Add( e_j );

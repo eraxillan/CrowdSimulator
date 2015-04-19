@@ -80,20 +80,41 @@ namespace SigmaDC.Interfaces
         float Get( float x, float y );
     }
 
-    public class Human
+    public enum HunanMobilityGroup { First = 1, Second = 2, Third = 3, Fourth = 4 };
+    public enum HumanAgeGroup { First = 1, Second = 2, Third = 3, Fourth = 4, Fifth = 5 };
+    public enum HumanEmotionState { Custom = 0, Comfort = 1, Calm = 2, Active = 3, VeryActive = 4 };
+
+    public interface IHuman
     {
-        public enum MobilityGroup { First = 1, Second = 2, Third = 3, Fourth = 4 };
-        public enum AgeGroup { First = 1, Second = 2, Third = 3, Fourth = 4, Fifth = 5 };
-        public enum EmotionState { Custom = 0, Comfort = 1, Calm = 2, Active = 3, VeryActive = 4 };
+        Vector2 ProjectionCenter
+        {
+            get;
+        }
 
-        public Vector2 projectionCenter;
-        public float projectionDiameter;
+        float ProjectionDiameter
+        {
+            get;
+        }
 
-        public int exitId;
+        int ExitId
+        {
+            get;
+        }
 
-        public MobilityGroup mobilityGroup;
-        public AgeGroup ageGroup;
-        public EmotionState emotionState;
+        HunanMobilityGroup MobilityGroup
+        {
+            get;
+        }
+
+        HumanAgeGroup AgeGroup
+        {
+            get;
+        }
+
+        HumanEmotionState EmotionState
+        {
+            get;
+        }
     }
 
     public class HumanRuntimeInfo
@@ -124,6 +145,6 @@ namespace SigmaDC.Interfaces
 
         void NextStepAll( IDistanceField S, ref List<HumanRuntimeInfo> hi );
 
-        Vector2 NextStep( Human human, IDistanceField S, ref HumanRuntimeInfo humanInfo );
+        Vector2 NextStep( IHuman human, IDistanceField S, ref HumanRuntimeInfo humanInfo );
     }
 }

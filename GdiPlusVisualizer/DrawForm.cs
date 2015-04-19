@@ -215,24 +215,6 @@ namespace GdiPlusVisualizer
             ScaleGraphics( g, pbVisualizator, range, margin );
         }
 
-        Human ConvertHumanData( HumanWrapper hw )
-        {
-            var h = new Human();
-
-            // TODO: z coordinate of human currently ignored
-            h.projectionCenter = new SigmaDC.Common.MathEx.Vector2( hw.Center.X, hw.Center.Y );
-            h.projectionDiameter = hw.Diameter;
-
-            h.exitId = hw.ExitId;
-
-            // FIXME: dangerous C-style cast from integer to enum type
-            h.mobilityGroup = ( Human.MobilityGroup )hw.MobilityGroup;
-            h.ageGroup = ( Human.AgeGroup )hw.AgeGroup;
-            h.emotionState = ( Human.EmotionState )hw.EmotionState;
-
-            return h;
-        }
-
         void InitDistanceField()
         {
             float w = m_building.Extents.Width;
@@ -298,12 +280,7 @@ namespace GdiPlusVisualizer
                 // TODO: smth else can be considered as obstacle?
                 model.SetupObstacles( obstacleExtents );
 
-                var people = new List<Human>();
-                foreach ( var humanData in m_building.CurrentFloor.People )
-                {
-                    people.Add( ConvertHumanData( humanData ) );
-                }
-                model.SetupPeople( people );
+                model.SetupPeople( m_building.CurrentFloor.People );
 
                 model.NextStepAll( null, ref m_humanRuntimeData );
 
@@ -526,12 +503,12 @@ namespace GdiPlusVisualizer
                 // First search for human projection
                 foreach ( var h in m_building.CurrentFloor.People )
                 {
-                    if ( MathUtils.Sqr( h.Center.X - pt[ 0 ].X ) + MathUtils.Sqr( h.Center.Y - pt[ 0 ].Y ) <= MathUtils.Sqr( h.Diameter / 2 ) )
+                    if ( MathUtils.Sqr( h.ProjectionCenter.X - pt[ 0 ].X ) + MathUtils.Sqr( h.ProjectionCenter.Y - pt[ 0 ].Y ) <= MathUtils.Sqr( h.ProjectionDiameter / 2 ) )
                     {
                         m_currentBoxExtents = RectangleF.Empty;
                         
-                        float r = h.Diameter/2;
-                        m_currentHumanExtents = new RectangleF( h.Center.X - r, h.Center.Y - r, h.Diameter, h.Diameter );
+                        float r = h.ProjectionDiameter/2;
+                        m_currentHumanExtents = new RectangleF( h.ProjectionCenter.X - r, h.ProjectionCenter.Y - r, h.ProjectionDiameter, h.ProjectionDiameter );
 
                         grdProps.SelectedObject = h;
                         grdProps.Refresh();
