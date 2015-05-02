@@ -86,12 +86,22 @@ namespace SigmaDC.Interfaces
 
     public interface IHuman
     {
+        int Id
+        {
+            get;
+        }
+
         Vector2 ProjectionCenter
         {
             get;
         }
 
         float ProjectionDiameter
+        {
+            get;
+        }
+
+        RectangleF ProjectionExtent
         {
             get;
         }
@@ -117,10 +127,9 @@ namespace SigmaDC.Interfaces
         }
     }
 
-    public class HumanRuntimeInfo
+    public class HumanRuntimeInfo : IHuman
     {
-        public Vector2 Center { get; set; }
-        public float Diameter { get; set; }
+        IHuman m_human;
 
         public List<float> RotateAngles { get; set; }
         public List<SdcRectangle> VisibilityAreas { get; set; }
@@ -130,13 +139,58 @@ namespace SigmaDC.Interfaces
 
         //public List<float> MoveProbabilites{get;set;}
 
-        public HumanRuntimeInfo()
+        public HumanRuntimeInfo(IHuman h)
         {
+            m_human = h;
+
             RotateAngles = new List<float>();
             VisibilityAreas = new List<SdcRectangle>();
             MoveDirections = new List<Vector2>();
             MinDistToObstacle = new List<float>();
         }
+
+        #region IHuman interface implementation
+
+        public int Id
+        {
+            get { return m_human.Id; }
+        }
+
+        public Vector2 ProjectionCenter
+        {
+            get { return m_human.ProjectionCenter; }
+        }
+
+        public float ProjectionDiameter
+        {
+            get { return m_human.ProjectionDiameter; }
+        }
+
+        public RectangleF ProjectionExtent
+        {
+            get { return m_human.ProjectionExtent; }
+        }
+
+        public int ExitId
+        {
+            get { return m_human.ExitId; }
+        }
+
+        public HunanMobilityGroup MobilityGroup
+        {
+            get { return m_human.MobilityGroup; }
+        }
+
+        public HumanAgeGroup AgeGroup
+        {
+            get { return m_human.AgeGroup; }
+        }
+
+        public HumanEmotionState EmotionState
+        {
+            get { return m_human.EmotionState; }
+        }
+        #endregion
     }
 
     public interface IEvacuationModel

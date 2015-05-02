@@ -9,7 +9,7 @@ using SigmaDC.Interfaces;
 using SigmaDC.Types;
 using System.Threading.Tasks;
 
-namespace MathModel
+namespace SigmaDC.MathModel
 {
     public class DistanceField : IDistanceField
     {

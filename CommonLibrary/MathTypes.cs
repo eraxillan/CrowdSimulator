@@ -29,6 +29,8 @@ namespace SigmaDC.Common.MathEx
 {
     public static class MathUtils
     {
+        public const float Epsilon = 0.001f;
+
         /// <summary>
         /// Represents the mathematical constant e(2.71828175).
         /// </summary>
@@ -133,6 +135,18 @@ namespace SigmaDC.Common.MathEx
             return minValue;
         }
 
+        public static float MaxVec( params float[] vec )
+        {
+            if ( vec.Length == 0 ) return float.NaN;
+
+            float maxValue = vec[ 0 ];
+            for ( int i = 1; i < vec.Length; ++i )
+            {
+                if ( vec[ i ] > maxValue ) maxValue = vec[ i ];
+            }
+            return maxValue;
+        }
+
         /// <summary>
         /// Determines if value is powered by two.
         /// </summary>
@@ -180,72 +194,6 @@ namespace SigmaDC.Common.MathEx
         }
     }
 
-    /*public static class DotNetExtensions
-    {
-        public static double Min( this List<double> collection  )
-        {
-            double minValue = double.PositiveInfinity;
-            foreach( var aValue in collection)
-            {
-                if ( aValue < minValue ) minValue = aValue;
-            }
-            return minValue;
-        }
-    }*/
-
-    public class PointD
-    {
-        double x = double.NaN;
-        double y = double.NaN;
-
-        public PointD()
-        {
-        }
-
-        public PointD( double x, double y )
-        {
-            this.x = x;
-            this.y = y;
-        }
-
-        public double X
-        {
-            get { return this.x; }
-        }
-
-        public double Y
-        {
-            get { return this.y; }
-        }
-
-        public override string ToString()
-        {
-            return "( X=" + this.x + ", Y=" + this.y + " )";
-        }
-
-        public override int GetHashCode()
-        {
-            return ( this.x.GetHashCode() + 2 ) ^ ( this.y.GetHashCode() + 2 );
-        }
-
-        public override bool Equals( object obj )
-        {
-            if ( !( obj is PointD ) ) return false;
-            PointD other = obj as PointD;
-            return ( this == other );
-        }
-
-        public static bool operator ==( PointD p1, PointD p2 )
-        {
-            return ( p1.x == p2.x ) && ( p1.y == p2.y );
-        }
-
-        public static bool operator !=( PointD p1, PointD p2 )
-        {
-            return !( p1 == p2 );
-        }
-    }
-
     public class Point3F
     {
         float m_X = float.NaN;
@@ -281,8 +229,7 @@ namespace SigmaDC.Common.MathEx
 
         public override string ToString()
         {
-            if ( IsNull )
-                return "<Invalid>";
+            if ( IsNull ) return "<Invalid>";
 
             string pntString = "{ ";
             pntString += X.ToString( "F3" );
@@ -366,10 +313,7 @@ namespace SigmaDC.Common.MathEx
         {
             get
             {
-                return string.Concat(
-                    this.X.ToString(), "  ",
-                    this.Y.ToString()
-                );
+                return string.Concat( "{ " + this.X.ToString(), "; ", this.Y.ToString() + " }" );
             }
         }
 
@@ -657,6 +601,18 @@ namespace SigmaDC.Common.MathEx
             float factor = 1 / divider;
             result.X = value1.X * factor;
             result.Y = value1.Y * factor;
+        }
+
+        /// <summary>
+        /// Returns a pseudo-cross product of two vectors.
+        /// </summary>
+        /// <remarks>"True" cross product is defined only for 3D vectors. This formula is just mathematical hack.</remarks>
+        /// <param name="value1">The first <see cref="Vector2"/>.</param>
+        /// <param name="value2">The second <see cref="Vector2"/>.</param>
+        /// <returns>The pseudo-cross product of two vectors.</returns>
+        public static float Cross( Vector2 value1, Vector2 value2 )
+        {
+            return ( value1.X * value2.Y - value2.X - value1.Y );
         }
 
         /// <summary>
@@ -949,7 +905,7 @@ namespace SigmaDC.Common.MathEx
         /// <returns>A <see cref="String"/> representation of this <see cref="Vector2"/>.</returns>
         public override string ToString()
         {
-            return "{X:" + X + " Y:" + Y + "}";
+            return "{ X:" + X + "; Y:" + Y + " }";
         }
 
         /// <summary>
@@ -959,6 +915,11 @@ namespace SigmaDC.Common.MathEx
         public Point ToPoint()
         {
             return new Point( ( int )X, ( int )Y );
+        }
+
+        public PointF ToPointF()
+        {
+            return new PointF( X, Y );
         }
 
         /// <summary>
@@ -1529,20 +1490,31 @@ namespace SigmaDC.Common.MathEx
         #endregion Public Methods
     }
 
-    public struct SdcLineSegment
+    public struct SdcLine
     {
         public Vector2 P1 { get; set; }
         public Vector2 P2 { get; set; }
 
-/*        public SdcLineSegment()
+        private struct GeneralLineEquation
         {
-            P1 = new Vector2();
-            P2 = new Vector2();
+            // A*x + B*y = C
+            public float A;
+            public float B;
+            public float C;
+
+            public GeneralLineEquation( Vector2 P, Vector2 Q )
+            {
+                // A = y2-y1
+                // B = x1-x2
+                // C = A*x1 + B*y1
+                A = Q.Y - P.Y;
+                B = P.X - Q.X;
+                C = A * P.X + B * P.Y;
+            }
         }
-        */
 
         // Inheritance is required, see http://stackoverflow.com/a/7670854/1794089
-        public SdcLineSegment( Vector2 first, Vector2 second ) : this()
+        public SdcLine( Vector2 first, Vector2 second ) : this()
         {
             Trace.Assert( second.X >= first.X );
             Trace.Assert( second.Y >= first.Y );
@@ -1551,41 +1523,212 @@ namespace SigmaDC.Common.MathEx
             P2 = second;
         }
 
-         // TODO: move to other common functions
-        const float SMALL_NUM = 0.00000001f; // anything that avoids division overflow
-
-        /// <summary>
-        /// dot product (3D) which allows vector operations in arguments
-        /// </summary>
-        /// <param name="u"></param>
-        /// <param name="v"></param>
-        /// <returns></returns>
-        public static float dot( Vector2 u, Vector2 v )
+        public bool IntersectsWith( SdcLineSegment other, out Vector2 ptIntersection )
         {
-            return ( u.X * v.X + u.Y * v.Y /*+ u.Z * v.Z*/ );
+            ptIntersection = new Vector2();
+
+            GeneralLineEquation t_le = new GeneralLineEquation( this.P1, this.P2 ); // A1, B1, C1
+            GeneralLineEquation o_le = new GeneralLineEquation( other.P1, other.P2 );  // A2, B2, C2
+
+            float det = t_le.A * o_le.B - o_le.A * t_le.B;
+            if ( MathUtils.NearlyZero( det ) )
+            {
+                //Lines are parallel
+                return false;
+            }
+
+            float x = ( o_le.B * t_le.C - t_le.B * o_le.C ) / det;
+            float y = ( t_le.A * o_le.C - o_le.A * t_le.C ) / det;
+            ptIntersection = new Vector2( x, y );
+            return true;
+        }
+    }
+
+    public struct SdcLineSegment
+    {
+        public Vector2 P1 { get; set; }
+        public Vector2 P2 { get; set; }
+
+        // Inheritance is required, see http://stackoverflow.com/a/7670854/1794089
+        public SdcLineSegment( Vector2 first, Vector2 second )
+            : this()
+        {
+            Trace.Assert( second.X >= first.X );
+            Trace.Assert( second.Y >= first.Y );
+
+            P1 = first;
+            P2 = second;
+        }
+
+        #region Check whether the line segment contains the specified point
+
+        public static bool Contains( SdcLineSegment S, Vector2 C )
+        {
+            var crossProduct = ( C.Y - S.P1.Y ) * ( S.P2.X - S.P1.X ) - ( C.X - S.P1.X ) * ( S.P2.Y - S.P1.Y );
+            if ( !MathUtils.NearlyZero( crossProduct ) ) return false;
+
+            var dotProduct = ( C.X - S.P1.X ) * ( S.P2.X - S.P1.X ) + ( C.Y - S.P1.Y ) * ( S.P2.Y - S.P1.Y );
+            if ( dotProduct < 0.0f ) return false;
+
+            var segmSquaredLength = ( S.P2.X - S.P1.X ) * ( S.P2.X - S.P1.X ) + ( S.P2.Y - S.P1.Y ) * ( S.P2.Y - S.P1.Y );
+            if ( dotProduct > segmSquaredLength ) return false;
+
+            return true;
+        }
+
+        public bool Contains( Vector2 P )
+        {
+            return SdcLineSegment.Contains( this, P );
+        }
+        #endregion
+
+        #region Private stuff for intersection testing
+        // Code sources: http://martin-thoma.com/how-to-check-if-two-line-segments-intersect/, https://stackoverflow.com/a/8524921/1794089
+        private Vector2[] GetBoundingBox()
+        {
+            var points = new Vector2[ 2 ];
+
+            if ( P1.X <= P2.X )
+            {
+                points[ 0 ].X = P1.X;
+                points[ 1 ].X = P2.X;
+            }
+            else
+            {
+                points[ 1 ].X = P1.X;
+                points[ 0 ].X = P2.X;
+            }
+
+            if ( P1.Y <= P2.Y )
+            {
+                points[ 0 ].Y = P1.Y;
+                points[ 1 ].Y = P2.Y;
+            }
+            else
+            {
+                points[ 1 ].Y = P1.Y;
+                points[ 0 ].Y = P2.Y;
+            }
+
+            return points;
+        }
+
+        private static bool BoundingBoxesIntersects( Vector2[] a, Vector2[] b )
+        {
+            return ( a[ 0 ].X <= b[ 1 ].X ) && ( a[ 1 ].X >= b[ 0 ].X ) && ( a[ 0 ].Y <= b[ 1 ].Y ) && ( a[ 1 ].Y >= b[ 0 ].Y );
         }
 
         /// <summary>
-        /// norm = length of  vector
+        /// Check on the which side of the segment S the point C is on
         /// </summary>
-        /// <param name="v"></param>
+        /// <see cref="https://stackoverflow.com/a/8524921/1794089"/>
+        /// <param name="S"></param>
+        /// <param name="C"></param>
         /// <returns></returns>
-        public static float norm( Vector2 v )
+        private static int FindPointSide( SdcLineSegment S, Vector2 C )
         {
-            return ( float )Math.Sqrt( dot( v, v ) );
-        }
-    
-        /// <summary>
-        /// distance = norm of difference
-        /// </summary>
-        /// <param name="u"></param>
-        /// <param name="v"></param>
-        /// <returns></returns>
-        public static float d( Vector2 u, Vector2 v )
-        {
-            return norm( u - v );
+            // First check degraded cases: vertical and horizontal line segments,
+            // because they require special processing (slope will be undefined for them)
+            if ( MathUtils.NearlyZero( S.P2.X - S.P1.X ) )
+            {
+                // Vertical line
+                if ( C.X < S.P2.X )
+                {
+                    return S.P2.Y > S.P1.Y ? 1 : -1;
+                }
+                if ( C.X > S.P2.X )
+                {
+                    return S.P2.Y > S.P1.Y ? -1 : 1;
+                }
+                return 0;
+            }
+            if ( MathUtils.NearlyZero( S.P2.Y - S.P1.Y ) )
+            {
+                // Horizontal line
+                if ( C.Y < S.P2.Y )
+                {
+                    return S.P2.X > S.P1.X ? -1 : 1;
+                }
+                if ( C.Y > S.P2.Y )
+                {
+                    return S.P2.X > S.P1.X ? 1 : -1;
+                }
+                return 0;
+            }
+
+            // Check common case using the slope
+            double slope = ( S.P2.Y - S.P1.Y ) / ( S.P2.X - S.P1.X );
+            double yIntercept = S.P1.Y - S.P1.X * slope;
+            double cSolution = ( slope * C.X ) + yIntercept;
+            if ( slope != 0 )
+            {
+                if ( C.Y > cSolution )
+                {
+                    return S.P2.X > S.P1.X ? 1 : -1;
+                }
+                if ( C.Y < cSolution )
+                {
+                    return S.P2.X > S.P1.X ? -1 : 1;
+                }
+                return 0;
+            }
+            return 0;
         }
 
+        private static bool TouchesOrCrossesLine( SdcLineSegment a, SdcLineSegment b )
+        {
+            bool b1 = Contains( a, b.P1 );
+            bool b2 = Contains( a, b.P2 );
+
+            int sideFirst = FindPointSide( a, b.P1 );
+            int sideSecond = FindPointSide( a, b.P2 );
+            bool b3 = sideFirst != sideSecond;
+
+            return b1 || b2 || b3;
+        }
+        #endregion
+
+        #region Line segment to line segment intersection test
+        public static bool Intersects( SdcLineSegment a, SdcLineSegment b )
+        {
+            var box1 = a.GetBoundingBox();
+            var box2 = b.GetBoundingBox();
+
+            bool b1 = BoundingBoxesIntersects( box1, box2 );
+            bool b2 = TouchesOrCrossesLine( a, b );
+            bool b3 = TouchesOrCrossesLine( b, a );
+            return b1 && b2 && b3;
+        }
+
+        public bool Intersects( SdcLineSegment S )
+        {
+            return SdcLineSegment.Intersects( this, S );
+        }
+
+        public static Vector2 GetIntersectionPoint( SdcLineSegment A, SdcLineSegment B )
+        {
+            Vector2 result = default( Vector2 );
+
+            double dy1 = A.P2.Y - A.P1.Y;
+            double dx1 = A.P2.X - A.P1.X;
+            double dy2 = B.P2.Y - B.P1.Y;
+            double dx2 = B.P2.X - B.P1.X;
+
+            if ( dy1 * dx2 == dy2 * dx1 )
+            {
+                return result;
+            }
+            else
+            {
+                double x = ( ( B.P1.Y - A.P1.Y ) * dx1 * dx2 + dy1 * dx2 * A.P1.X - dy2 * dx1 * B.P1.X ) / ( dy1 * dx2 - dy2 * dx1 );
+                double y = A.P1.Y + ( dy1 / dx1 ) * ( x - A.P1.X );
+                result = new Vector2( ( float )x, ( float )y );
+                return result;
+            }
+        }
+        #endregion
+
+        #region Line segment to line segment minimal distance calculation
         /// <summary>
         /// Get the 2D minimum distance between 2 segments
         /// </summary>
@@ -1594,20 +1737,20 @@ namespace SigmaDC.Common.MathEx
         /// <returns>The shortest distance between S1 and S2</returns>
         public static float Distance2D( SdcLineSegment S1, SdcLineSegment S2 )
         {
-            Vector2 u = S1.P2 - S1.P1;
-            Vector2 v = S2.P2 - S2.P1;
-            Vector2 w = S1.P1 - S2.P1;
-            float a = dot( u, u );         // always >= 0
-            float b = dot( u, v );
-            float c = dot( v, v );         // always >= 0
-            float d = dot( u, w );
-            float e = dot( v, w );
-            float D = a * c - b * b;        // always >= 0
+            var u = S1.P2 - S1.P1;
+            var v = S2.P2 - S2.P1;
+            var w = S1.P1 - S2.P1;
+            float a = Vector2.Dot( u, u );         // always >= 0
+            float b = Vector2.Dot( u, v );
+            float c = Vector2.Dot( v, v );         // always >= 0
+            float d = Vector2.Dot( u, w );
+            float e = Vector2.Dot( v, w );
+            float D = a * c - b * b;    // always >= 0
             float sc, sN, sD = D;       // sc = sN / sD, default sD = D >= 0
             float tc, tN, tD = D;       // tc = tN / tD, default tD = D >= 0
 
             // compute the line parameters of the two closest points
-            if ( D < SMALL_NUM )
+            if ( MathUtils.NearlyZero( D ) )
             {
                 // the lines are almost parallel
                 sN = 0.0f;         // force using point P0 on segment S1
@@ -1665,15 +1808,28 @@ namespace SigmaDC.Common.MathEx
                     sD = a;
                 }
             }
+
             // finally do the division to get sc and tc
-            sc = ( Math.Abs( sN ) < SMALL_NUM ? 0.0f : sN / sD );
-            tc = ( Math.Abs( tN ) < SMALL_NUM ? 0.0f : tN / tD );
+            sc = ( MathUtils.NearlyZero( sN ) ? 0.0f : sN / sD );
+            tc = ( MathUtils.NearlyZero( tN ) ? 0.0f : tN / tD );
 
             // get the difference of the two closest points
-            Vector2 dP = w + ( sc * u ) - ( tc * v );  // =  S1(sc) - S2(tc)
-
-            return norm( dP );   // return the closest distance
+            var dP = w + ( sc * u ) - ( tc * v );  // =  S1(sc) - S2(tc)
+            return dP.Length(); // return the closest distance
         }
+
+        public float Distance2D( SdcLineSegment S )
+        {
+            return SdcLineSegment.Distance2D( this, S );
+        }
+        #endregion
+
+        #region Standart .Net stuff
+        public override string ToString()
+        {
+            return string.Format( "A: ({0}; {1}), B: ({2}; {3})", this.P1.X, this.P1.Y, this.P2.X, this.P2.Y );
+        }
+        #endregion
     }
 
     /// <summary>
@@ -1712,6 +1868,45 @@ namespace SigmaDC.Common.MathEx
         }
     }
 
+    public class SdcTriangle
+    {
+        public Vector2 A { get; set; }
+        public Vector2 B { get; set; }
+        public Vector2 C { get; set; }
+
+        public SdcTriangle( Vector2 A, Vector2 B, Vector2 C )
+        {
+            this.A = A;
+            this.B = B;
+            this.C = C;
+        }
+
+        public bool Contains( Vector2 P )
+        {
+            // Use Barycentric Technique: see http://www.blackpawn.com/texts/pointinpoly/default.html
+
+            // Compute vectors        
+            var v0 = C - A;
+            var v1 = B - A;
+            var v2 = P - A;
+
+            // Compute dot products
+            var dot00 = Vector2.Dot( v0, v0 );
+            var dot01 = Vector2.Dot( v0, v1 );
+            var dot02 = Vector2.Dot( v0, v2 );
+            var dot11 = Vector2.Dot( v1, v1 );
+            var dot12 = Vector2.Dot( v1, v2 );
+
+            // Compute barycentric coordinates
+            var invDenom = 1.0f / ( dot00 * dot11 - dot01 * dot01 );
+            var u = ( dot11 * dot02 - dot01 * dot12 ) * invDenom;
+            var v = ( dot00 * dot12 - dot01 * dot02 ) * invDenom;
+
+            // Check if point is in triangle
+            return ( u >= 0 ) && ( v >= 0 ) && ( u + v < 1 );
+        }
+    }
+
     /// <summary>
     /// <remarks>http://programyourfaceoff.blogspot.ru/2011/12/intersection-testing.html</remarks>
     /// </summary>
@@ -1723,7 +1918,8 @@ namespace SigmaDC.Common.MathEx
         #region For intersection testing only
         public float HalfWidth { get; set; }
         public float HalfHeight { get; set; }
-        public float Angle { get; set; }
+        public float RotationAngle { get; set; }
+        public Vector2 RotationCenter { get; set; }
         #endregion
 
         #region Common rectangle properties
@@ -1740,12 +1936,21 @@ namespace SigmaDC.Common.MathEx
         public SdcLineSegment Right { get; set; }
         #endregion
 
-        public float Width { get { return RightTop.X - LeftBottom.X; } }
-        public float Height { get { return RightTop.Y - LeftBottom.Y; } }
+        public float Width { get; set; }
+
+        public float Height { get; set; }
 
         public SdcRectangle()
         {
             Center = new Vector2();
+
+            HalfWidth = 0.0f;
+            HalfHeight = 0.0f;
+            RotationAngle = 0.0f;
+            RotationCenter = new Vector2();
+
+            Width = 0.0f;
+            Height = 0.0f;
 
             LeftBottom = new Vector2();
             LeftTop = new Vector2();
@@ -1762,6 +1967,14 @@ namespace SigmaDC.Common.MathEx
         {
             Center = other.Center;
 
+            HalfWidth = other.HalfWidth;
+            HalfHeight = other.HalfHeight;
+            RotationAngle = other.RotationAngle;
+            RotationCenter = other.RotationCenter;
+
+            Width = other.Width;
+            Height = other.Height;
+
             LeftBottom = other.LeftBottom;
             LeftTop = other.LeftTop;
             RightBottom = other.RightBottom;
@@ -1775,13 +1988,26 @@ namespace SigmaDC.Common.MathEx
 
         public SdcRectangle( RectangleF otherRect )
         {
-            Center = new Vector2( ( otherRect.Left + otherRect.Right ) / 2, ( otherRect.Bottom + otherRect.Top ) / 2 );
-            HalfWidth = otherRect.Width / 2;
-            HalfHeight = otherRect.Height / 2;
-            Angle = 0.0f;
+            Trace.Assert( otherRect.Right >= otherRect.Left );
+//            Trace.Assert( otherRect.Top >= otherRect.Bottom );
 
-            float top = otherRect.Top, bottom = otherRect.Bottom;
-            if ( otherRect.Top < otherRect.Bottom ) { top = otherRect.Bottom; bottom = otherRect.Top; }
+            Center = new Vector2( ( otherRect.Left + otherRect.Right ) / 2.0f, ( otherRect.Bottom + otherRect.Top ) / 2.0f );
+
+            HalfWidth = otherRect.Width / 2.0f;
+            HalfHeight = otherRect.Height / 2.0f;
+            RotationAngle = 0.0f;
+            RotationCenter = new Vector2();
+
+            float top = otherRect.Top;
+            float bottom = otherRect.Bottom;
+            if ( otherRect.Top < otherRect.Bottom )
+            {
+                top = otherRect.Bottom;
+                bottom = otherRect.Top;
+            }
+
+            Width = otherRect.Width;
+            Height = otherRect.Height;
 
             LeftBottom = new Vector2( otherRect.Left, bottom );
             LeftTop = new Vector2( otherRect.Left, top );
@@ -1793,8 +2019,16 @@ namespace SigmaDC.Common.MathEx
             Left = new SdcLineSegment( LeftBottom, LeftTop );
             Right = new SdcLineSegment( RightBottom, RightTop );
 
-            Debug.Assert( Width >= 0 && Height >= 0 );
-            // TODO: other validation, like Right >= Left
+            Trace.Assert( Width >= 0 );
+            Trace.Assert( Height >= 0 );
+            Trace.Assert( Right.P1.X >= Left.P1.X );
+            Trace.Assert( Right.P2.X >= Left.P2.X );
+            Trace.Assert( Top.P1.Y >= Bottom.P1.Y );
+            Trace.Assert( Top.P2.Y >= Bottom.P2.Y );
+            Trace.Assert( RightBottom.X >= LeftBottom.X );
+            Trace.Assert( RightTop.X >= LeftTop.X );
+            Trace.Assert( LeftTop.Y >= LeftBottom.Y );
+            Trace.Assert( RightTop.Y >= RightBottom.Y );
         }
 
         /// <summary>
@@ -1808,6 +2042,9 @@ namespace SigmaDC.Common.MathEx
             var manRadius = manDiameter / 2.0f;
 
             // 1) Find X-axis aligned rectangle
+            Width = visibilityRadius;
+            Height = manDiameter;
+
             LeftBottom = new Vector2( manProjCenter.X, manProjCenter.Y - manRadius );
             LeftTop = new Vector2( manProjCenter.X, manProjCenter.Y + manRadius );
             RightBottom = new Vector2( manProjCenter.X + visibilityRadius, manProjCenter.Y - manRadius );
@@ -1819,59 +2056,137 @@ namespace SigmaDC.Common.MathEx
             Right = new SdcLineSegment( RightBottom, RightTop );
 
             // 2) Fill the intersection-specific field values
-            Center = new Vector2( ( LeftBottom.X + RightTop.X ) / 2, ( LeftBottom.Y + RightTop.Y ) / 2 );
-            HalfWidth = Width / 2;
-            HalfHeight = Height / 2;
+            Center = new Vector2( ( LeftBottom.X + RightTop.X ) / 2.0f, ( LeftBottom.Y + RightTop.Y ) / 2.0f );
 
-            // FIXME: should we rotate rect right here and do not store the angle?
-//            Angle = 0.0f;
-            Angle = angle;
+            HalfWidth = Width / 2.0f;
+            HalfHeight = Height / 2.0f;
+            RotationAngle = angle;
+            RotationCenter = manProjCenter;
+
+            Debug.Assert( Width >= 0 && Height >= 0 );
         }
 
         public SdcRectangle Rotate( Vector2 origin, float angle )
         {
+            if ( angle == 0.0f ) return this;
+
             var result = new SdcRectangle();
 
-            result.LeftBottom = Vector2.RotateAroundPoint( LeftBottom, origin, angle );
-            result.RightBottom = Vector2.RotateAroundPoint( RightBottom, origin, angle );
-            result.RightTop = Vector2.RotateAroundPoint( RightTop, origin, angle);
-            result.LeftTop = Vector2.RotateAroundPoint( LeftTop, origin, angle );
+            result.Center = Vector2.RotateAroundPoint( this.Center, origin, angle );
+            result.HalfWidth = this.HalfWidth;
+            result.HalfHeight = this.HalfHeight;
+            result.RotationAngle = 0.0f;
+            result.RotationCenter = this.RotationCenter;
+
+            result.Width = this.Width;
+            result.Height = this.Height;
+
+            result.LeftBottom = Vector2.RotateAroundPoint( this.LeftBottom, origin, angle );
+            result.RightBottom = Vector2.RotateAroundPoint( this.RightBottom, origin, angle );
+            result.RightTop = Vector2.RotateAroundPoint( this.RightTop, origin, angle );
+            result.LeftTop = Vector2.RotateAroundPoint( this.LeftTop, origin, angle );
+
+            // Swap points if required: left/right and top/bottom can be swapped after the rotation
+            // TODO: test hard this code!
+            List<float> xCoords = new List<float>() { result.LeftBottom.X, result.RightBottom.X, result.RightTop.X, result.LeftTop.X };
+            List<float> yCoords = new List<float>() { result.LeftBottom.Y, result.RightBottom.Y, result.RightTop.Y, result.LeftTop.Y };
+            xCoords.Sort();
+            yCoords.Sort();
+            result.LeftBottom = new Vector2( xCoords[ 0 ], yCoords[ 0 ] );
+            result.RightTop = new Vector2( xCoords[ 3 ], yCoords[ 3 ] );
+            result.LeftTop = new Vector2( xCoords[ 1 ], yCoords[ 2 ] );
+            result.RightBottom = new Vector2( xCoords[ 2 ], yCoords[ 1 ] );
+
+            result.Bottom = new SdcLineSegment( result.LeftBottom, result.RightBottom );
+            result.Top = new SdcLineSegment( result.LeftTop, result.RightTop );
+            result.Left = new SdcLineSegment( result.LeftBottom, result.LeftTop );
+            result.Right = new SdcLineSegment( result.RightBottom, result.RightTop );
 
             return result;
-
-            /*rect.LeftBottom -= pt;
-            rect.RightBottom -= pt;
-            rect.RightTop -= pt;
-            rect.LeftTop -= pt;
-
-            rect.LeftBottom = Vector2.Transform( rect.LeftBottom, rotMatrix );
-            rect.RightBottom = Vector2.Transform( rect.RightBottom, rotMatrix );
-            rect.RightTop = Vector2.Transform( rect.RightTop, rotMatrix );
-            rect.LeftTop = Vector2.Transform( rect.LeftTop, rotMatrix );
-
-            rect.LeftBottom += pt;
-            rect.RightBottom += pt;
-            rect.RightTop += pt;
-            rect.LeftTop += pt;*/
         }
 
-        public float DistanceTo( SdcLineSegment segm )
+        public static float SMALL_NUM = 0.001f;
+
+        public float DistanceTo( SdcRectangle other )
         {
-            float a = SdcLineSegment.Distance2D( Left, segm );
-            float b = SdcLineSegment.Distance2D( Right, segm );
-            float c = SdcLineSegment.Distance2D( Top, segm );
-            float d = SdcLineSegment.Distance2D( Bottom, segm );
+            float a = DistanceTo( other.Left ); if ( a <= SMALL_NUM ) a = float.MaxValue;
+            float b = DistanceTo( other.Right ); if ( b <= SMALL_NUM ) b = float.MaxValue;
+            float c = DistanceTo( other.Top ); if ( c <= SMALL_NUM ) c = float.MaxValue;
+            float d = DistanceTo( other.Bottom ); if ( d <= SMALL_NUM ) d = float.MaxValue;
             float min = MathUtils.MinVec( a, b, c, d );
             return min;
         }
 
-        public bool Intersects( SdcRectangle box )
+        public float DistanceTo( SdcLineSegment segm )
         {
+            var rotatedThis = Rotate( this.RotationCenter, this.RotationAngle );
+
+            float a = SdcLineSegment.Distance2D( rotatedThis.Left, segm ); if ( a <= SMALL_NUM ) a = float.MaxValue;
+            float b = SdcLineSegment.Distance2D( rotatedThis.Right, segm ); if ( b <= SMALL_NUM ) b = float.MaxValue;
+            float c = SdcLineSegment.Distance2D( rotatedThis.Top, segm ); if ( c <= SMALL_NUM ) c = float.MaxValue;
+            float d = SdcLineSegment.Distance2D( rotatedThis.Bottom, segm ); if ( c <= SMALL_NUM ) c = float.MaxValue;
+            float min = MathUtils.MinVec( a, b, c, d );
+            return min;
+        }
+
+        public override string ToString()
+        {
+            return string.Format( "LeftBottom: ( {0}; {1} ), RightTop: ( {2}; {3} )", LeftBottom.X, LeftBottom.Y, RightTop.X, RightTop.Y );
+        }
+
+        public bool Contains( Vector2 pt )
+        {
+            // Let the current rectangle is described by four vertices: A, B, C, D
+
+            // 1) Rotate rectangle
+            var rotatedThis = Rotate( this.RotationCenter, this.RotationAngle );
+
+            // 2) Split it to the two triangles: ABD, BCD
+            var trABD = new SdcTriangle( rotatedThis.LeftBottom, rotatedThis.LeftTop, rotatedThis.RightBottom );
+            var trBCD = new SdcTriangle( rotatedThis.LeftTop, rotatedThis.RightTop, rotatedThis.RightBottom );
+
+            // 3) Check if one of the triangles contains the specified point
+            return ( trABD.Contains( pt ) || trBCD.Contains( pt ) );
+        }
+
+        public bool Contains( SdcRectangle rect )
+        {
+            // One rectangle completely contains another <==> it contains all four it's points
+            return ( Contains( rect.LeftBottom ) && Contains( rect.LeftTop ) && Contains( rect.RightTop ) && Contains( rect.RightBottom ) );
+        }
+
+        public bool Intersects( SdcRectangle other )
+        {
+            var rotatedThis = this.Rotate( this.RotationCenter, this.RotationAngle );
+            var rotatedOther = other.Rotate( other.RotationCenter, other.RotationAngle );
+
+            if ( rotatedThis.Left.Intersects( rotatedOther.Left ) ) return true;
+            if ( rotatedThis.Left.Intersects( rotatedOther.Top ) ) return true;
+            if ( rotatedThis.Left.Intersects( rotatedOther.Right ) ) return true;
+            if ( rotatedThis.Left.Intersects( rotatedOther.Bottom ) ) return true;
+
+            if ( rotatedThis.Top.Intersects( rotatedOther.Left ) ) return true;
+            if ( rotatedThis.Top.Intersects( rotatedOther.Top ) ) return true;
+            if ( rotatedThis.Top.Intersects( rotatedOther.Right ) ) return true;
+            if ( rotatedThis.Top.Intersects( rotatedOther.Bottom ) ) return true;
+
+            if ( rotatedThis.Right.Intersects( rotatedOther.Left ) ) return true;
+            if ( rotatedThis.Right.Intersects( rotatedOther.Top ) ) return true;
+            if ( rotatedThis.Right.Intersects( rotatedOther.Right ) ) return true;
+            if ( rotatedThis.Right.Intersects( rotatedOther.Bottom ) ) return true;
+
+            if ( rotatedThis.Bottom.Intersects( rotatedOther.Left ) ) return true;
+            if ( rotatedThis.Bottom.Intersects( rotatedOther.Top ) ) return true;
+            if ( rotatedThis.Bottom.Intersects( rotatedOther.Right ) ) return true;
+            if ( rotatedThis.Bottom.Intersects( rotatedOther.Bottom ) ) return true;
+
+            return false;
+
             // Transform the half measures
-            Vector2 halfWidthVectOne = Vector2.Transform( this.HalfWidth * Vector2.UnitX, Matrix2.CreateRotation/*Z*/( Angle ) );
-            Vector2 halfHeightVectOne = Vector2.Transform( this.HalfHeight * Vector2.UnitY, Matrix2.CreateRotation/*Z*/( Angle ) );
-            Vector2 halfWidthVectTwo = Vector2.Transform( box.HalfWidth * Vector2.UnitX, Matrix2.CreateRotation/*Z*/( box.Angle ) );
-            Vector2 halfHeightVectTwo = Vector2.Transform( box.HalfHeight * Vector2.UnitY, Matrix2.CreateRotation/*Z*/( box.Angle ) );
+            /*Vector2 halfWidthVectOne = Vector2.Transform( this.HalfWidth * Vector2.UnitX, Matrix2.CreateRotation( this.RotationAngle ) );
+            Vector2 halfHeightVectOne = Vector2.Transform( this.HalfHeight * Vector2.UnitY, Matrix2.CreateRotation( this.RotationAngle ) );
+            Vector2 halfWidthVectTwo = Vector2.Transform( other.HalfWidth * Vector2.UnitX, Matrix2.CreateRotation( other.RotationAngle ) );
+            Vector2 halfHeightVectTwo = Vector2.Transform( other.HalfHeight * Vector2.UnitY, Matrix2.CreateRotation( other.RotationAngle ) );
 
             // They'll work as normals too
             Vector2[] normals = new Vector2[ 4 ];
@@ -1884,40 +2199,38 @@ namespace SigmaDC.Common.MathEx
             {
                 normals[ i ].Normalize();
 
-                //Project the half measures onto the normal...
+                // Project the half measures onto the normal...
                 Vector2 projectedHWOne = Vector2.Dot( halfWidthVectOne, normals[ i ] ) * normals[ i ];
                 Vector2 projectedHHOne = Vector2.Dot( halfHeightVectOne, normals[ i ] ) * normals[ i ];
                 Vector2 projectedHWTwo = Vector2.Dot( halfWidthVectTwo, normals[ i ] ) * normals[ i ];
                 Vector2 projectedHHTwo = Vector2.Dot( halfHeightVectTwo, normals[ i ] ) * normals[ i ];
 
-                //Calculate the half lengths along the separation axis.
+                // Calculate the half lengths along the separation axis.
                 float halfLengthOne = projectedHWOne.Length() + projectedHHOne.Length();
                 float halfLengthTwo = projectedHWTwo.Length() + projectedHHTwo.Length();
 
-                //Find the distance between object centers along the separation axis.
-                Vector2 difference = ( this.Center - box.Center );
+                // Find the distance between object centers along the separation axis.
+                Vector2 difference = ( this.Center - other.Center );
                 Vector2 projectedDiff = Vector2.Dot( difference, normals[ i ] ) * normals[ i ];
                 float projectedDistance = projectedDiff.Length();
 
-                //Test for early out.
+                // Test for early out.
                 if ( projectedDistance > halfLengthOne + halfLengthTwo )
                 {
                     return false;
                 }
             }
 
-            //We tested every normal axis,
-            //we must be in intersection!
-            return true;
+            // We tested every normal axis,
+            // we must be in intersection!
+            return true;*/
         }
 
         public bool Intersects( SdcCircle circle )
         {
             //Transform the half measures
-            Vector2 halfWidthVect = Vector2.Transform(
-                HalfWidth * Vector2.UnitX, Matrix2.CreateRotationZ( Angle ) );
-            Vector2 halfHeightVect = Vector2.Transform(
-                HalfHeight * Vector2.UnitY, Matrix2.CreateRotationZ( Angle ) );
+            Vector2 halfWidthVect = Vector2.Transform( HalfWidth * Vector2.UnitX, Matrix2.CreateRotationZ( RotationAngle ) );
+            Vector2 halfHeightVect = Vector2.Transform( HalfHeight * Vector2.UnitY, Matrix2.CreateRotationZ( RotationAngle ) );
 
             Vector2[] normals = new Vector2[ 6 ];
             normals[ 0 ] = halfHeightVect;

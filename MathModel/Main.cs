@@ -190,7 +190,7 @@ namespace SigmaDC.MathModel
         {
             foreach ( var h in m_people )
             {
-                var hiTemp = new HumanRuntimeInfo();
+                var hiTemp = new HumanRuntimeInfo(h);
                 NextStep( h, S, ref hiTemp );
                 hi.Add( hiTemp );
             }
@@ -199,9 +199,6 @@ namespace SigmaDC.MathModel
         public Vector2 NextStep( IHuman human, IDistanceField S, ref HumanRuntimeInfo humanInfo )
         {
             Vector2 xPrev = human.ProjectionCenter;
-
-            humanInfo.Center = human.ProjectionCenter;
-            humanInfo.Diameter = human.ProjectionDiameter;
 
             // TODO: j == q case is reduntant
             for ( int j = 1; j <= m_modelParams.q; ++j )
@@ -253,11 +250,13 @@ namespace SigmaDC.MathModel
 
                 // 0.1) Calculate r*[j] - the distance from human projection centre to first obstacle on his way
                 float r_j;
-                if ( !FindNearestObstacle( j, humanInfo, out r_j ) )
+                if ( !FindNearestObstacle( j, m_modelParams.r, humanInfo, out r_j ) )
                 {
                     r_j = m_modelParams.r;
                 }
                 humanInfo.MinDistToObstacle.Add( r_j );
+
+//                Debug.Assert( r_j <= m_modelParams.r );
 
                 // 0.2) dS[j] - the difference between old and new shortest path field values
  /*               var x_r = new Vector2( xPrev.X + 0.1f * humanInfo.MoveDirections[ j ].X, xPrev.Y + 0.1f * humanInfo.MoveDirections[ j ].Y );
@@ -313,13 +312,7 @@ namespace SigmaDC.MathModel
             //        deltaD - people compression coefficient (model parameter), can be a constant
             //                 or density-dependant function
             //
-//            SdcRectangle rect()
-            PointD[] moveProjection = { new PointD(), new PointD(), new PointD(), new PointD() };
-            //RectangleF moveProjection = 
-            foreach ( var h in m_people )
-            {
-                //
-            }
+            // TODO:
 
             //
             // 1.4.3) If conditions from 1.4.2 are ruled out, then supposed new human coordinates x[i]
@@ -365,15 +358,32 @@ namespace SigmaDC.MathModel
             return 0;
         }
 
-        bool FindNearestObstacle( int j, HumanRuntimeInfo hi, out float dist )
+        bool FindNearestObstacle( int j, float r_max, HumanRuntimeInfo hi, out float dist )
         {
+            // NOTE: Test case ID's: 412, 531
+
             var distances = new List<float>();
             foreach ( var rect in m_obstacleExtents )
             {
-                if ( rect.Intersects( hi.VisibilityAreas[ j - 1 ] ) )
+                if ( rect.Intersects( hi.VisibilityAreas[ j - 1 ] ) && !rect.Contains( hi.VisibilityAreas[ j - 1 ] ) )
                 {
-                    // FIXME: ensure the left side containts the human projection center
-                    distances.Add( rect.DistanceTo( hi.VisibilityAreas[ j - 1].Left ) );
+                    // Obtain actual visibility area rectangle (rotated one)
+                    var rotatedVa = hi.VisibilityAreas[ j - 1 ].Rotate( hi.VisibilityAreas[ j - 1 ].RotationCenter, hi.VisibilityAreas[ j - 1 ].RotationAngle );
+
+                    // Search for side what contains human projection center
+                    SdcLineSegment baseSegm = new SdcLineSegment();
+                    if ( rotatedVa.Left.Contains( hi.ProjectionCenter ) ) baseSegm = rotatedVa.Left;
+                    if ( rotatedVa.Right.Contains( hi.ProjectionCenter ) ) baseSegm = rotatedVa.Right;
+                    if ( rotatedVa.Bottom.Contains( hi.ProjectionCenter ) ) baseSegm = rotatedVa.Bottom;
+                    if ( rotatedVa.Top.Contains( hi.ProjectionCenter ) ) baseSegm = rotatedVa.Top;
+                    float distTemp = rect.DistanceTo( baseSegm );
+
+                    // Check whether the obstacle just "touches" the visibility area rect:
+                    // the minimum distance can't be smaller than hi.ProjectionDiameter/2,
+                    // i.e. human can't "grow into" the wall
+                    if ( MathUtils.NearlyZero( distTemp ) ) continue;
+                    
+                    distances.Add( distTemp );
                 }
             }
 
@@ -384,6 +394,7 @@ namespace SigmaDC.MathModel
             }
 
             dist = distances.Min();
+            if ( dist > r_max ) dist = r_max;
             return true;
         }
     }

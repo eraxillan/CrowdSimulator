@@ -20,6 +20,7 @@
  */
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Collections;
 using System.Collections.Generic;
@@ -39,13 +40,22 @@ namespace SigmaDC.Types
         PeopleTypes.TMan m_human;
         Vector2 m_center;
         float m_diameter;
+        RectangleF m_extent;
 
         public HumanWrapper( PeopleTypes.TMan human )
         {
             m_human = human;
+
             // TODO: z coordinate of human is currently ignored
             m_center = new Vector2( m_human.px, m_human.py );
             m_diameter = 2 * ( float )Math.Sqrt( m_human.Size / ( float )Math.PI );
+
+            float r = m_diameter / 2;
+            m_extent = new RectangleF( m_center.X - r, m_center.Y - r, m_diameter, m_diameter );
+
+            Trace.Assert( m_diameter > 0 );
+            Trace.Assert( m_extent.Width > 0 );
+            Trace.Assert( m_extent.Height > 0 );
         }
 
         [System.ComponentModel.Category( "General" ),
@@ -86,6 +96,12 @@ namespace SigmaDC.Types
         public float ProjectionDiameter
         {
             get { return m_diameter; }
+        }
+
+        [System.ComponentModel.Browsable(false)]
+        public RectangleF ProjectionExtent
+        {
+            get { return m_extent; }
         }
 
         [System.ComponentModel.Category( "Evacuation" ),
@@ -192,8 +208,7 @@ namespace SigmaDC.Types
         {
             get
             {
-                if ( !m_extent.IsEmpty )
-                    return m_extent;
+                if ( !m_extent.IsEmpty ) return m_extent;
 
                 m_extent = GetExtents();
                 return m_extent;

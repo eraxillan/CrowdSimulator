@@ -46,7 +46,7 @@ namespace GdiPlusVisualizer
         Dictionary<RectangleF, BoxWrapper> m_boxMap = null;
         RectangleF m_currentBoxExtents;
         RectangleF m_fixedBoxExtents;
-        RectangleF m_currentHumanExtents;
+        IHuman m_currentHuman;
         bool m_keepAspectRatio = false;
         bool m_drawBuilding = true;
         bool m_drawFurniture = true;
@@ -55,8 +55,8 @@ namespace GdiPlusVisualizer
         bool m_imageIsPanning = false;
         float m_a = 0.1f;
         bool m_highlightBoxes = false;
-        MathModel.DistanceField m_distField = null;
-        MathModel.DistanceField.DrawMode m_fieldVisMode = MathModel.DistanceField.DrawMode.None;
+        DistanceField m_distField = null;
+        DistanceField.DrawMode m_fieldVisMode = DistanceField.DrawMode.None;
         double[][] m_S = null;
         List<HumanRuntimeInfo> m_humanRuntimeData = new List<HumanRuntimeInfo>();
 
@@ -242,9 +242,9 @@ namespace GdiPlusVisualizer
 
             if ( m_S == null )
             {
-                m_distField = new MathModel.DistanceField( m_building, m_a, M, N, x0, y0 );
+                m_distField = new DistanceField( m_building, m_a, M, N, x0, y0 );
 
-                this.UseWaitCursor = true;
+               /* this.UseWaitCursor = true;
                 this.Enabled = false;
 
                 Stopwatch stopwatch = Stopwatch.StartNew();
@@ -258,10 +258,10 @@ namespace GdiPlusVisualizer
                 MessageBox.Show( "Distance field calculation took: " + elapsedTime );
 
                 this.Enabled = true;
-                this.UseWaitCursor = false;
+                this.UseWaitCursor = false;*/
 
                 var model = new SigmaDCModel();
-                var hi = new HumanRuntimeInfo();
+               // var hi = new HumanRuntimeInfo(h);
                 model.SetupParameters( new Dictionary<string, object>() { { "r", 1.0f }, { "w", 0.0f }, { "deltaD", 0.0f }, { "kw", 4.0f }, { "kp", 1.0f }, { "ks", 1.0f } } );
 
                 var obstacleExtents = new List<RectangleF>();
@@ -355,45 +355,72 @@ namespace GdiPlusVisualizer
                 }
 
                 // Highlight current human extent
-                if ( !m_currentHumanExtents.IsEmpty )
+                if ( m_currentHuman != null )
                 {
                     using ( var blueBrush = new SolidBrush( Color.Blue ) )
                     {
-                        g.FillEllipse( blueBrush, m_currentHumanExtents.X, m_currentHumanExtents.Y, m_currentHumanExtents.Width, m_currentHumanExtents.Height );
+                        g.FillEllipse( blueBrush, m_currentHuman.ProjectionExtent.X, m_currentHuman.ProjectionExtent.Y, m_currentHuman.ProjectionExtent.Width, m_currentHuman.ProjectionExtent.Height );
                     }
                 }
             }
 
-            if ( m_fieldVisMode != MathModel.DistanceField.DrawMode.None ) m_distField.Visualize( g );
+            if ( m_fieldVisMode != DistanceField.DrawMode.None ) m_distField.Visualize( g );
 
+            if ( m_currentHuman == null ) return;
             foreach ( var hrt in m_humanRuntimeData )
             {
+                if ( hrt.Id != m_currentHuman.Id ) continue;
+
                 for ( int i = 0; i < hrt.RotateAngles.Count; ++i )
                 {
                     var rect = hrt.VisibilityAreas[ i ];
-                    var rectRot = rect.Rotate( hrt.Center, hrt.RotateAngles[ i ] );
+//                    var rectRot = rect.Rotate( hrt.ProjectionCenter, hrt.RotateAngles[ i ] );
+                    var rectRot = rect.Rotate( rect.RotationCenter, rect.RotationAngle );
+                    Trace.Assert( rectRot.LeftTop.Y >= rectRot.LeftBottom.Y && rectRot.RightTop.Y >= rectRot.RightBottom.Y );
+                    Trace.Assert( rectRot.RightBottom.X >= rectRot.LeftBottom.X && rectRot.RightTop.X >= rectRot.LeftTop.X );
+
+                    if( hrt.Id == 412)
+                    {
+                        Console.WriteLine( "rectRot[ " + i + " ]: " + rectRot.ToString() );
+                    }
 
                     var rectVis = new SdcRectangle( rect );
                     rectVis.RightTop = new Vector2( rectVis.LeftTop.X + hrt.MinDistToObstacle[ i ], rectVis.LeftTop.Y );
                     rectVis.RightBottom = new Vector2( rectVis.LeftBottom.X + hrt.MinDistToObstacle[ i ], rectVis.LeftBottom.Y );
-                    var rectVisRot = rectVis.Rotate( hrt.Center, hrt.RotateAngles[ i ] );
+                    var rectVisRot = rectVis.Rotate( hrt.ProjectionCenter, hrt.RotateAngles[ i ] );
 
                     // FIXME: add IVisualisable support to SdcRectangle
-                    using ( var bluePen = new Pen( Color.BlueViolet, 1.0f / g.DpiX ) )
+                    using ( var bluePen = new Pen( Color.Red /*Color.BlueViolet*/, 2.0f / g.DpiX ) )
                     {
-                        g.DrawLine( bluePen, rectRot.LeftTop.X, rectRot.LeftTop.Y, rectRot.RightTop.X, rectRot.RightTop.Y );    // Top line segment
-                        g.DrawLine( bluePen, rectRot.LeftBottom.X, rectRot.LeftBottom.Y, rectRot.RightBottom.X, rectRot.RightBottom.Y );    // Bottom line segment
-                        g.DrawLine( bluePen, rectRot.LeftTop.X, rectRot.LeftTop.Y, rectRot.LeftBottom.X, rectRot.LeftBottom.Y );    // Left line segment
-                        g.DrawLine( bluePen, rectRot.RightTop.X, rectRot.RightTop.Y, rectRot.RightBottom.X, rectRot.RightBottom.Y );    // Right line segment
+                        //if ( i == 0 )
+                        {
+                            PointF[] rectPts = { rectRot.LeftBottom.ToPointF(), rectRot.LeftTop.ToPointF(), rectRot.RightTop.ToPointF(), rectRot.RightBottom.ToPointF() };
+                            g.DrawPolygon( bluePen, rectPts );
+
+                            //g.DrawLine( bluePen, rectRot.LeftTop.X, rectRot.LeftTop.Y, rectRot.RightTop.X, rectRot.RightTop.Y );    // Top line segment
+                            //g.DrawLine( bluePen, rectRot.LeftBottom.X, rectRot.LeftBottom.Y, rectRot.RightBottom.X, rectRot.RightBottom.Y );    // Bottom line segment
+                            //g.DrawLine( bluePen, rectRot.LeftTop.X, rectRot.LeftTop.Y, rectRot.LeftBottom.X, rectRot.LeftBottom.Y );    // Left line segment
+                            //g.DrawLine( bluePen, rectRot.RightTop.X, rectRot.RightTop.Y, rectRot.RightBottom.X, rectRot.RightBottom.Y );    // Right line segment
+                        }
                     }
 
                     // Draw distance to the nearest obstacle
-                    using ( var pinkPen = new Pen( Color.HotPink, 2.0f / g.DpiX ) )
+                    using ( var pinkPen = new Pen( Color.Cyan, 4.0f / g.DpiX ) )
                     {
+                        //if ( i == 0 )
+                        {
+                            PointF[] rectPts = { rectVisRot.LeftBottom.ToPointF(), rectVisRot.LeftTop.ToPointF(), rectVisRot.RightTop.ToPointF(), rectVisRot.RightBottom.ToPointF() };
+                            g.DrawPolygon( pinkPen, rectPts );
+
+                            /*g.DrawLine( pinkPen, rectRot.LeftBottom.X , rectRot.LeftBottom.Y + hrt.MinDistToObstacle[ i ],
+                                                 rectRot.RightBottom.X , rectRot.RightBottom.Y + hrt.MinDistToObstacle[ i ]
+                                                  );*/
+                        }
+
 //                        g.DrawLine( pinkPen, rectVisRot.LeftTop.X, rectVisRot.LeftTop.Y, rectVisRot.RightTop.X, rectVisRot.RightTop.Y );    // Top line segment
 //                        g.DrawLine( pinkPen, rectVisRot.LeftBottom.X, rectVisRot.LeftBottom.Y, rectVisRot.RightBottom.X, rectVisRot.RightBottom.Y );    // Bottom line segment
 //                        g.DrawLine( pinkPen, rectVisRot.LeftTop.X, rectVisRot.LeftTop.Y, rectVisRot.LeftBottom.X, rectVisRot.LeftBottom.Y );    // Left line segment
-                        g.DrawLine( pinkPen, rectVisRot.RightTop.X, rectVisRot.RightTop.Y, rectVisRot.RightBottom.X, rectVisRot.RightBottom.Y );    // Right line segment
+                        //g.DrawLine( pinkPen, rectVisRot.RightTop.X, rectVisRot.RightTop.Y, rectVisRot.RightBottom.X, rectVisRot.RightBottom.Y );    // Right line segment
                     }
                 }
             }
@@ -498,17 +525,14 @@ namespace GdiPlusVisualizer
 
             if ( m_highlightBoxes )
             {
-                if ( m_currentHumanExtents.Contains( pt[ 0 ] ) ) return;
+                if ( ( m_currentHuman != null ) && m_currentHuman.ProjectionExtent.Contains( pt[ 0 ] ) ) return;
 
                 // First search for human projection
                 foreach ( var h in m_building.CurrentFloor.People )
                 {
                     if ( MathUtils.Sqr( h.ProjectionCenter.X - pt[ 0 ].X ) + MathUtils.Sqr( h.ProjectionCenter.Y - pt[ 0 ].Y ) <= MathUtils.Sqr( h.ProjectionDiameter / 2 ) )
                     {
-                        m_currentBoxExtents = RectangleF.Empty;
-                        
-                        float r = h.ProjectionDiameter/2;
-                        m_currentHumanExtents = new RectangleF( h.ProjectionCenter.X - r, h.ProjectionCenter.Y - r, h.ProjectionDiameter, h.ProjectionDiameter );
+                        m_currentHuman = h;
 
                         grdProps.SelectedObject = h;
                         grdProps.Refresh();
@@ -517,6 +541,8 @@ namespace GdiPlusVisualizer
                         return;
                     }
                 }
+
+                m_currentHuman = null;
 
                 if ( m_currentBoxExtents.Contains( pt[ 0 ] ) || !m_fixedBoxExtents.IsEmpty ) return;
 
@@ -630,7 +656,7 @@ namespace GdiPlusVisualizer
             m_boxMap = m_building.CurrentFloor.GetBoxMap();
             m_currentBoxExtents = RectangleF.Empty;
             m_fixedBoxExtents = RectangleF.Empty;
-            m_currentHumanExtents = RectangleF.Empty;
+            m_currentHuman = null;
 
             lblFloor.Text = "Floor number: " + newFloorNumber.ToString();
             pbVisualizator.Refresh();
@@ -722,7 +748,7 @@ namespace GdiPlusVisualizer
                 case 'g':
                 {
                     m_drawGrid = !m_drawGrid;
-                    if ( !m_drawGrid ) m_fieldVisMode = MathModel.DistanceField.DrawMode.None;
+                    if ( !m_drawGrid ) m_fieldVisMode = DistanceField.DrawMode.None;
 
                     lblCurrentCell.Visible = m_drawGrid;
                     break;
@@ -731,10 +757,10 @@ namespace GdiPlusVisualizer
                 {
                     if ( m_drawGrid )
                     {
-                        m_fieldVisMode = ( MathModel.DistanceField.DrawMode )( ( int )m_fieldVisMode + 1 );
-                        if ( ( int )m_fieldVisMode > ( int )MathModel.DistanceField.DrawMode.Count )
+                        m_fieldVisMode = (DistanceField.DrawMode )( ( int )m_fieldVisMode + 1 );
+                        if ( ( int )m_fieldVisMode > ( int )DistanceField.DrawMode.Count )
                         {
-                            m_fieldVisMode = MathModel.DistanceField.DrawMode.None;
+                            m_fieldVisMode = DistanceField.DrawMode.None;
                         }
                         m_distField.SetDrawMode( m_fieldVisMode );
                     }
