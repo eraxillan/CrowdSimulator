@@ -273,10 +273,11 @@ namespace GdiPlusVisualizer
                 {
                     obstacleExtents.Add( furn.Extents );
                 }
-                foreach ( var window in m_building.CurrentFloor.Windows )
+                // FIXME: window has null height, but should be considered as obstacle
+                /*foreach ( var window in m_building.CurrentFloor.Windows )
                 {
                     obstacleExtents.Add( window.Extents );
-                }
+                }*/
                 // TODO: smth else can be considered as obstacle?
                 model.SetupObstacles( obstacleExtents );
 
@@ -374,53 +375,28 @@ namespace GdiPlusVisualizer
                 for ( int i = 0; i < hrt.RotateAngles.Count; ++i )
                 {
                     var rect = hrt.VisibilityAreas[ i ];
-//                    var rectRot = rect.Rotate( hrt.ProjectionCenter, hrt.RotateAngles[ i ] );
                     var rectRot = rect.Rotate( rect.RotationCenter, rect.RotationAngle );
-                    Trace.Assert( rectRot.LeftTop.Y >= rectRot.LeftBottom.Y && rectRot.RightTop.Y >= rectRot.RightBottom.Y );
-                    Trace.Assert( rectRot.RightBottom.X >= rectRot.LeftBottom.X && rectRot.RightTop.X >= rectRot.LeftTop.X );
-
-                    if( hrt.Id == 412)
-                    {
-                        Console.WriteLine( "rectRot[ " + i + " ]: " + rectRot.ToString() );
-                    }
+//                    Trace.Assert( rectRot.LeftTop.Y >= rectRot.LeftBottom.Y && rectRot.RightTop.Y >= rectRot.RightBottom.Y );
+//                    Trace.Assert( rectRot.RightBottom.X >= rectRot.LeftBottom.X && rectRot.RightTop.X >= rectRot.LeftTop.X );
 
                     var rectVis = new SdcRectangle( rect );
-                    rectVis.RightTop = new Vector2( rectVis.LeftTop.X + hrt.MinDistToObstacle[ i ], rectVis.LeftTop.Y );
-                    rectVis.RightBottom = new Vector2( rectVis.LeftBottom.X + hrt.MinDistToObstacle[ i ], rectVis.LeftBottom.Y );
+
+                    rectVis.A = new Vector2( rectVis.C.X + hrt.MinDistToObstacle[ i ], rectVis.C.Y );
+                    rectVis.B = new Vector2( rectVis.D.X + hrt.MinDistToObstacle[ i ], rectVis.D.Y );
                     var rectVisRot = rectVis.Rotate( hrt.ProjectionCenter, hrt.RotateAngles[ i ] );
 
                     // FIXME: add IVisualisable support to SdcRectangle
-                    using ( var bluePen = new Pen( Color.Red /*Color.BlueViolet*/, 2.0f / g.DpiX ) )
+                    using ( var redPen = new Pen( Color.Red, 1.0f / g.DpiX ) )
                     {
-                        //if ( i == 0 )
-                        {
-                            PointF[] rectPts = { rectRot.LeftBottom.ToPointF(), rectRot.LeftTop.ToPointF(), rectRot.RightTop.ToPointF(), rectRot.RightBottom.ToPointF() };
-                            g.DrawPolygon( bluePen, rectPts );
-
-                            //g.DrawLine( bluePen, rectRot.LeftTop.X, rectRot.LeftTop.Y, rectRot.RightTop.X, rectRot.RightTop.Y );    // Top line segment
-                            //g.DrawLine( bluePen, rectRot.LeftBottom.X, rectRot.LeftBottom.Y, rectRot.RightBottom.X, rectRot.RightBottom.Y );    // Bottom line segment
-                            //g.DrawLine( bluePen, rectRot.LeftTop.X, rectRot.LeftTop.Y, rectRot.LeftBottom.X, rectRot.LeftBottom.Y );    // Left line segment
-                            //g.DrawLine( bluePen, rectRot.RightTop.X, rectRot.RightTop.Y, rectRot.RightBottom.X, rectRot.RightBottom.Y );    // Right line segment
-                        }
+                            PointF[] rectPts = { rectRot.A.ToPointF(), rectRot.B.ToPointF(), rectRot.C.ToPointF(), rectRot.D.ToPointF() };
+                            g.DrawPolygon( redPen, rectPts );
                     }
 
                     // Draw distance to the nearest obstacle
-                    using ( var pinkPen = new Pen( Color.Cyan, 4.0f / g.DpiX ) )
+                    using ( var cyanPen = new Pen( Color.Cyan, 1.0f / g.DpiX ) )
                     {
-                        //if ( i == 0 )
-                        {
-                            PointF[] rectPts = { rectVisRot.LeftBottom.ToPointF(), rectVisRot.LeftTop.ToPointF(), rectVisRot.RightTop.ToPointF(), rectVisRot.RightBottom.ToPointF() };
-                            g.DrawPolygon( pinkPen, rectPts );
-
-                            /*g.DrawLine( pinkPen, rectRot.LeftBottom.X , rectRot.LeftBottom.Y + hrt.MinDistToObstacle[ i ],
-                                                 rectRot.RightBottom.X , rectRot.RightBottom.Y + hrt.MinDistToObstacle[ i ]
-                                                  );*/
-                        }
-
-//                        g.DrawLine( pinkPen, rectVisRot.LeftTop.X, rectVisRot.LeftTop.Y, rectVisRot.RightTop.X, rectVisRot.RightTop.Y );    // Top line segment
-//                        g.DrawLine( pinkPen, rectVisRot.LeftBottom.X, rectVisRot.LeftBottom.Y, rectVisRot.RightBottom.X, rectVisRot.RightBottom.Y );    // Bottom line segment
-//                        g.DrawLine( pinkPen, rectVisRot.LeftTop.X, rectVisRot.LeftTop.Y, rectVisRot.LeftBottom.X, rectVisRot.LeftBottom.Y );    // Left line segment
-                        //g.DrawLine( pinkPen, rectVisRot.RightTop.X, rectVisRot.RightTop.Y, rectVisRot.RightBottom.X, rectVisRot.RightBottom.Y );    // Right line segment
+                            PointF[] rectPts = { rectVisRot.AB.P1.ToPointF(), rectVisRot.AB.P2.ToPointF(), rectVisRot.CD.P2.ToPointF(), rectVisRot.CD.P1.ToPointF() };
+                            g.DrawPolygon( cyanPen, rectPts );
                     }
                 }
             }
@@ -687,6 +663,7 @@ namespace GdiPlusVisualizer
             const int moveConst = 20;
             switch ( char.ToLower( e.KeyChar ) )
             {
+                // Moving scene: w, a, s, d (like FPS :))
                 case 'w':
                 {
                     m_panPoint.Y -= moveConst;
@@ -707,12 +684,14 @@ namespace GdiPlusVisualizer
                     m_panPoint.X += moveConst;
                     break;
                 }
+                // Reset scene scale and position to default ones
                 case 'n':
                 {
                     m_panPoint = m_panPointOrig;
                     m_scale = 1;
                     break;
                 }
+                // Increase/decrease scale
                 case '+':
                 {
                     m_scale += zoomConst;
@@ -725,11 +704,13 @@ namespace GdiPlusVisualizer
                     if ( Math.Abs( m_scale ) <= 0.1 ) m_scale = 0.1f;
                     break;
                 }
+                // Box higliting enabled/disabled
                 case 'h':
                 {
                     m_highlightBoxes = !m_highlightBoxes;
                     break;
                 }
+                // Building/furniture/people/grid drawing enabled/disabled
                 case 'b':
                 {
                     m_drawBuilding = !m_drawBuilding;

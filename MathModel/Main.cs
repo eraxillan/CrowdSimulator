@@ -29,7 +29,7 @@ namespace SigmaDC.MathModel
             /// <summary>
             /// The number of directions where human can move
             /// </summary>
-            public int q = 4;
+            public int q = 8;
 
             public float kw;
             public float kp;
@@ -360,7 +360,7 @@ namespace SigmaDC.MathModel
 
         bool FindNearestObstacle( int j, float r_max, HumanRuntimeInfo hi, out float dist )
         {
-            // NOTE: Test case ID's: 412, 531
+            // NOTE: Test case human IDs': 412, 531
 
             var distances = new List<float>();
             foreach ( var rect in m_obstacleExtents )
@@ -370,13 +370,7 @@ namespace SigmaDC.MathModel
                     // Obtain actual visibility area rectangle (rotated one)
                     var rotatedVa = hi.VisibilityAreas[ j - 1 ].Rotate( hi.VisibilityAreas[ j - 1 ].RotationCenter, hi.VisibilityAreas[ j - 1 ].RotationAngle );
 
-                    // Search for side what contains human projection center
-                    SdcLineSegment baseSegm = new SdcLineSegment();
-                    if ( rotatedVa.Left.Contains( hi.ProjectionCenter ) ) baseSegm = rotatedVa.Left;
-                    if ( rotatedVa.Right.Contains( hi.ProjectionCenter ) ) baseSegm = rotatedVa.Right;
-                    if ( rotatedVa.Bottom.Contains( hi.ProjectionCenter ) ) baseSegm = rotatedVa.Bottom;
-                    if ( rotatedVa.Top.Contains( hi.ProjectionCenter ) ) baseSegm = rotatedVa.Top;
-                    float distTemp = rect.DistanceTo( baseSegm );
+                    float distTemp = rect.DistanceTo( rotatedVa );
 
                     // Check whether the obstacle just "touches" the visibility area rect:
                     // the minimum distance can't be smaller than hi.ProjectionDiameter/2,

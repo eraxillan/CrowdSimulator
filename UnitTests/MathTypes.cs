@@ -271,7 +271,18 @@ namespace UnitTests
         [TestMethod]
         public void Vector2_Distance_Test()
         {
-            //
+            // Arrange
+            SdcLineSegment pq = new SdcLineSegment( new Vector2( 8.9f, 9.8f ), new Vector2( 9.6f, 10.5f ) );
+            SdcLineSegment uv = new SdcLineSegment( new Vector2( 8.9f, 10.3f ), new Vector2( 11.4f, 10.3f ) );
+
+            // Act
+            float result = SdcLineSegment.Distance2D( pq, uv );
+            Vector2 R = SdcLineSegment.GetIntersectionPoint( pq, uv );
+            float t = Vector2.Distance( R, pq.P2 );
+            result = t;
+
+            // Assert
+            Assert.IsTrue( MathUtils.NearlyEqual( result, 0.283f ) );
         }
 
         [TestMethod]
@@ -370,6 +381,28 @@ namespace UnitTests
     [TestClass]
     public class SdcLineSegmentTests
     {
+        [TestMethod]
+        public void Length_Test()
+        {
+            // Arrange
+            var horSegm = new SdcLineSegment( new Vector2( 9.36f, 10.46f ), new Vector2( 9.64f, 10.46f ) );         // AD
+            var vertSegm = new SdcLineSegment( new Vector2( 9.64f, 10.60f ), new Vector2( 9.64f, 11.60f ) );        // DC
+            var commonSegmUp = new SdcLineSegment( new Vector2( 9.50f, 10.60f ), new Vector2( 9.64f, 11.60f ) );    // MC
+            var commonSegmDown = new SdcLineSegment( new Vector2( 9.36f, 10.46f ), new Vector2( 9.50f, 10.60f ) );  // MA
+
+            // Act
+            float horSegmLength = horSegm.Length();
+            float vertSegmLength = vertSegm.Length();
+            float commonSegmUpLength = commonSegmUp.Length();
+            float commonSegmDownLength = commonSegmDown.Length();
+
+            // Assert
+            Assert.IsTrue( MathUtils.NearlyEqual( horSegmLength, 0.28f ) );
+            Assert.IsTrue( MathUtils.NearlyEqual( vertSegmLength, 1.0f ) );
+            Assert.IsTrue( MathUtils.NearlyEqual( commonSegmUpLength, 1.01f ) );
+            Assert.IsTrue( MathUtils.NearlyEqual( commonSegmDownLength, 0.198f ) );
+        }
+
         [TestMethod]
         public void GetBoundingBox_Test()
         {

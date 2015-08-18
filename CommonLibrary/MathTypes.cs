@@ -19,6 +19,7 @@
  */
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -458,7 +459,8 @@ namespace SigmaDC.Common.MathEx
         /// <returns><c>true</c> if the instances are equal; <c>false</c> otherwise.</returns>
         public static bool operator ==( Vector2 value1, Vector2 value2 )
         {
-            return value1.X == value2.X && value1.Y == value2.Y;
+            // NOTE: fuzzy compare used here
+            return ( MathUtils.NearlyEqual( value1.X, value2.X ) && MathUtils.NearlyEqual( value1.Y, value2.Y ) );
         }
 
         /// <summary>
@@ -1553,11 +1555,29 @@ namespace SigmaDC.Common.MathEx
         public SdcLineSegment( Vector2 first, Vector2 second )
             : this()
         {
-            Trace.Assert( second.X >= first.X );
-            Trace.Assert( second.Y >= first.Y );
+            //Trace.Assert( second.X >= first.X );
+            //Trace.Assert( second.Y >= first.Y );
+            if ( !( ( second.X >= first.X ) || ( second.Y >= first.Y ) ) ) Debugger.Break();
+            Trace.Assert( second.X >= first.X || second.Y >= first.Y );
+
+            if ( MathUtils.NearlyEqual( first.X, second.X ) ) Trace.Assert( !MathUtils.NearlyEqual( first.Y, second.Y ) );
+            if ( MathUtils.NearlyEqual( first.Y, second.Y ) ) Trace.Assert( !MathUtils.NearlyEqual( first.X, second.X ) );
 
             P1 = first;
             P2 = second;
+        }
+
+        /*public SdcLineSegment Rotate( Vector2 origin, float angle )
+        {
+            var result = new SdcLineSegment();
+            result.P1 = Vector2.RotateAroundPoint( this.P1, origin, angle );
+            result.P2 = Vector2.RotateAroundPoint( this.P2, origin, angle );
+            return result;
+        }*/
+
+        public float Length()
+        {
+            return ( P1 - P2 ).Length();
         }
 
         #region Check whether the line segment contains the specified point
@@ -1584,6 +1604,7 @@ namespace SigmaDC.Common.MathEx
 
         #region Private stuff for intersection testing
         // Code sources: http://martin-thoma.com/how-to-check-if-two-line-segments-intersect/, https://stackoverflow.com/a/8524921/1794089
+        // NOTE: some modifications were made!
         private Vector2[] GetBoundingBox()
         {
             var points = new Vector2[ 2 ];
@@ -1705,117 +1726,404 @@ namespace SigmaDC.Common.MathEx
             return SdcLineSegment.Intersects( this, S );
         }
 
+        public bool Touches( SdcLineSegment S )
+        {
+            return ( S.Contains( this.P1 ) || S.Contains( this.P2 ) );
+        }
+
         public static Vector2 GetIntersectionPoint( SdcLineSegment A, SdcLineSegment B )
         {
             Vector2 result = default( Vector2 );
 
-            double dy1 = A.P2.Y - A.P1.Y;
-            double dx1 = A.P2.X - A.P1.X;
-            double dy2 = B.P2.Y - B.P1.Y;
-            double dx2 = B.P2.X - B.P1.X;
+            float dy1 = A.P2.Y - A.P1.Y;
+            float dx1 = A.P2.X - A.P1.X;
+            float dy2 = B.P2.Y - B.P1.Y;
+            float dx2 = B.P2.X - B.P1.X;
 
-            if ( dy1 * dx2 == dy2 * dx1 )
+            if ( MathUtils.NearlyZero( dx1 ) )
             {
+                Trace.Assert( MathUtils.NearlyZero( dy2 ) );
+                return new Vector2( A.P1.X, B.P1.Y );
+            }
+
+            if ( MathUtils.NearlyEqual( dy1 * dx2, dy2 * dx1 ) )
+            {
+                Trace.Assert( false, "dy1*dx2 == dy2*dx1" );
                 return result;
             }
-            else
-            {
-                double x = ( ( B.P1.Y - A.P1.Y ) * dx1 * dx2 + dy1 * dx2 * A.P1.X - dy2 * dx1 * B.P1.X ) / ( dy1 * dx2 - dy2 * dx1 );
-                double y = A.P1.Y + ( dy1 / dx1 ) * ( x - A.P1.X );
-                result = new Vector2( ( float )x, ( float )y );
+            
+                float x = ( ( B.P1.Y - A.P1.Y ) * dx1 * dx2 + dy1 * dx2 * A.P1.X - dy2 * dx1 * B.P1.X ) / ( dy1 * dx2 - dy2 * dx1 );
+                float y = A.P1.Y + ( dy1 / dx1 ) * ( x - A.P1.X );
+                result = new Vector2( x, y );
                 return result;
-            }
+            
         }
+
+        public Vector2 GetIntersectionPoint(SdcLineSegment other)
+        {
+            return SdcLineSegment.GetIntersectionPoint( this, other );
+        }
+
         #endregion
 
         #region Line segment to line segment minimal distance calculation
-        /// <summary>
-        /// Get the 2D minimum distance between 2 segments
-        /// </summary>
-        /// <param name="S1">2D line segment</param>
-        /// <param name="S2">2D line segment</param>
-        /// <returns>The shortest distance between S1 and S2</returns>
-        public static float Distance2D( SdcLineSegment S1, SdcLineSegment S2 )
-        {
-            var u = S1.P2 - S1.P1;
-            var v = S2.P2 - S2.P1;
-            var w = S1.P1 - S2.P1;
-            float a = Vector2.Dot( u, u );         // always >= 0
-            float b = Vector2.Dot( u, v );
-            float c = Vector2.Dot( v, v );         // always >= 0
-            float d = Vector2.Dot( u, w );
-            float e = Vector2.Dot( v, w );
-            float D = a * c - b * b;    // always >= 0
-            float sc, sN, sD = D;       // sc = sN / sD, default sD = D >= 0
-            float tc, tN, tD = D;       // tc = tN / tD, default tD = D >= 0
 
-            // compute the line parameters of the two closest points
-            if ( MathUtils.NearlyZero( D ) )
+        // NOTE: stolen from http://www.geometrictools.com/Source/Distance2D.html#LinearLinear
+        class DistResult
+        {
+            public float distance, sqrDistance;
+            public float[] parameter;
+            public Vector2[] closest;
+
+            public DistResult()
             {
-                // the lines are almost parallel
-                sN = 0.0f;         // force using point P0 on segment S1
-                sD = 1.0f;         // to prevent possible division by 0.0 later
-                tN = e;
-                tD = c;
+                distance = 0;
+                sqrDistance = 0;
+                parameter = new float[ 2 ];
+                closest = new Vector2[ 2 ];
+            }
+        }
+
+        // FIXME: UGLY! static is dangerous in multithreaded environment!
+
+        // The coefficients of R(s,t), not including the constant term.
+        static float mA, mB, mC, mD, mE;
+
+        // dR/ds(i,j) at the four corners of the domain
+        static float mF00, mF10, mF01, mF11;
+
+        // dR/dt(i,j) at the four corners of the domain
+        static float mG00, mG10, mG01, mG11;
+
+        static float GetClampedRoot( float slope, float h0, float h1 )
+        {
+            // Theoretically, r is in (0,1).  However, when the slope is nearly zero,
+            // then so are h0 and h1.  Significant numerical rounding problems can
+            // occur when using floating-point arithmetic.  If the rounding causes r
+            // to be outside the interval, clamp it.  It is possible that r is in
+            // (0,1) and has rounding errors, but because h0 and h1 are both nearly
+            // zero, the quadratic is nearly constant on (0,1).  Any choice of p
+            // should not cause undesirable accuracy problems for the final distance
+            // computation.
+            //
+            // NOTE:  You can use bisection to recompute the root or even use
+            // bisection to compute the root and skip the division.  This is generally
+            // slower, which might be a problem for high-performance applications.
+
+            float r = 0.0f;
+            if ( h0 < 0.0f )
+            {
+                if ( h1 > 0.0f )
+                {
+                    r = -h0 / slope;
+                    if ( r > 1.0f )
+                    {
+                        r = 0.5f;
+                    }
+                    // The slope is positive and -h0 is positive, so there is no
+                    // need to test for a negative value and clamp it.
+                }
+                else
+                {
+                    r = 1.0f;
+                }
             }
             else
             {
-                // get the closest points on the infinite lines
-                sN = ( b * e - c * d );
-                tN = ( a * e - b * d );
-                if ( sN < 0.0f )
-                {        // sc < 0 => the s=0 edge is visible
-                    sN = 0.0f;
-                    tN = e;
-                    tD = c;
-                }
-                else if ( sN > sD )
+                r = 0.0f;
+            }
+            return r;
+        }
+
+        static void ComputeIntersection( float[] sValue, int[] classify, ref int[] edge, ref float[ , ] end )
+        {
+            if ( sValue.Length != 2 ) throw new ArgumentException( "sValue parameter must contains exactly 2 items" );
+            if ( classify.Length != 2 ) throw new ArgumentException( "classify parameter must contains exactly 2 items" );
+            if ( edge.Length != 2 ) throw new ArgumentException( "edge parameter must contains exactly 2 items" );
+            if ( end.Length != 4 ) throw new ArgumentException( "end parameter must contains exactly 2 items in the first and second dimension" );
+
+            // The divisions are theoretically numbers in [0,1].  Numerical rounding
+            // errors might cause the result to be outside the interval.  When this
+            // happens, it must be that both numerator and denominator are nearly
+            // zero.  The denominator is nearly zero when the segments are nearly
+            // perpendicular.  The numerator is nearly zero when the P-segment is
+            // nearly degenerate (mF00 = a is small).  The choice of 0.5 should not
+            // cause significant accuracy problems.
+            //
+            // NOTE:  You can use bisection to recompute the root or even use
+            // bisection to compute the root and skip the division.  This is generally
+            // slower, which might be a problem for high-performance applications.
+
+            if ( classify[ 0 ] < 0 )
+            {
+                edge[ 0 ] = 0;
+                end[ 0, 0 ] = 0.0f;
+                end[ 0, 1 ] = mF00 / mB;
+                if ( end[ 0, 1 ] < 0.0f || end[ 0, 1 ] > 1.0f )
                 {
-                    // sc > 1  => the s=1 edge is visible
-                    sN = sD;
-                    tN = e + b;
-                    tD = c;
+                    end[ 0, 1 ] = 0.5f;
+                }
+
+                if ( classify[ 1 ] == 0 )
+                {
+                    edge[ 1 ] = 3;
+                    end[ 1, 0 ] = sValue[ 1 ];
+                    end[ 1, 1 ] = 1.0f;
+                }
+                else  // classify[1] > 0
+                {
+                    edge[ 1 ] = 1;
+                    end[ 1, 0 ] = 1.0f;
+                    end[ 1, 1 ] = mF10 / mB;
+                    if ( end[ 1, 1 ] < 0.0f || end[ 1, 1 ] > 1.0f )
+                    {
+                        end[ 1, 1 ] = 0.5f;
+                    }
                 }
             }
-
-            if ( tN < 0.0f )
+            else if ( classify[ 0 ] == 0 )
             {
-                // tc < 0 => the t=0 edge is visible
-                tN = 0.0f;
-                // recompute sc for this edge
-                if ( -d < 0.0f )
-                    sN = 0.0f;
-                else if ( -d > a )
-                    sN = sD;
+                edge[ 0 ] = 2;
+                end[ 0, 0 ] = sValue[ 0 ];
+                end[ 0, 1 ] = 0.0f;
+
+                if ( classify[ 1 ] < 0 )
+                {
+                    edge[ 1 ] = 0;
+                    end[ 1, 0 ] = 0.0f;
+                    end[ 1, 1 ] = mF00 / mB;
+                    if ( end[ 1, 1 ] < 0.0f || end[ 1, 1 ] > 1.0f )
+                    {
+                        end[ 1, 1 ] = 0.5f;
+                    }
+                }
+                else if ( classify[ 1 ] == 0 )
+                {
+                    edge[ 1 ] = 3;
+                    end[ 1, 0 ] = sValue[ 1 ];
+                    end[ 1, 1 ] = 1.0f;
+                }
                 else
                 {
-                    sN = -d;
-                    sD = a;
+                    edge[ 1 ] = 1;
+                    end[ 1, 0 ] = 1.0f;
+                    end[ 1, 1 ] = mF10 / mB;
+                    if ( end[ 1, 1 ] < 0.0f || end[ 1, 1 ] > 1.0f )
+                    {
+                        end[ 1, 1 ] = 0.5f;
+                    }
                 }
             }
-            else if ( tN > tD )
+            else  // classify[0] > 0
             {
-                // tc > 1  => the t=1 edge is visible
-                tN = tD;
-                // recompute sc for this edge
-                if ( ( -d + b ) < 0.0f )
-                    sN = 0;
-                else if ( ( -d + b ) > a )
-                    sN = sD;
+                edge[ 0 ] = 1;
+                end[ 0, 0 ] = 1.0f;
+                end[ 0, 1 ] = mF10 / mB;
+                if ( end[ 0, 1 ] < 0.0f || end[ 0, 1 ] > 1 )
+                {
+                    end[ 0, 1 ] = 0.5f;
+                }
+
+                if ( classify[ 1 ] == 0 )
+                {
+                    edge[ 1 ] = 3;
+                    end[ 1, 0 ] = sValue[ 1 ];
+                    end[ 1, 1 ] = 1.0f;
+                }
                 else
                 {
-                    sN = ( -d + b );
-                    sD = a;
+                    edge[ 1 ] = 0;
+                    end[ 1, 0 ] = 0.0f;
+                    end[ 1, 1 ] = mF00 / mB;
+                    if ( end[ 1, 1 ] < 0.0f || end[ 1, 1 ] > 1.0f )
+                    {
+                        end[ 1, 1 ] = 0.5f;
+                    }
+                }
+            }
+        }
+
+        static void ComputeMinimumParameters( int[/*2*/] edge, float[/*2*/,/*2*/] end, ref float[/*2*/] parameter )
+        {
+            if ( edge.Length != 2 ) throw new ArgumentException( "edge parameter must contains exactly 2 items" );
+            if ( end.Length != 4 ) throw new ArgumentException( "end parameter must contains exactly 2 items in the first and second dimension" );
+            if ( parameter.Length != 2 ) throw new ArgumentException( "parameter parameter must contains exactly 2 items" );
+
+            float delta = end[ 1, 1 ] - end[ 0, 1 ];
+            float h0 = delta * ( -mB * end[ 0, 0 ] + mC * end[ 0, 1 ] - mE );
+            if ( h0 >= 0.0f )
+            {
+                if ( edge[ 0 ] == 0 )
+                {
+                    parameter[ 0 ] = 0.0f;
+                    parameter[ 1 ] = GetClampedRoot( mC, mG00, mG01 );
+                }
+                else if ( edge[ 0 ] == 1 )
+                {
+                    parameter[ 0 ] = 1.0f;
+                    parameter[ 1 ] = GetClampedRoot( mC, mG10, mG11 );
+                }
+                else
+                {
+                    parameter[ 0 ] = end[ 0, 0 ];
+                    parameter[ 1 ] = end[ 0, 1 ];
+                }
+            }
+            else
+            {
+                float h1 = delta * ( -mB * end[ 1, 0 ] + mC * end[ 1, 1 ] - mE );
+                if ( h1 <= 0.0f )
+                {
+                    if ( edge[ 1 ] == 0 )
+                    {
+                        parameter[ 0 ] = 0.0f;
+                        parameter[ 1 ] = GetClampedRoot( mC, mG00, mG01 );
+                    }
+                    else if ( edge[ 1 ] == 1 )
+                    {
+                        parameter[ 0 ] = 1.0f;
+                        parameter[ 1 ] = GetClampedRoot( mC, mG10, mG11 );
+                    }
+                    else
+                    {
+                        parameter[ 0 ] = end[ 1, 0 ];
+                        parameter[ 1 ] = end[ 1, 1 ];
+                    }
+                }
+                else  // h0 < 0 and h1 > 0
+                {
+                    float z = Math.Min( Math.Max( h0 / ( h0 - h1 ), 0.0f ), 1.0f );
+                    float omz = 1.0f - z;
+                    parameter[ 0 ] = omz * end[ 0, 0 ] + z * end[ 1, 0 ];
+                    parameter[ 1 ] = omz * end[ 0, 1 ] + z * end[ 1, 1 ];
+                }
+            }
+        }
+
+        public static float Distance2D( SdcLineSegment line1, SdcLineSegment line2 )
+        {
+            DistResult result = new DistResult();
+
+            // The code allows degenerate line segments; that is, P0 and P1 can be
+            // the same point or Q0 and Q1 can be the same point.  The quadratic
+            // function for squared distance between the segment is
+            //   R(s,t) = a*s^2 - 2*b*s*t + c*t^2 + 2*d*s - 2*e*t + f
+            // for (s,t) in [0,1]^2 where
+            //   a = Dot(P1-P0,P1-P0), b = Dot(P1-P0,Q1-Q0), c = Dot(Q1-Q0,Q1-Q0),
+            //   d = Dot(P1-P0,P0-Q0), e = Dot(Q1-Q0,P0-Q0), f = Dot(P0-Q0,P0-Q0)
+            Vector2 P1mP0 = line1.P2 - line1.P1;
+            Vector2 Q1mQ0 = line2.P2 - line2.P1;
+            Vector2 P0mQ0 = line1.P1 - line2.P1;
+            mA = Vector2.Dot( P1mP0, P1mP0 );
+            mB = Vector2.Dot( P1mP0, Q1mQ0 );
+            mC = Vector2.Dot( Q1mQ0, Q1mQ0 );
+            mD = Vector2.Dot( P1mP0, P0mQ0 );
+            mE = Vector2.Dot( Q1mQ0, P0mQ0 );
+
+            mF00 = mD;
+            mF10 = mF00 + mA;
+            mF01 = mF00 - mB;
+            mF11 = mF10 - mB;
+
+            mG00 = -mE;
+            mG10 = mG00 - mB;
+            mG01 = mG00 + mC;
+            mG11 = mG10 + mC;
+
+            if ( mA > 0.0f && mC > 0.0f )
+            {
+                // Compute the solutions to dR/ds(s0,0) = 0 and dR/ds(s1,1) = 0.  The
+                // location of sI on the s-axis is stored in classifyI (I = 0 or 1).  If
+                // sI <= 0, classifyI is -1.  If sI >= 1, classifyI is 1.  If 0 < sI < 1,
+                // classifyI is 0.  This information helps determine where to search for
+                // the minimum point (s,t).  The fij values are dR/ds(i,j) for i and j in
+                // {0,1}.
+
+                float[] sValue = new float[ 2 ];
+                sValue[ 0 ] = GetClampedRoot( mA, mF00, mF10 );
+                sValue[ 1 ] = GetClampedRoot( mA, mF01, mF11 );
+
+                int[] classify = new int[ 2 ];
+                for ( int i = 0; i < 2; ++i )
+                {
+                    if ( sValue[ i ] <= 0.0f )
+                    {
+                        classify[ i ] = -1;
+                    }
+                    else if ( sValue[ i ] >= 1.0f )
+                    {
+                        classify[ i ] = +1;
+                    }
+                    else
+                    {
+                        classify[ i ] = 0;
+                    }
+                }
+
+                if ( classify[ 0 ] == -1 && classify[ 1 ] == -1 )
+                {
+                    // The minimum must occur on s = 0 for 0 <= t <= 1.
+                    result.parameter[ 0 ] = 0.0f;
+                    result.parameter[ 1 ] = GetClampedRoot( mC, mG00, mG01 );
+                }
+                else if ( classify[ 0 ] == +1 && classify[ 1 ] == +1 )
+                {
+                    // The minimum must occur on s = 1 for 0 <= t <= 1.
+                    result.parameter[ 0 ] = 1.0f;
+                    result.parameter[ 1 ] = GetClampedRoot( mC, mG10, mG11 );
+                }
+                else
+                {
+                    // The line dR/ds = 0 intersects the domain [0,1]^2 in a
+                    // nondegenerate segment.  Compute the endpoints of that segment,
+                    // end[0] and end[1].  The edge[i] flag tells you on which domain
+                    // edge end[i] lives: 0 (s=0), 1 (s=1), 2 (t=0), 3 (t=1).
+                    int[] edge = new int[ 2 ];
+                    float[ , ] end = new float[ 2, 2 ];
+                    ComputeIntersection( sValue, classify, ref edge, ref end );
+
+                    // The directional derivative of R along the segment of
+                    // intersection is
+                    //   H(z) = (end[1][1]-end[1][0])*dR/dt((1-z)*end[0] + z*end[1])
+                    // for z in [0,1].  The formula uses the fact that dR/ds = 0 on
+                    // the segment.  Compute the minimum of H on [0,1].
+                    ComputeMinimumParameters( edge, end, ref result.parameter );
+                }
+            }
+            else
+            {
+                if ( mA > 0.0f )
+                {
+                    // The Q-segment is degenerate (Q0 and Q1 are the same point) and
+                    // the quadratic is R(s,0) = a*s^2 + 2*d*s + f and has (half)
+                    // first derivative F(t) = a*s + d.  The closest P-point is
+                    // interior to the P-segment when F(0) < 0 and F(1) > 0.
+                    result.parameter[ 0 ] = GetClampedRoot( mA, mF00, mF10 );
+                    result.parameter[ 1 ] = 0.0f;
+                }
+                else if ( mC > 0.0f )
+                {
+                    // The P-segment is degenerate (P0 and P1 are the same point) and
+                    // the quadratic is R(0,t) = c*t^2 - 2*e*t + f and has (half)
+                    // first derivative G(t) = c*t - e.  The closest Q-point is
+                    // interior to the Q-segment when G(0) < 0 and G(1) > 0.
+                    result.parameter[ 0 ] = 0.0f;
+                    result.parameter[ 1 ] = GetClampedRoot( mC, mG00, mG01 );
+                }
+                else
+                {
+                    // P-segment and Q-segment are degenerate.
+                    result.parameter[ 0 ] = 0.0f;
+                    result.parameter[ 1 ] = 0.0f;
                 }
             }
 
-            // finally do the division to get sc and tc
-            sc = ( MathUtils.NearlyZero( sN ) ? 0.0f : sN / sD );
-            tc = ( MathUtils.NearlyZero( tN ) ? 0.0f : tN / tD );
-
-            // get the difference of the two closest points
-            var dP = w + ( sc * u ) - ( tc * v );  // =  S1(sc) - S2(tc)
-            return dP.Length(); // return the closest distance
+            result.closest[ 0 ] = ( 1.0f - result.parameter[ 0 ] ) * line1.P1 + result.parameter[ 0 ] * line1.P2;
+            result.closest[ 1 ] = ( 1.0f - result.parameter[ 1 ] ) * line2.P1 + result.parameter[ 1 ] * line2.P2;
+            Vector2 diff = result.closest[ 0 ] - result.closest[ 1 ];
+            result.sqrDistance = Vector2.Dot( diff, diff );
+            result.distance = ( float )Math.Sqrt( result.sqrDistance );
+            return result.distance;
         }
 
         public float Distance2D( SdcLineSegment S )
@@ -1923,17 +2231,51 @@ namespace SigmaDC.Common.MathEx
         #endregion
 
         #region Common rectangle properties
-        public Vector2 LeftBottom { get; set; }
-        public Vector2 LeftTop { get; set; }
-        public Vector2 RightBottom { get; set; }
-        public Vector2 RightTop { get; set; }
-        #endregion
+        
+        private bool PointLess( Vector2 P, Vector2 Q )
+        {
+            return ( P.X <= Q.X ) && ( P.Y <= Q.Y );
+        }
 
-        #region For line segment intersection testing only
-        public SdcLineSegment Bottom { get; set; }
-        public SdcLineSegment Top { get; set; }
-        public SdcLineSegment Left { get; set; }
-        public SdcLineSegment Right { get; set; }
+        // Counterclockwise direction: A, B, C, D
+        public SdcLineSegment AB { get { return ( PointLess( A, B ) ? new SdcLineSegment( A, B ) : new SdcLineSegment( B, A ) ); } }
+        public SdcLineSegment BC { get { return ( PointLess( B, C ) ? new SdcLineSegment( B, C ) : new SdcLineSegment( C, B ) ); } }
+        public SdcLineSegment CD { get { return ( PointLess( C, D ) ? new SdcLineSegment( C, D ) : new SdcLineSegment( D, C ) ); } }
+        public SdcLineSegment DA { get { return ( PointLess( D, A ) ? new SdcLineSegment( D, A ) : new SdcLineSegment( A, D ) ); } }
+
+        /// <summary>
+        /// The base edge contains human projection center point
+        /// </summary>
+        public SdcLineSegment BaseEdge
+        {
+            get
+            {
+                bool b1 = AB.Contains( RotationCenter );
+                bool b2 = BC.Contains( RotationCenter );
+                bool b3 = CD.Contains( RotationCenter );
+                bool b4 = DA.Contains( RotationCenter );
+                
+                // One and only one edge must containt the human projection center
+                Trace.Assert( b1 || b2 || b3 || b4 );
+                Trace.Assert( b1 ? (b1 && !b2 && !b3 && !b4 ) : true);
+                Trace.Assert( b2 ? (b2 && !b1 && !b3 && !b4 ) : true);
+                Trace.Assert( b3 ? (b3 && !b1 && !b2 && !b4 ) : true);
+                Trace.Assert( b4 ? (b4 && !b1 && !b2 && !b3 ) : true);
+
+                if ( b1 ) return AB;
+                if ( b2 ) return BC;
+                if ( b3 ) return CD;
+                if ( b4 ) return DA;
+
+                return new SdcLineSegment();
+            }
+        }
+        
+        public Vector2 A { get; set; }
+        public Vector2 B { get; set; }
+        public Vector2 C { get; set; }
+        public Vector2 D { get; set; }
+
         #endregion
 
         public float Width { get; set; }
@@ -1942,7 +2284,8 @@ namespace SigmaDC.Common.MathEx
 
         public SdcRectangle()
         {
-            Center = new Vector2();
+            // FIXME:
+           /* Center = new Vector2();
 
             HalfWidth = 0.0f;
             HalfHeight = 0.0f;
@@ -1960,7 +2303,7 @@ namespace SigmaDC.Common.MathEx
             Bottom = new SdcLineSegment();
             Top = new SdcLineSegment();
             Left = new SdcLineSegment();
-            Right = new SdcLineSegment();
+            Right = new SdcLineSegment();*/
         }
 
         public SdcRectangle( SdcRectangle other )
@@ -1975,15 +2318,10 @@ namespace SigmaDC.Common.MathEx
             Width = other.Width;
             Height = other.Height;
 
-            LeftBottom = other.LeftBottom;
-            LeftTop = other.LeftTop;
-            RightBottom = other.RightBottom;
-            RightTop = other.RightTop;
-
-            Bottom = other.Bottom;
-            Top = other.Top;
-            Left = other.Left;
-            Right = other.Right;
+            this.A = other.A;
+            this.B = other.B;
+            this.C = other.C;
+            this.D = other.D;
         }
 
         public SdcRectangle( RectangleF otherRect )
@@ -2009,26 +2347,24 @@ namespace SigmaDC.Common.MathEx
             Width = otherRect.Width;
             Height = otherRect.Height;
 
-            LeftBottom = new Vector2( otherRect.Left, bottom );
-            LeftTop = new Vector2( otherRect.Left, top );
-            RightBottom = new Vector2( otherRect.Right, bottom );
-            RightTop = new Vector2( otherRect.Right, top );
+            var leftBottom = new Vector2( otherRect.Left, bottom );
+            var leftTop = new Vector2( otherRect.Left, top );
+            var rightBottom = new Vector2( otherRect.Right, bottom );
+            var rightTop = new Vector2( otherRect.Right, top );
 
-            Bottom = new SdcLineSegment( LeftBottom, RightBottom );
-            Top = new SdcLineSegment( LeftTop, RightTop );
-            Left = new SdcLineSegment( LeftBottom, LeftTop );
-            Right = new SdcLineSegment( RightBottom, RightTop );
+            A = rightBottom;
+            B = rightTop;
+            C = leftTop;
+            D = leftBottom;
 
+            
             Trace.Assert( Width >= 0 );
             Trace.Assert( Height >= 0 );
-            Trace.Assert( Right.P1.X >= Left.P1.X );
-            Trace.Assert( Right.P2.X >= Left.P2.X );
-            Trace.Assert( Top.P1.Y >= Bottom.P1.Y );
-            Trace.Assert( Top.P2.Y >= Bottom.P2.Y );
-            Trace.Assert( RightBottom.X >= LeftBottom.X );
-            Trace.Assert( RightTop.X >= LeftTop.X );
-            Trace.Assert( LeftTop.Y >= LeftBottom.Y );
-            Trace.Assert( RightTop.Y >= RightBottom.Y );
+
+            Trace.Assert( AB.Length() > 0 );
+            Trace.Assert( BC.Length() > 0 );
+            Trace.Assert( CD.Length() > 0 );
+            Trace.Assert( DA.Length() > 0 );
         }
 
         /// <summary>
@@ -2045,18 +2381,18 @@ namespace SigmaDC.Common.MathEx
             Width = visibilityRadius;
             Height = manDiameter;
 
-            LeftBottom = new Vector2( manProjCenter.X, manProjCenter.Y - manRadius );
-            LeftTop = new Vector2( manProjCenter.X, manProjCenter.Y + manRadius );
-            RightBottom = new Vector2( manProjCenter.X + visibilityRadius, manProjCenter.Y - manRadius );
-            RightTop = new Vector2( manProjCenter.X + visibilityRadius, manProjCenter.Y + manRadius );
+            var leftBottom = new Vector2( manProjCenter.X, manProjCenter.Y - manRadius );
+            var leftTop = new Vector2( manProjCenter.X, manProjCenter.Y + manRadius );
+            var rightBottom = new Vector2( manProjCenter.X + visibilityRadius, manProjCenter.Y - manRadius );
+            var rightTop = new Vector2( manProjCenter.X + visibilityRadius, manProjCenter.Y + manRadius );
 
-            Bottom = new SdcLineSegment( LeftBottom, RightBottom );
-            Top = new SdcLineSegment( LeftTop, RightTop );
-            Left = new SdcLineSegment( LeftBottom, LeftTop );
-            Right = new SdcLineSegment( RightBottom, RightTop );
+            A = rightBottom;
+            B = rightTop;
+            C = leftTop;
+            D = leftBottom;
 
             // 2) Fill the intersection-specific field values
-            Center = new Vector2( ( LeftBottom.X + RightTop.X ) / 2.0f, ( LeftBottom.Y + RightTop.Y ) / 2.0f );
+            Center = new Vector2( ( leftBottom.X + rightTop.X ) / 2.0f, ( leftBottom.Y + rightTop.Y ) / 2.0f );
 
             HalfWidth = Width / 2.0f;
             HalfHeight = Height / 2.0f;
@@ -2081,27 +2417,10 @@ namespace SigmaDC.Common.MathEx
             result.Width = this.Width;
             result.Height = this.Height;
 
-            result.LeftBottom = Vector2.RotateAroundPoint( this.LeftBottom, origin, angle );
-            result.RightBottom = Vector2.RotateAroundPoint( this.RightBottom, origin, angle );
-            result.RightTop = Vector2.RotateAroundPoint( this.RightTop, origin, angle );
-            result.LeftTop = Vector2.RotateAroundPoint( this.LeftTop, origin, angle );
-
-            // Swap points if required: left/right and top/bottom can be swapped after the rotation
-            // TODO: test hard this code!
-            List<float> xCoords = new List<float>() { result.LeftBottom.X, result.RightBottom.X, result.RightTop.X, result.LeftTop.X };
-            List<float> yCoords = new List<float>() { result.LeftBottom.Y, result.RightBottom.Y, result.RightTop.Y, result.LeftTop.Y };
-            xCoords.Sort();
-            yCoords.Sort();
-            result.LeftBottom = new Vector2( xCoords[ 0 ], yCoords[ 0 ] );
-            result.RightTop = new Vector2( xCoords[ 3 ], yCoords[ 3 ] );
-            result.LeftTop = new Vector2( xCoords[ 1 ], yCoords[ 2 ] );
-            result.RightBottom = new Vector2( xCoords[ 2 ], yCoords[ 1 ] );
-
-            result.Bottom = new SdcLineSegment( result.LeftBottom, result.RightBottom );
-            result.Top = new SdcLineSegment( result.LeftTop, result.RightTop );
-            result.Left = new SdcLineSegment( result.LeftBottom, result.LeftTop );
-            result.Right = new SdcLineSegment( result.RightBottom, result.RightTop );
-
+            result.A = Vector2.RotateAroundPoint( this.A, origin, angle );
+            result.B = Vector2.RotateAroundPoint( this.B, origin, angle );
+            result.C = Vector2.RotateAroundPoint( this.C, origin, angle );
+            result.D = Vector2.RotateAroundPoint( this.D, origin, angle );
             return result;
         }
 
@@ -2109,29 +2428,70 @@ namespace SigmaDC.Common.MathEx
 
         public float DistanceTo( SdcRectangle other )
         {
-            float a = DistanceTo( other.Left ); if ( a <= SMALL_NUM ) a = float.MaxValue;
-            float b = DistanceTo( other.Right ); if ( b <= SMALL_NUM ) b = float.MaxValue;
-            float c = DistanceTo( other.Top ); if ( c <= SMALL_NUM ) c = float.MaxValue;
-            float d = DistanceTo( other.Bottom ); if ( d <= SMALL_NUM ) d = float.MaxValue;
-            float min = MathUtils.MinVec( a, b, c, d );
-            return min;
-        }
+            // Determine visibility area side edges (adjacent with base one) 
+            Trace.Assert( other.BaseEdge.P1 == other.CD.P1 && other.BaseEdge.P2 == other.CD.P2 );
+            Trace.Assert( !other.AB.Touches( other.CD ) );
+            Trace.Assert( other.BC.Touches( other.CD ) );
+            Trace.Assert( other.DA.Touches( other.CD ) );
+            Trace.Assert( other.CD.Contains( other.BC.P1 ) || other.CD.Contains( other.BC.P2 ) );
+            Trace.Assert( other.CD.Contains( other.DA.P1 ) || other.CD.Contains( other.DA.P2 ) );
+            
+            // Determine base edge points order
+            Vector2 C = other.CD.Contains( other.BC.P1 ) ? other.BC.P1 : other.BC.P2;
+            Vector2 D = other.CD.Contains( other.DA.P1 ) ? other.DA.P1 : other.DA.P2;
+            // Three cases are available: rectangles can have no intersection, can touch each other
+            // and have two or more intersection points
+            if ( this.Touches( other ) )
+            {
+                return 0;
+            }
+            else if ( !this.Intersects( other ) )
+            {
+                return MathUtils.MinVec( other.CD.Distance2D( this.AB ), other.CD.Distance2D( this.BC ), other.CD.Distance2D( this.CD ), other.CD.Distance2D( this.DA ) );
+            }
+            else
+            {
+                // Determine intersection of BC and this rectangle (obstacle extent)
+                List<Vector2> bcPts = new List<Vector2>();
+                if ( other.BC.Intersects( this.AB ) ) bcPts.Add( other.BC.GetIntersectionPoint( this.AB ) );
+                if ( other.BC.Intersects( this.BC ) ) bcPts.Add( other.BC.GetIntersectionPoint( this.BC ) );
+                if ( other.BC.Intersects( this.CD ) ) bcPts.Add( other.BC.GetIntersectionPoint( this.CD ) );
+                if ( other.BC.Intersects( this.DA ) ) bcPts.Add( other.BC.GetIntersectionPoint( this.DA ) );
+                Trace.Assert( bcPts.Count <= 2 );
 
-        public float DistanceTo( SdcLineSegment segm )
-        {
-            var rotatedThis = Rotate( this.RotationCenter, this.RotationAngle );
+                // Determine intersection of DA and this rectangle (obstacle extent)
+                List<Vector2> daPts = new List<Vector2>();
+                if ( other.DA.Intersects( this.AB ) ) daPts.Add( other.DA.GetIntersectionPoint( this.AB ) );
+                if ( other.DA.Intersects( this.BC ) ) daPts.Add( other.DA.GetIntersectionPoint( this.BC ) );
+                if ( other.DA.Intersects( this.CD ) ) daPts.Add( other.DA.GetIntersectionPoint( this.CD ) );
+                if ( other.DA.Intersects( this.DA ) ) daPts.Add( other.DA.GetIntersectionPoint( this.DA ) );
+                Trace.Assert( daPts.Count <= 2 );
 
-            float a = SdcLineSegment.Distance2D( rotatedThis.Left, segm ); if ( a <= SMALL_NUM ) a = float.MaxValue;
-            float b = SdcLineSegment.Distance2D( rotatedThis.Right, segm ); if ( b <= SMALL_NUM ) b = float.MaxValue;
-            float c = SdcLineSegment.Distance2D( rotatedThis.Top, segm ); if ( c <= SMALL_NUM ) c = float.MaxValue;
-            float d = SdcLineSegment.Distance2D( rotatedThis.Bottom, segm ); if ( c <= SMALL_NUM ) c = float.MaxValue;
-            float min = MathUtils.MinVec( a, b, c, d );
-            return min;
+                // Determine distance from C to intersection points
+                List<float> bcDist = new List<float>();
+                for ( int i = 0; i < bcPts.Count; ++i )
+                {
+                    bcDist.Add( Vector2.Distance( C, bcPts[ i ] ) );
+                }
+
+                // Determine distance from D to intersection points
+                List<float> daDist = new List<float>();
+                for ( int i = 0; i < daPts.Count; ++i )
+                {
+                    daDist.Add( Vector2.Distance( D, daPts[ i ] ) );
+                }
+
+                // Return the minimum distance found
+                return MathUtils.MinVec( bcDist.Count >= 1 ? bcDist.Min() : float.MaxValue, daDist.Count >= 1 ? daDist.Min() : float.MaxValue );
+            }
+
+            throw new NotImplementedException();
         }
 
         public override string ToString()
         {
-            return string.Format( "LeftBottom: ( {0}; {1} ), RightTop: ( {2}; {3} )", LeftBottom.X, LeftBottom.Y, RightTop.X, RightTop.Y );
+            return string.Format( "A: ({0}; {1}), B: ({2}; {3}), C: ({4}; {5}), D: ({6}; {7})",
+                A.X, A.Y, B.X, B.Y, C.X, C.Y, D.X, D.Y );
         }
 
         public bool Contains( Vector2 pt )
@@ -2142,8 +2502,8 @@ namespace SigmaDC.Common.MathEx
             var rotatedThis = Rotate( this.RotationCenter, this.RotationAngle );
 
             // 2) Split it to the two triangles: ABD, BCD
-            var trABD = new SdcTriangle( rotatedThis.LeftBottom, rotatedThis.LeftTop, rotatedThis.RightBottom );
-            var trBCD = new SdcTriangle( rotatedThis.LeftTop, rotatedThis.RightTop, rotatedThis.RightBottom );
+            var trABD = new SdcTriangle( rotatedThis.A, rotatedThis.B, rotatedThis.D );
+            var trBCD = new SdcTriangle( rotatedThis.B, rotatedThis.C, rotatedThis.D );
 
             // 3) Check if one of the triangles contains the specified point
             return ( trABD.Contains( pt ) || trBCD.Contains( pt ) );
@@ -2152,7 +2512,16 @@ namespace SigmaDC.Common.MathEx
         public bool Contains( SdcRectangle rect )
         {
             // One rectangle completely contains another <==> it contains all four it's points
-            return ( Contains( rect.LeftBottom ) && Contains( rect.LeftTop ) && Contains( rect.RightTop ) && Contains( rect.RightBottom ) );
+            return ( Contains( rect.A ) && Contains( rect.B ) && Contains( rect.C ) && Contains( rect.D ) );
+        }
+
+        public bool Touches( SdcRectangle other )
+        {
+            bool b1 = this.AB.Touches( other.AB ) || this.AB.Touches( other.BC ) || this.AB.Touches( other.CD ) || this.AB.Touches( other.DA );
+            bool b2 = this.BC.Touches( other.AB ) || this.BC.Touches( other.BC ) || this.BC.Touches( other.CD ) || this.BC.Touches( other.DA );
+            bool b3 = this.CD.Touches( other.AB ) || this.CD.Touches( other.BC ) || this.CD.Touches( other.CD ) || this.CD.Touches( other.DA );
+            bool b4 = this.DA.Touches( other.AB ) || this.DA.Touches( other.BC ) || this.DA.Touches( other.CD ) || this.DA.Touches( other.DA );
+            return b1 || b2 || b3 || b4;
         }
 
         public bool Intersects( SdcRectangle other )
@@ -2160,25 +2529,25 @@ namespace SigmaDC.Common.MathEx
             var rotatedThis = this.Rotate( this.RotationCenter, this.RotationAngle );
             var rotatedOther = other.Rotate( other.RotationCenter, other.RotationAngle );
 
-            if ( rotatedThis.Left.Intersects( rotatedOther.Left ) ) return true;
-            if ( rotatedThis.Left.Intersects( rotatedOther.Top ) ) return true;
-            if ( rotatedThis.Left.Intersects( rotatedOther.Right ) ) return true;
-            if ( rotatedThis.Left.Intersects( rotatedOther.Bottom ) ) return true;
+            if ( rotatedThis.AB.Intersects( rotatedOther.AB ) ) return true;
+            if ( rotatedThis.AB.Intersects( rotatedOther.BC ) ) return true;
+            if ( rotatedThis.AB.Intersects( rotatedOther.CD ) ) return true;
+            if ( rotatedThis.AB.Intersects( rotatedOther.DA ) ) return true;
 
-            if ( rotatedThis.Top.Intersects( rotatedOther.Left ) ) return true;
-            if ( rotatedThis.Top.Intersects( rotatedOther.Top ) ) return true;
-            if ( rotatedThis.Top.Intersects( rotatedOther.Right ) ) return true;
-            if ( rotatedThis.Top.Intersects( rotatedOther.Bottom ) ) return true;
+            if ( rotatedThis.BC.Intersects( rotatedOther.AB ) ) return true;
+            if ( rotatedThis.BC.Intersects( rotatedOther.BC ) ) return true;
+            if ( rotatedThis.BC.Intersects( rotatedOther.CD ) ) return true;
+            if ( rotatedThis.BC.Intersects( rotatedOther.DA ) ) return true;
 
-            if ( rotatedThis.Right.Intersects( rotatedOther.Left ) ) return true;
-            if ( rotatedThis.Right.Intersects( rotatedOther.Top ) ) return true;
-            if ( rotatedThis.Right.Intersects( rotatedOther.Right ) ) return true;
-            if ( rotatedThis.Right.Intersects( rotatedOther.Bottom ) ) return true;
+            if ( rotatedThis.CD.Intersects( rotatedOther.AB ) ) return true;
+            if ( rotatedThis.CD.Intersects( rotatedOther.BC ) ) return true;
+            if ( rotatedThis.CD.Intersects( rotatedOther.CD ) ) return true;
+            if ( rotatedThis.CD.Intersects( rotatedOther.DA ) ) return true;
 
-            if ( rotatedThis.Bottom.Intersects( rotatedOther.Left ) ) return true;
-            if ( rotatedThis.Bottom.Intersects( rotatedOther.Top ) ) return true;
-            if ( rotatedThis.Bottom.Intersects( rotatedOther.Right ) ) return true;
-            if ( rotatedThis.Bottom.Intersects( rotatedOther.Bottom ) ) return true;
+            if ( rotatedThis.DA.Intersects( rotatedOther.AB ) ) return true;
+            if ( rotatedThis.DA.Intersects( rotatedOther.BC ) ) return true;
+            if ( rotatedThis.DA.Intersects( rotatedOther.CD ) ) return true;
+            if ( rotatedThis.DA.Intersects( rotatedOther.DA ) ) return true;
 
             return false;
 
