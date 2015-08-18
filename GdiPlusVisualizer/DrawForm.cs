@@ -244,7 +244,7 @@ namespace GdiPlusVisualizer
             {
                 m_distField = new DistanceField( m_building, m_a, M, N, x0, y0 );
 
-               /* this.UseWaitCursor = true;
+                this.UseWaitCursor = true;
                 this.Enabled = false;
 
                 Stopwatch stopwatch = Stopwatch.StartNew();
@@ -258,11 +258,11 @@ namespace GdiPlusVisualizer
                 MessageBox.Show( "Distance field calculation took: " + elapsedTime );
 
                 this.Enabled = true;
-                this.UseWaitCursor = false;*/
+                this.UseWaitCursor = false;
 
                 var model = new SigmaDCModel();
-               // var hi = new HumanRuntimeInfo(h);
-                model.SetupParameters( new Dictionary<string, object>() { { "r", 1.0f }, { "w", 0.0f }, { "deltaD", 0.0f }, { "kw", 4.0f }, { "kp", 1.0f }, { "ks", 1.0f } } );
+                model.SetupParameters( new Dictionary<string, object>() { { "r", 1.0f }, { "w", 0.0f }, { "deltaD", 0.0f }, { "deltaT", 1.0f },
+                { "kw", 4.0f }, { "kp", 1.0f }, { "ks", 1.0f } } );
 
                 var obstacleExtents = new List<RectangleF>();
                 foreach ( var box in m_building.CurrentFloor.Geometry )
@@ -280,16 +280,9 @@ namespace GdiPlusVisualizer
                 }*/
                 // TODO: smth else can be considered as obstacle?
                 model.SetupObstacles( obstacleExtents );
-
                 model.SetupPeople( m_building.CurrentFloor.People );
 
-                model.NextStepAll( null, ref m_humanRuntimeData );
-
-                /*var human = new Human();
-                human.projectionCenter = new SigmaDC.Common.MathEx.Vector2( 1.0f, 3.0f );
-                human.projectionDiameter = 2.0f;
-                model.NextStep( human, m_distField, hi );*/
-                return;
+                model.NextStepAll( m_distField, ref m_humanRuntimeData );
             }
         }
 

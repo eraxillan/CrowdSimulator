@@ -2628,5 +2628,10 @@ namespace SigmaDC.Common.MathEx
             }
             return true;
         }
+
+        public float Area()
+        {
+            return Width * Height;
+        }
     }
 }

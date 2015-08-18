@@ -20,6 +20,7 @@ namespace SigmaDC.MathModel
             public float r;
             public float w = 0;
             public float deltaD = 0.01f;
+            public float deltaT = 1.0f;
             
             /// <summary>
             /// Grid step size, 10 cm by default
@@ -45,15 +46,28 @@ namespace SigmaDC.MathModel
         IEnumerable<IHuman> m_people = new List<IHuman>();
         List<SdcRectangle> m_obstacleExtents = new List<SdcRectangle>();
 
+        // Constant data
+        // FIXME: move to the static constructor
+        Dictionary<PathType, SpeedConst> m_speedConst;
+        Dictionary<AdultClothes, double> m_adultDiameters;
+        Dictionary<ChildClothes, Dictionary<ChildrenAgeGroups, double>> m_childDiameters;
+
         public void SetupParameters( Dictionary<string, object> modelParams )
         {
             m_modelParams.r = ( float )modelParams[ "r" ];
             m_modelParams.w = ( float )modelParams[ "w" ];
             m_modelParams.deltaD = ( float )modelParams[ "deltaD" ];
+            m_modelParams.deltaT = ( float )modelParams[ "deltaT" ];
 
             m_modelParams.kw = ( float )modelParams[ "kw" ];
             m_modelParams.kp = ( float )modelParams[ "kp" ];
             m_modelParams.ks = ( float )modelParams[ "ks" ];
+
+            FillSpeedConstants();
+            FillProjectionDiametersTables();
+
+            // FIXME: implement
+//            ValidateParameters();
         }
 
         public void SetupObstacles( List<RectangleF> obstacleExtents )
@@ -82,15 +96,15 @@ namespace SigmaDC.MathModel
         void FillProjectionDiametersTables()
         {
             // weather -> circular projection diameter (meters, m)
-            Dictionary<AdultClothes, double> adultDiameters = new Dictionary<AdultClothes, double>();
-            adultDiameters.Add( AdultClothes.LightClothing, 0.35 );
-            adultDiameters.Add( AdultClothes.InBetweenSeason, 0.36 );
-            adultDiameters.Add( AdultClothes.Winter, 0.40 );
+            m_adultDiameters = new Dictionary<AdultClothes, double>();
+            m_adultDiameters.Add( AdultClothes.LightClothing, 0.35 );
+            m_adultDiameters.Add( AdultClothes.InBetweenSeason, 0.36 );
+            m_adultDiameters.Add( AdultClothes.Winter, 0.40 );
 
-            Dictionary<ChildClothes, Dictionary<ChildrenAgeGroups, double>> childDiameters = new Dictionary<ChildClothes, Dictionary<ChildrenAgeGroups, double>>();
-            childDiameters.Add( ChildClothes.LeisureWear, new Dictionary<ChildrenAgeGroups, double>() { { ChildrenAgeGroups.Junior, 0.22 }, { ChildrenAgeGroups.Middle, 0.27 }, { ChildrenAgeGroups.Senior, 0.32 } } );
-            childDiameters.Add( ChildClothes.LeisureWearPlusBag, new Dictionary<ChildrenAgeGroups, double>() { { ChildrenAgeGroups.Junior, 0.28 }, { ChildrenAgeGroups.Middle, 0.356 }, { ChildrenAgeGroups.Senior, 0.42 } } );
-            childDiameters.Add( ChildClothes.OutdoorClothes, new Dictionary<ChildrenAgeGroups, double>() { { ChildrenAgeGroups.Junior, 0.34 }, { ChildrenAgeGroups.Middle, 0.4 }, { ChildrenAgeGroups.Senior, 0.45 } } );
+            m_childDiameters = new Dictionary<ChildClothes, Dictionary<ChildrenAgeGroups, double>>();
+            m_childDiameters.Add( ChildClothes.LeisureWear, new Dictionary<ChildrenAgeGroups, double>() { { ChildrenAgeGroups.Junior, 0.22 }, { ChildrenAgeGroups.Middle, 0.27 }, { ChildrenAgeGroups.Senior, 0.32 } } );
+            m_childDiameters.Add( ChildClothes.LeisureWearPlusBag, new Dictionary<ChildrenAgeGroups, double>() { { ChildrenAgeGroups.Junior, 0.28 }, { ChildrenAgeGroups.Middle, 0.356 }, { ChildrenAgeGroups.Senior, 0.42 } } );
+            m_childDiameters.Add( ChildClothes.OutdoorClothes, new Dictionary<ChildrenAgeGroups, double>() { { ChildrenAgeGroups.Junior, 0.34 }, { ChildrenAgeGroups.Middle, 0.4 }, { ChildrenAgeGroups.Senior, 0.45 } } );
         }
 
         public struct SpeedConst
@@ -121,69 +135,122 @@ namespace SigmaDC.MathModel
 
         void FillSpeedConstants()
         {
-            var speedConst = new Dictionary<PathType, SpeedConst>();
+            m_speedConst = new Dictionary<PathType, SpeedConst>();
 
             var horizontalConst = new Dictionary<HumanEmotionState, SpeedConst.SpeedInitialValues>();
             horizontalConst.Add( HumanEmotionState.Comfort, new SpeedConst.SpeedInitialValues( 0.57, 0.08 ) );
             horizontalConst.Add( HumanEmotionState.Calm, new SpeedConst.SpeedInitialValues( 0.96, 0.047 ) );
             horizontalConst.Add( HumanEmotionState.Active, new SpeedConst.SpeedInitialValues( 1.3, 0.66 ) );
             horizontalConst.Add( HumanEmotionState.VeryActive, new SpeedConst.SpeedInitialValues( 1.75, 0.083 ) );
-            speedConst.Add( PathType.Horizontal, new SpeedConst( 0.06, 0.295, horizontalConst ) );
+            m_speedConst.Add( PathType.Horizontal, new SpeedConst( 0.06, 0.295, horizontalConst ) );
 
             var apertureConst = new Dictionary<HumanEmotionState, SpeedConst.SpeedInitialValues>();
             apertureConst.Add( HumanEmotionState.Comfort, new SpeedConst.SpeedInitialValues( 0.57, 0.08 ) );
             apertureConst.Add( HumanEmotionState.Calm, new SpeedConst.SpeedInitialValues( 0.96, 0.047 ) );
             apertureConst.Add( HumanEmotionState.Active, new SpeedConst.SpeedInitialValues( 1.3, 0.66 ) );
             apertureConst.Add( HumanEmotionState.VeryActive, new SpeedConst.SpeedInitialValues( 1.75, 0.083 ) );
-            speedConst.Add( PathType.Horizontal, new SpeedConst( 0.08, 0.295, apertureConst ) );
+            m_speedConst.Add( PathType.Aperture, new SpeedConst( 0.08, 0.295, apertureConst ) );
 
             var stairwayDownConst = new Dictionary<HumanEmotionState, SpeedConst.SpeedInitialValues>();
             stairwayDownConst.Add( HumanEmotionState.Comfort, new SpeedConst.SpeedInitialValues( 0.57, 0.08 ) );
             stairwayDownConst.Add( HumanEmotionState.Calm, new SpeedConst.SpeedInitialValues( 0.96, 0.047 ) );
             stairwayDownConst.Add( HumanEmotionState.Active, new SpeedConst.SpeedInitialValues( 1.3, 0.66 ) );
             stairwayDownConst.Add( HumanEmotionState.VeryActive, new SpeedConst.SpeedInitialValues( 1.75, 0.083 ) );
-            speedConst.Add( PathType.Horizontal, new SpeedConst( 0.10, 0.400, stairwayDownConst ) );
+            m_speedConst.Add( PathType.StairwayDown, new SpeedConst( 0.10, 0.400, stairwayDownConst ) );
 
             var stairwayUpConst = new Dictionary<HumanEmotionState, SpeedConst.SpeedInitialValues>();
             stairwayUpConst.Add( HumanEmotionState.Comfort, new SpeedConst.SpeedInitialValues( 0.31, 0.47 ) );
             stairwayUpConst.Add( HumanEmotionState.Calm, new SpeedConst.SpeedInitialValues( 0.54, 0.03 ) );
             stairwayUpConst.Add( HumanEmotionState.Active, new SpeedConst.SpeedInitialValues( 0.775, 0.47 ) );
             stairwayUpConst.Add( HumanEmotionState.VeryActive, new SpeedConst.SpeedInitialValues( 1.08, 0.05 ) );
-            speedConst.Add( PathType.Horizontal, new SpeedConst( 0.08, 0.305, stairwayUpConst ) );
+            m_speedConst.Add( PathType.StairwayUp, new SpeedConst( 0.08, 0.305, stairwayUpConst ) );
 
             var horizontalOutsideBuildingConst = new Dictionary<HumanEmotionState, SpeedConst.SpeedInitialValues>();
-            speedConst.Add( PathType.HorizontalOutsideBuilding, new SpeedConst( 0.08, 0.407, horizontalOutsideBuildingConst ) );
+            m_speedConst.Add( PathType.HorizontalOutsideBuilding, new SpeedConst( 0.08, 0.407, horizontalOutsideBuildingConst ) );
         }
 
-        public void InitShortestPathField()
-        {
-            throw new NotImplementedException();
-        }
-
-        float HeavisideFunction( float x )
+        private float HeavisideFunction( float x )
         {
             if ( x < 0 ) return 0;
             if ( MathUtils.NearlyZero( x ) ) return 0.5f;
             return 1;
         }
 
-        float Density( float r_j, IHuman currHuman )
+        private float Density( float r_j, IHuman currHuman, SdcRectangle visArea )
         {
-            // FIXME: precision loss during double ---> float conversion
-            /*RectangleF V = new RectangleF( (float)currHuman.projectionCenter.X, (float)currHuman.projectionCenter.Y, 
-                (float)currHuman.projectionDiameter, (float)r_j );
-            
-            List<Human> m_people = new List<Human>();
-            foreach(var human in m_people)
+            // Search for other people in visibility area V[i,j]
+            float peopleOccupiedArea = 0;
+            foreach ( var h in m_people )
             {
-                if(human.Ex)
-            }*/
-            throw new NotImplementedException();
+                if ( visArea.Intersects( new SdcCircle( h.ProjectionCenter, h.ProjectionDiameter / 2.0f ) ) )
+                {
+                    // FIXME: implement exact human - obstacle intersection area calculation
+                    peopleOccupiedArea += ( float )Math.PI * MathUtils.Sqr( h.ProjectionDiameter / 2.0f );
+                }
+            }
+
+            float result = peopleOccupiedArea / visArea.Area();
+            Trace.Assert( result >= 0.0f && result <= 1.0f );
+            return result;
         }
 
-        float WallApproching( float x )
+        private float WallApproching( float x )
         {
             return ( x > m_modelParams.w ) ? 1 : 0;
+        }
+
+        /// <summary>
+        /// Velocity mathematical expectation
+        /// </summary>
+        private float VelocityMean( PathType l, IHuman human, SdcRectangle visArea, float r_j )
+        {
+            float F_rj = Density( r_j, human, visArea );
+            float F0 = ( float )m_speedConst[ l ].F0;
+
+            float v0 = ( float )m_speedConst[ l ].initValues[ human.EmotionState ].v0;
+            if ( F_rj > F0 )
+            {
+                float a_l = ( float )m_speedConst[ l ].a_l;
+
+                return ( float )( v0 * ( 1 - a_l * Math.Log( F_rj / F0 ) ) );
+            }
+
+            return v0;
+        }
+
+        /// <summary>
+        /// Velocity standard deviation
+        /// </summary>
+        /// <returns></returns>
+        private float VelocityStdDev( PathType l, IHuman human, SdcRectangle visArea, float r_j )
+        {
+            float F_rj = Density( r_j, human, visArea );
+            float F0 = ( float )m_speedConst[ l ].F0;
+
+            float sigma_v0 = ( float )m_speedConst[ l ].initValues[ human.EmotionState ].sigma_v0;
+            if ( F_rj > F0 )
+            {
+                float a_l = ( float )m_speedConst[ l ].a_l;
+
+                return ( float )( sigma_v0 * ( 1 - a_l * Math.Log( F_rj / F0 ) ) );
+            }
+
+            return sigma_v0;
+        }
+
+        private float Velocity( PathType l, IHuman human, SdcRectangle visArea, float r_j )
+        {
+            float result = 0.0f;
+
+            Random rnd = new Random();
+            float thetaSum = 0.0f;
+            for ( int i = 1; i <= 12; ++i )
+            {
+                thetaSum += ( float )rnd.NextDouble();
+            }
+
+            result = ( thetaSum + 6 ) * VelocityStdDev( l, human, visArea, r_j ) + VelocityMean( l, human, visArea, r_j );
+            return result;
         }
 
         public void NextStepAll( IDistanceField S, ref List<HumanRuntimeInfo> hi )
@@ -239,7 +306,6 @@ namespace SigmaDC.MathModel
             //    r >= min( d[i]/2 ), i = 1,N, where N - people count
             //    min( d[i]/2 ) <= r*[j] <= r
             //
-            List<KeyValuePair<float, Vector2>> directions = new List<KeyValuePair<float, Vector2>>();
             List<float> probabilities = new List<float>( m_modelParams.q );
             float norm = 0;
             for ( int j = 1; j <= m_modelParams.q; ++j )
@@ -256,29 +322,26 @@ namespace SigmaDC.MathModel
                 }
                 humanInfo.MinDistToObstacle.Add( r_j );
 
-//                Debug.Assert( r_j <= m_modelParams.r );
+                Debug.Assert( r_j <= m_modelParams.r );
 
                 // 0.2) dS[j] - the difference between old and new shortest path field values
- /*               var x_r = new Vector2( xPrev.X + 0.1f * humanInfo.MoveDirections[ j ].X, xPrev.Y + 0.1f * humanInfo.MoveDirections[ j ].Y );
+                var x_r = new Vector2( xPrev.X + 0.1f * humanInfo.MoveDirections[ j - 1 ].X, xPrev.Y + 0.1f * humanInfo.MoveDirections[ j - 1 ].Y );
                 float d_S = S.Get( xPrev.X, xPrev.Y ) - S.Get( x_r.X, x_r.Y );
 
-                float p_j = (float)Math.Exp( -m_modelParams.kw * ( 1 - r_j / m_modelParams.r ) * HeavisideFunction( d_S ) )
-                    * ( float )Math.Exp( -m_modelParams.kp * Density( r_j, human ) )
+                float p_j = ( float )Math.Exp( -m_modelParams.kw * ( 1 - r_j / m_modelParams.r ) * HeavisideFunction( d_S ) )
+                    * ( float )Math.Exp( -m_modelParams.kp * Density( r_j, human, humanInfo.VisibilityAreas[ j - 1 ] ) )
                     * ( float )Math.Exp( m_modelParams.ks * d_S )
-                    * WallApproching( r_j - human.projectionDiameter / 2.0f );
-                probabilities.Add( (float)p_j );
+                    * WallApproching( r_j - human.ProjectionDiameter / 2.0f );
+                probabilities.Add( ( float )p_j );
 
-                norm += p_j;*/
+                norm += p_j;
             }
 
-            // FIXME: remove
-            return new Vector2();
-            
             //
             // p[j] = p^[j] / norm,
             // FIXME: check this is working code!
             //
-            probabilities.ForEach( x => x /= norm );
+            probabilities = probabilities.ConvertAll( x => x /= norm );
 
             //
             // 1.2) norm == 0 ==> man will not move
@@ -300,7 +363,10 @@ namespace SigmaDC.MathModel
             //        human age group (TODO: currently only EmSt variable used),
             //        and determine using corresponding table or calculated using formula below
             //
-            var selectedDir = directions[ j_selected ];
+            var selectedDir = humanInfo.MoveDirections[ j_selected ];
+            var selectedVisArea = humanInfo.VisibilityAreas[ j_selected ];
+            var selected_r_j = humanInfo.MinDistToObstacle[ j_selected ];
+            var possibleCoords = xPrev + selectedDir * Velocity( PathType.Horizontal, human, selectedVisArea, selected_r_j ) * m_modelParams.deltaT;
             
             //
             // 1.4.2) Select the e^[j] direction if human[i] track will not be crossed
@@ -348,10 +414,13 @@ namespace SigmaDC.MathModel
             Trace.Assert( probabilities.Count == m_modelParams.q );
 
             System.Random rndGen = new Random();
-            double randomNum = rndGen.NextDouble();
-            for ( int i = 0; i < probabilities.Count;++i )
+            for ( int counter = 0; counter < 100; ++counter )
             {
-                if ( randomNum >= probabilities[ i ] ) return i;
+                double randomNum = rndGen.NextDouble();
+                for ( int i = 0; i < probabilities.Count; ++i )
+                {
+                    if ( randomNum >= probabilities[ i ] ) return i;
+                }
             }
 
             Trace.Assert( false, "Invalid probability value was generated || empty probability list was specified" );
