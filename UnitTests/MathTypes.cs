@@ -11,19 +11,48 @@ namespace UnitTests
         [TestMethod]
         public void Test_ToDegrees()
         {
-            // TODO:
+            // Arrange
+
+            // Act
+            var pidiv4Deg = MathUtils.ToDegrees( MathUtils.PiOver4 );
+            var pidiv2Deg = MathUtils.ToDegrees( MathUtils.PiOver2 );
+            var piDeg = MathUtils.ToDegrees( MathUtils.Pi );
+
+            // Assert
+            Assert.IsTrue( MathUtils.NearlyEqual( pidiv4Deg, 45.0f ) );
+            Assert.IsTrue( MathUtils.NearlyEqual( pidiv2Deg, 90.0f ) );
+            Assert.IsTrue( MathUtils.NearlyEqual( piDeg, 180.0f ) );
         }
 
         [TestMethod]
         public void Test_ToRadians()
         {
-            // TODO:
+            // Arrange
+
+            // Act
+            var pidiv4Rad = MathUtils.ToRadians( 45.0f );
+            var pidiv2Rad = MathUtils.ToRadians( 90.0f );
+            var piRad = MathUtils.ToRadians( 180.0f );
+
+            // Assert
+            Assert.IsTrue( MathUtils.NearlyEqual( pidiv4Rad, MathUtils.PiOver4 ) );
+            Assert.IsTrue( MathUtils.NearlyEqual( pidiv2Rad, MathUtils.PiOver2 ) );
+            Assert.IsTrue( MathUtils.NearlyEqual( piRad, MathUtils.Pi ) );
         }
 
         [TestMethod]
         public void Test_WrapAngle()
         {
-            // TODO:
+            // Arrange
+            // Act
+            var piWrapped = MathUtils.WrapAngle( MathUtils.Pi );
+            var pi23Wrapped = MathUtils.WrapAngle( 2 * MathUtils.Pi / 3 );
+            var pi32Wrapped = MathUtils.WrapAngle( 3 * MathUtils.Pi / 2 );
+
+            // Assert
+            Assert.IsTrue( MathUtils.NearlyEqual( piWrapped, MathUtils.Pi ) );
+            Assert.IsTrue( MathUtils.NearlyEqual( pi23Wrapped, 2 * MathUtils.Pi / 3 ) );
+            Assert.IsTrue( MathUtils.NearlyEqual( pi32Wrapped, -MathUtils.Pi / 2 ) );
         }
 
         [TestMethod]
@@ -48,7 +77,7 @@ namespace UnitTests
             // Arrange
 
             // Act
-            var resultTwoZeros = MathUtils.MinVec(0.0f, 0.0f);
+            var resultTwoZeros = MathUtils.MinVec( 0.0f, 0.0f );
             var resultTwoPositives = MathUtils.MinVec( 1.5f, 2.5f );
             var resultTwoNegatives = MathUtils.MinVec( -1.5f, -2.5f );
             var resultNegativeAndPositive = MathUtils.MinVec( 1.5f, -2.5f );
@@ -193,87 +222,113 @@ namespace UnitTests
         [TestMethod]
         public void Vector2_Minus_Operator()
         {
-            //
+            // Arrange
+            // Act
+            // Assert
         }
 
         [TestMethod]
         public void Vector2_Plus_Operator()
         {
-            //
+            // Arrange
+            // Act
+            // Assert
         }
 
         [TestMethod]
         public void Vector2_Mul_Operator()
         {
-            //
+            // Arrange
+            // Act
+            // Assert
         }
 
         [TestMethod]
         public void Vector2_Div_Operator()
         {
-            //
+            // Arrange
+            // Act
+            // Assert
         }
 
         [TestMethod]
         public void Vector2_Comparison_Operators()
         {
-            //
+            // Arrange
+            // Act
+            // Assert
         }
 
         [TestMethod]
         public void Vector2_Equals()
         {
-            //
+            // Arrange
+            // Act
+            // Assert
         }
 
         [TestMethod]
         public void Vector2_GetHashCode()
         {
-            //
+            // Arrange
+            // Act
+            // Assert
         }
 
         [TestMethod]
         public void Vector2_Negate_Test()
         {
-            //
+            // Arrange
+            // Act
+            // Assert
         }
 
         [TestMethod]
         public void Vector2_Add_Test()
         {
-            //
+            // Arrange
+            // Act
+            // Assert
         }
 
         [TestMethod]
         public void Vector2_Subtract_Test()
         {
-            //
+            // Arrange
+            // Act
+            // Assert
         }
 
         [TestMethod]
         public void Vector2_Multiply_Test()
         {
-            //
+            // Arrange
+            // Act
+            // Assert
         }
 
         [TestMethod]
         public void Vector2_Divide_Test()
         {
-            //
+            // Arrange
+            // Act
+            // Assert
         }
 
         [TestMethod]
         public void Vector2_Dot_Test()
         {
-            //
+            // Arrange
+            // Act
+            // Assert
         }
 
         [TestMethod]
         public void Vector2_Distance_Test()
         {
             // Arrange
-            SdcLineSegment pq = new SdcLineSegment( new Vector2( 8.9f, 9.8f ), new Vector2( 9.6f, 10.5f ) );
-            SdcLineSegment uv = new SdcLineSegment( new Vector2( 8.9f, 10.3f ), new Vector2( 11.4f, 10.3f ) );
+            var pq = new SdcLineSegment( new Vector2( 8.9f, 9.8f ), new Vector2( 9.6f, 10.5f ) );
+            var uv = new SdcLineSegment( new Vector2( 8.9f, 10.3f ), new Vector2( 11.4f, 10.3f ) );
 
             // Act
             float result = SdcLineSegment.Distance2D( pq, uv );
@@ -288,67 +343,146 @@ namespace UnitTests
         [TestMethod]
         public void Vector2_DistanceSquared_Test()
         {
-            //
+            // Arrange
+            var pq = new SdcLineSegment( new Vector2( 8.9f, 9.8f ), new Vector2( 9.6f, 10.5f ) );
+            var uv = new SdcLineSegment( new Vector2( 8.9f, 10.3f ), new Vector2( 11.4f, 10.3f ) );
+
+            // Act
+            float result = SdcLineSegment.Distance2D( pq, uv );
+            Vector2 R = SdcLineSegment.GetIntersectionPoint( pq, uv );
+            float t = Vector2.DistanceSquared( R, pq.P2 );
+            result = t;
+
+            // Assert
+            Assert.IsTrue( MathUtils.NearlyEqual( result, 0.283f * 0.283f ) );
         }
 
         [TestMethod]
         public void Vector2_Length_Test()
         {
-            //
+            // Arrange
+            var pq = new SdcLineSegment( new Vector2( 8.9f, 9.8f ), new Vector2( 9.6f, 10.5f ) );
+            var uv = new SdcLineSegment( new Vector2( 8.9f, 10.3f ), new Vector2( 11.4f, 10.3f ) );
+
+            // Act
+            var pqLength = pq.Length();
+            var uvLength = uv.Length();
+
+            // Assert
+            Assert.IsTrue( MathUtils.NearlyEqual( pqLength, 0.99f ) );
+            Assert.IsTrue( MathUtils.NearlyEqual( uvLength, 2.5f ) );
         }
 
         [TestMethod]
         public void Vector2_LengthSquared_Test()
         {
-            //
+            // Arrange
+            var pq = new SdcLineSegment( new Vector2( 8.9f, 9.8f ), new Vector2( 9.6f, 10.5f ) );
+            var uv = new SdcLineSegment( new Vector2( 8.9f, 10.3f ), new Vector2( 11.4f, 10.3f ) );
+
+            // Act
+            var pqLength = pq.LengthSquared();
+            var uvLength = uv.LengthSquared();
+
+            // Assert
+            Assert.IsTrue( MathUtils.NearlyEqual( pqLength, 0.99f * 0.99f ) );
+            Assert.IsTrue( MathUtils.NearlyEqual( uvLength, 2.5f * 2.5f ) );
         }
 
         [TestMethod]
         public void Vector2_Min_Test()
         {
-            //
+            // Arrange
+            // Act
+            // Assert
         }
 
         [TestMethod]
         public void Vector2_Max_Test()
         {
-            //
+            // Arrange
+            // Act
+            // Assert
         }
 
         [TestMethod]
         public void Vector2_Normalize_Test()
         {
-            //
+            // Arrange
+            // Act
+            // Assert
         }
 
         [TestMethod]
         public void Vector2_Reflect_Test()
         {
-            //
+            // Arrange
+            // Act
+            // Assert
         }
 
         [TestMethod]
         public void Vector2_Transform_Test()
         {
-            //
+            // Arrange
+            // Act
+            // Assert
         }
 
         [TestMethod]
         public void Vector2_RotateAroundPoint_Test()
         {
-            //
+            // Arrange
+            // Act
+            // Assert
         }
 
         [TestMethod]
         public void Vector2_ToPoint_Test()
         {
-            //
+            // Arrange
+            var p = new Vector2( 8.9f, 9.8f );
+            var q = new Vector2( 9.6f, 10.5f );
+
+            // Act
+            var pPt = p.ToPoint();
+            var qPt = q.ToPoint();
+
+            // Assert
+            Assert.AreEqual( pPt, new System.Drawing.Point( 8, 9 ) );
+            Assert.AreEqual( qPt, new System.Drawing.Point( 9, 10 ) );
+        }
+
+        [TestMethod]
+        public void Vector2_ToPointF_Test()
+        {
+            // Arrange
+            var p = new Vector2( 8.9f, 9.8f );
+            var q = new Vector2( 9.6f, 10.5f );
+
+            // Act
+            var pPt = p.ToPointF();
+            var qPt = q.ToPointF();
+
+            // Assert
+            Assert.AreEqual( pPt, new System.Drawing.PointF( 8.9f, 9.8f ) );
+            Assert.AreEqual( qPt, new System.Drawing.PointF( 9.6f, 10.5f ) );
         }
 
         [TestMethod]
         public void Vector2_ToString_Test()
         {
-            //
+            // Arrange
+            var p = new Vector2( 8.9f, 9.8f );
+            var q = new Vector2( 9.6f, 10.5f );
+
+            // Act
+            var pStr = p.ToString();
+            var qStr = q.ToString();
+
+            // Assert
+            Assert.AreEqual( pStr, "{ X:8,9; Y:9,8 }" );
+            Assert.AreEqual( qStr, "{ X:9,6; Y:10,5 }" );
         }
     }
 
@@ -358,25 +492,101 @@ namespace UnitTests
         // TODO:
     }
 
-   /* [TestClass]
-    public class SdcLineSegmentTests
-    {
-        //
-    }*/
-
     [TestClass]
     public class SdcCircleTests
     {
-        //
+        [TestMethod]
+        public void Intersects_Test()
+        {
+            // Arrange
+            // Act
+            // Assert
+        }
+    }
+
+    [TestClass]
+    public class SdcTriangleTests
+    {
+        [TestMethod]
+        public void Contains_Test()
+        {
+            // Arrange
+            // Act
+            // Assert
+        }
     }
 
     [TestClass]
     public class SdcRectangleTests
     {
-        //
+        [TestMethod]
+        public void Area_Test()
+        {
+            // Arrange
+            // Act
+            // Assert
+        }
+
+        [TestMethod]
+        public void Contains_Test()
+        {
+            // Arrange
+            // Act
+            // Assert
+        }
+
+        [TestMethod]
+        public void DistanceTo_Test()
+        {
+            // Arrange
+            // Act
+            // Assert
+        }
+
+        [TestMethod]
+        public void Intersects_Test()
+        {
+            // Arrange
+            // Act
+            // Assert
+        }
+
+        [TestMethod]
+        public void Touches_Test()
+        {
+            // Arrange
+            // Act
+            // Assert
+        }
+
+        [TestMethod]
+        public void Rotate_Test()
+        {
+            // Arrange
+            // Act
+            // Assert
+        }
+
+        [TestMethod]
+        public void ToString_Test()
+        {
+            // Arrange
+            // Act
+            // Assert
+        }
     }
 
-    // TODO: others, like SdcLine
+    [TestClass]
+    public class SdcLineTests
+    {
+        [TestMethod]
+        public void IntersectsWith_Test()
+        {
+            // Arrange
+            // Act
+            // Assert
+        }
+    }
 
     [TestClass]
     public class SdcLineSegmentTests
@@ -406,7 +616,9 @@ namespace UnitTests
         [TestMethod]
         public void GetBoundingBox_Test()
         {
-            //
+            // Arrange
+            // Act
+            // Assert
         }
 
         [TestMethod]
@@ -540,7 +752,28 @@ namespace UnitTests
         [TestMethod]
         public void GetIntersectionPoint_Test()
         {
-            //
+            // Arrange
+            // 1) Horizontal and vertical segments
+            var segmHor_1 = new SdcLineSegment( new Vector2( 4.1f, 11.1f ), new Vector2( 5.5f, 11.1f ) );
+            var segmVert_1 = new SdcLineSegment( new Vector2( 4.56f, 10.3f ), new Vector2( 4.56f, 11.3f ) );
+
+            // 2) Horizontal and usual (with slope) segments
+            var segmHor_2 = new SdcLineSegment( new Vector2( 8.7f, 10.3f ), new Vector2( 11.4f, 10.3f ) );
+            var segmUsual_2 = new SdcLineSegment( new Vector2( 8.9f, 9.8f ), new Vector2( 9.6f, 10.5f ) );
+
+            // 3) Two usual segments
+            var segmUsual_31 = new SdcLineSegment( new Vector2( 9.2f, 10.5f ), new Vector2( 9.8f, 9.9f ) );
+            var segmUsual_32 = new SdcLineSegment( new Vector2( 8.9f, 9.8f ), new Vector2( 9.6f, 10.5f ) );
+
+            // Act
+            var pt1 = segmHor_1.GetIntersectionPoint( segmVert_1 );
+            var pt2 = segmHor_2.GetIntersectionPoint( segmUsual_2 );
+            var pt3 = segmUsual_31.GetIntersectionPoint( segmUsual_32 );
+
+            // Assert
+            Assert.IsTrue( pt1 == new Vector2( 4.56f, 11.1f ) );
+            Assert.IsTrue( pt2 == new Vector2( 9.4f, 10.3f ) );
+            Assert.IsTrue( pt3 == new Vector2( 9.4f, 10.3f ) );
         }
 
         [TestMethod]
@@ -557,6 +790,22 @@ namespace UnitTests
             // Assert
             Assert.IsTrue( MathUtils.NearlyEqual( dist1, dist2 ) );
             Assert.IsTrue( MathUtils.NearlyEqual( dist1, 0.9f ) );
+        }
+
+        [TestMethod]
+        public void ToString_Test()
+        {
+            // Arrange
+            var pq = new SdcLineSegment( new Vector2( 8.9f, 9.8f ), new Vector2( 9.6f, 10.5f ) );
+            var uv = new SdcLineSegment( new Vector2( 8.9f, 10.3f ), new Vector2( 11.4f, 10.3f ) );
+
+            // Act
+            var pqStr = pq.ToString();
+            var uvStr = uv.ToString();
+
+            // Assert
+            Assert.AreEqual( pqStr, "A: (8,9; 9,8), B: (9,6; 10,5)" );
+            Assert.AreEqual( uvStr, "A: (8,9; 10,3), B: (11,4; 10,3)" );
         }
     }
 }

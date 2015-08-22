@@ -1580,6 +1580,11 @@ namespace SigmaDC.Common.MathEx
             return ( P1 - P2 ).Length();
         }
 
+        public float LengthSquared()
+        {
+            return ( P1 - P2 ).LengthSquared();
+        }
+
         #region Check whether the line segment contains the specified point
 
         public static bool Contains( SdcLineSegment S, Vector2 C )

@@ -123,7 +123,7 @@ namespace SigmaDC.Types
                     case 2: return HunanMobilityGroup.Second;
                     case 3: return HunanMobilityGroup.Third;
                     case 4: return HunanMobilityGroup.Fourth;
-                    default: throw new NotImplementedException();
+                    default: throw new InvalidOperationException( "The human has incorrect mobility group" );
                 }
             }
         }
@@ -141,7 +141,7 @@ namespace SigmaDC.Types
                     case 3: return HumanAgeGroup.Third;
                     case 4: return HumanAgeGroup.Fourth;
                     case 5: return HumanAgeGroup.Fifth;
-                    default: throw new NotImplementedException();
+                    default: throw new InvalidOperationException( "The human has incorrect age group" );
                 }
             }
         }
@@ -159,7 +159,7 @@ namespace SigmaDC.Types
                     case 2: return HumanEmotionState.Calm;
                     case 3: return HumanEmotionState.Active;
                     case 4: return HumanEmotionState.VeryActive;
-                    default: throw new NotImplementedException();
+                    default: throw new InvalidOperationException( "The human has incorrect emotional state" );
                 }
 
             }
